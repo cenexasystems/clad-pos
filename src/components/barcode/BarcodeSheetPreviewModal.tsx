@@ -97,7 +97,7 @@ export const BarcodeSheetPreviewModal: React.FC<BarcodeSheetPreviewModalProps> =
           <div>
             <h3 className="text-sm sm:text-base font-black tracking-wide text-white">Print Preview</h3>
             <p className="text-[11px] sm:text-xs text-[#D4AF37] font-semibold">
-              {individualLabels.length} Labels (1 Barcode Per Page • {sizeConfig.name} • {sizeConfig.widthMm} × {sizeConfig.heightMm} mm)
+              {individualLabels.length} Labels ({Math.max(1, sizeConfig.labelsPerRow || 1)} Per Row/Page • {sizeConfig.name} • {sizeConfig.widthMm} × {sizeConfig.heightMm} mm)
             </p>
           </div>
           <button

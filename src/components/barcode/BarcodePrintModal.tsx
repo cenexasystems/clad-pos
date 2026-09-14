@@ -27,6 +27,8 @@ type LabelSizePreset = {
   name: string
   widthMm: number
   heightMm: number
+  labelsPerRow: number
+  horizontalGapMm: number
 }
 
 const getAvailablePresets = (): LabelSizePreset[] => {
@@ -35,6 +37,8 @@ const getAvailablePresets = (): LabelSizePreset[] => {
     name: `${s.name} (${s.widthMm}mm × ${s.heightMm}mm)`,
     widthMm: s.widthMm,
     heightMm: s.heightMm,
+    labelsPerRow: Math.max(1, s.labelsPerRow || 1),
+    horizontalGapMm: s.horizontalGapMm || 0,
   }))
 }
 
@@ -50,7 +54,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 }) => {
   const [presets, setPresets] = useState<LabelSizePreset[]>(getAvailablePresets)
   const [quantity, setQuantity] = useState<string>(String(defaultQuantity || 1))
-  const [selectedPreset, setSelectedPreset] = useState<LabelSizePreset>(() => presets[0] || { name: 'Thermal Standard', widthMm: 50, heightMm: 25 })
+  const [selectedPreset, setSelectedPreset] = useState<LabelSizePreset>(() => presets[0] || { name: 'Thermal Standard', widthMm: 50, heightMm: 25, labelsPerRow: 1, horizontalGapMm: 0 })
   const [copied, setCopied] = useState(false)
   const [printerType, setPrinterType] = useState<'label' | 'regular'>(() => {
     return getStoredBarcodeSettings().printerType || 'label'
@@ -162,13 +166,24 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
           </div>
         </div>
       `
-      const allStickersHtml = Array.from({ length: Math.max(1, validQuantity) })
-        .map(() => singleStickerHtml)
-        .join('')
+
+      // Group stickers into rows of `labelsPerRow` for 2-up / 3-up side-by-side printing.
+      // Each row becomes one physical "page" on the thermal roll; the browser then
+      // advances to a new row/page rather than leaving the second slot blank.
+      const labelsPerRow = Math.max(1, selectedPreset.labelsPerRow || 1)
+      const gapMm = selectedPreset.horizontalGapMm || 0
+      const rowWidthMm = selectedPreset.widthMm * labelsPerRow + gapMm * (labelsPerRow - 1)
+
+      const allStickers = Array.from({ length: Math.max(1, validQuantity) }, () => singleStickerHtml)
+
+      let rowsHtml = ''
+      for (let i = 0; i < allStickers.length; i += labelsPerRow) {
+        rowsHtml += `<div class="row">${allStickers.slice(i, i + labelsPerRow).join('')}</div>`
+      }
 
       const bodyContent = isThermal
-        ? allStickersHtml
-        : `<div class="a4-container">${allStickersHtml}</div>`
+        ? rowsHtml
+        : `<div class="a4-container">${allStickers.join('')}</div>`
 
       const html = `
         <!DOCTYPE html>
@@ -179,9 +194,23 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
               @page {
                 ${
                   isThermal
-                    ? `size: ${selectedPreset.widthMm}mm ${selectedPreset.heightMm}mm; margin: 0mm !important; marks: none !important;`
+                    ? `size: ${rowWidthMm}mm ${selectedPreset.heightMm}mm !important; margin: 0mm !important; marks: none !important;`
                     : `size: A4 portrait; margin: 10mm !important;`
                 }
+              }
+              /* Lock the printable area to the exact physical roll width so Chrome's
+                 print driver doesn't try to "helpfully" auto-rotate or scale-to-fit a
+                 landscape 2-up row into a portrait orientation. Height is intentionally
+                 left unconstrained on html/body below so multiple rows/quantities can
+                 flow onto their own pages instead of being clipped after the first row. */
+              ${
+                isThermal
+                  ? `@media print {
+                html, body {
+                  width: ${rowWidthMm}mm !important;
+                }
+              }`
+                  : ''
               }
               * {
                 box-sizing: border-box;
@@ -195,12 +224,26 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+                ${isThermal ? `width: ${rowWidthMm}mm;` : ''}
               }
               .a4-container {
                 display: flex;
                 flex-wrap: wrap;
                 align-content: flex-start;
                 gap: 3mm 4mm;
+              }
+              .row {
+                display: flex;
+                flex-direction: row;
+                align-items: stretch;
+                width: ${rowWidthMm}mm;
+                height: ${selectedPreset.heightMm}mm;
+                gap: 0 ${gapMm}mm;
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+              }
+              .row + .row {
+                ${isThermal ? 'break-before: page !important; page-break-before: always !important;' : ''}
               }
               .sticker {
                 width: ${selectedPreset.widthMm}mm;
@@ -219,9 +262,6 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 page-break-inside: avoid !important;
                 background: #fff;
                 ${!isThermal ? 'border: 0.2mm dashed #bbb;' : ''}
-              }
-              .sticker + .sticker {
-                ${isThermal ? 'break-before: page !important; page-break-before: always !important;' : ''}
               }
               .header {
                 width: 100%;
@@ -521,7 +561,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 Sticker Print Preview
               </label>
               <span className="text-[11px] font-bold text-[#B48811]">
-                {quantity || 1} {quantity === '1' ? 'Label' : 'Labels'} • {selectedPreset.widthMm} × {selectedPreset.heightMm} mm ({printerType === 'label' ? 'Roll' : 'A4 Sheet'})
+                {quantity || 1} {quantity === '1' ? 'Label' : 'Labels'} • {selectedPreset.widthMm} × {selectedPreset.heightMm} mm
+                {selectedPreset.labelsPerRow > 1 ? ` • ${selectedPreset.labelsPerRow}-Up` : ''} ({printerType === 'label' ? 'Roll' : 'A4 Sheet'})
               </span>
             </div>
             <div className="bg-[#FBFAF6] border-2 border-dashed border-[#E8D399] rounded-2xl py-6 px-4 flex items-center justify-center min-h-[140px]">
