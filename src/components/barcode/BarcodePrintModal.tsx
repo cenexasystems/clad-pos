@@ -147,7 +147,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       const titleFontSize = isSmall ? '6pt' : isLarge ? '9pt' : '7.5pt'
       const tagFontSize = isSmall ? '5.5pt' : isLarge ? '8.5pt' : '7pt'
       const priceFontSize = isSmall ? '8pt' : isLarge ? '12pt' : '9.5pt'
-      const stickerPadding = isSmall ? '0.6mm 1.2mm' : '1.0mm 1.6mm'
+      const stickerPadding = isSmall ? '0.8mm 2mm' : '1.0mm 1.6mm'
 
       const parsedQty = parseInt(quantity.trim(), 10)
       const validQuantity = !isNaN(parsedQty) && parsedQty > 0 ? parsedQty : 1
@@ -178,7 +178,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
       let rowsHtml = ''
       for (let i = 0; i < allStickers.length; i += labelsPerRow) {
-        rowsHtml += `<div class="row">${allStickers.slice(i, i + labelsPerRow).join('')}</div>`
+        const rowHtml = allStickers.slice(i, i + labelsPerRow).join('')
+        if (isThermal) {
+          rowsHtml += `<div class="page-wrapper"><div class="row">${rowHtml}</div></div>`
+        } else {
+          rowsHtml += `<div class="row">${rowHtml}</div>`
+        }
       }
 
       const bodyContent = isThermal
@@ -198,20 +203,6 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                     : `size: A4 portrait; margin: 10mm !important;`
                 }
               }
-              /* Lock the printable area to the exact physical roll width so Chrome's
-                 print driver doesn't try to "helpfully" auto-rotate or scale-to-fit a
-                 landscape 2-up row into a portrait orientation. Height is intentionally
-                 left unconstrained on html/body below so multiple rows/quantities can
-                 flow onto their own pages instead of being clipped after the first row. */
-              ${
-                isThermal
-                  ? `@media print {
-                html, body {
-                  width: ${rowWidthMm}mm !important;
-                }
-              }`
-                  : ''
-              }
               * {
                 box-sizing: border-box;
                 margin: 0;
@@ -224,7 +215,24 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
-                ${isThermal ? `width: ${rowWidthMm}mm;` : ''}
+              }
+              ${
+                isThermal
+                  ? `
+              .page-wrapper {
+                width: ${rowWidthMm}mm !important;
+                height: ${selectedPreset.heightMm}mm !important;
+                overflow: hidden !important;
+                page-break-after: always !important;
+                break-after: page !important;
+              }
+              @media print {
+                .page-wrapper {
+                  width: ${rowWidthMm}mm !important;
+                  height: ${selectedPreset.heightMm}mm !important;
+                }
+              }`
+                  : ''
               }
               .a4-container {
                 display: flex;
@@ -238,12 +246,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 align-items: stretch;
                 width: ${rowWidthMm}mm;
                 height: ${selectedPreset.heightMm}mm;
-                gap: 0 ${gapMm}mm;
+                justify-content: space-between;
+                gap: 0;
                 break-inside: avoid !important;
                 page-break-inside: avoid !important;
-              }
-              .row + .row {
-                ${isThermal ? 'break-before: page !important; page-break-before: always !important;' : ''}
               }
               .sticker {
                 width: ${selectedPreset.widthMm}mm;
