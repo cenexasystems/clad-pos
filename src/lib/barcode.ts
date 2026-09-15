@@ -1,6 +1,10 @@
 import JsBarcode from 'jsbarcode'
 import { isSupabaseConfigured, supabase } from './supabase'
 
+export const normalizeBarcode = (code: string | null | undefined): string => {
+  return (code || '').trim().toUpperCase()
+}
+
 export interface LabelSizeConfig {
   id: string
   name: string

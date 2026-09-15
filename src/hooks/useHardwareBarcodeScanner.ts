@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useNavigationStore } from '../store/navigationStore'
+import { normalizeBarcode } from '../lib/barcode'
 
 interface UseHardwareBarcodeScannerOptions {
   onScanDirect?: (barcode: string) => void
@@ -58,15 +59,18 @@ export function useHardwareBarcodeScanner({
               currentTab === 'pos' ||
               window.location.pathname === '/pos')
 
+          const cleanCode = normalizeBarcode(buffered)
+          if (!cleanCode) return
+
           if (onBillingView) {
             if (onScanDirect) {
-              onScanDirect(buffered)
+              onScanDirect(cleanCode)
             } else {
-              useNavigationStore.getState().setExternalScannedCode(buffered)
+              useNavigationStore.getState().setExternalScannedCode(cleanCode)
             }
           } else {
             // Show cross-tab alert warning dialog
-            setPendingBarcode(buffered)
+            setPendingBarcode(cleanCode)
           }
           return
         }

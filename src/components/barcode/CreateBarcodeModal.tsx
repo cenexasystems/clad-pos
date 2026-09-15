@@ -23,12 +23,14 @@ import {
   fetchRemoteCustomSizes,
   renderBarcodeSvg,
   generateBarcodeSvgString,
+  normalizeBarcode,
 } from '../../lib/barcode'
 import { BRAND_EN } from '../../lib/brand'
 import { barcodeService } from '../../services/barcodeService'
 import { fetchVariantsByProduct, type ProductVariant } from '../../services/variantService'
 import { BarcodeSettingsDrawer } from './BarcodeSettingsDrawer'
 import { BarcodeSheetPreviewModal } from './BarcodeSheetPreviewModal'
+import { useProductStore } from '../../store/store'
 
 interface ProductOption {
   id: number
@@ -109,6 +111,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
   // Submission & Status
   const [generating, setGenerating] = useState(false)
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [updateStock, setUpdateStock] = useState<boolean>(false)
 
   // Preview SVG Ref
   const previewSvgRef = useRef<SVGSVGElement>(null)
@@ -291,7 +294,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
       productName: selectedProduct.name,
       variantId: selectedVariant?.id || null,
       variantName: selectedVariant?.variantName || undefined,
-      barcodeValue: itemCode.trim(),
+      barcodeValue: normalizeBarcode(itemCode),
       price: selectedVariant?.price || selectedProduct.price,
       costPrice: selectedProduct.cost_price || 0,
       noOfLabels: finalLabels,
@@ -348,23 +351,30 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
         await barcodeService.receiveStockWithBarcode({
           product_id: item.productId,
           variant_id: item.variantId || null,
-          quantity_received: item.noOfLabels,
+          quantity_received: updateStock ? item.noOfLabels : 0,
           unit_cost: item.costPrice || null,
-          custom_barcode: item.barcodeValue,
-          note: `Received via Barcode Generator (${item.noOfLabels} labels)`,
+          custom_barcode: normalizeBarcode(item.barcodeValue),
+          note: updateStock
+            ? `Received via Barcode Generator (${item.noOfLabels} labels)`
+            : `Barcode Tagging (${item.noOfLabels} labels)`,
           created_by_name: 'Admin',
         })
       }
 
       setStatusMessage({
         type: 'success',
-        text: `Successfully generated barcodes & added stock for ${selectedItems.length} items (${totalLabelsNeeded} total units)!`,
+        text: updateStock
+          ? `Successfully generated barcodes & added stock for ${selectedItems.length} items (${totalLabelsNeeded} total units)!`
+          : `Successfully generated barcodes for ${selectedItems.length} items (${totalLabelsNeeded} labels ready)!`,
       })
+
+      // Refresh product store so changes reflect across the app
+      await useProductStore.getState().fetchProducts(true)
 
       onSuccess?.()
       setShowSheetPreviewModal(true)
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to receive stock with barcodes'
+      const msg = err instanceof Error ? err.message : 'Failed to generate barcodes'
       setStatusMessage({ type: 'error', text: msg })
     } finally {
       setGenerating(false)
@@ -1314,6 +1324,16 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
             </button>
 
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <label className="flex items-center gap-1.5 text-xs font-bold text-gray-700 cursor-pointer select-none bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={updateStock}
+                  onChange={(e) => setUpdateStock(e.target.checked)}
+                  className="rounded border-gray-300 text-[#0A0A0A] focus:ring-black h-3.5 w-3.5 cursor-pointer"
+                />
+                <span className="text-[11px] sm:text-xs font-semibold">Update Stock</span>
+              </label>
+
               {queue.length > 0 && (
                 <button
                   type="button"
@@ -1333,12 +1353,19 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
                 {generating ? (
                   <>
                     <span className="w-3.5 h-3.5 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin inline-block" />
-                    <span className="hidden sm:inline">Receiving Stock &amp; Generating...</span>
-                    <span className="sm:hidden">Adding...</span>
+                    <span className="hidden sm:inline">
+                      {updateStock ? 'Receiving Stock & Generating...' : 'Generating Barcodes...'}
+                    </span>
+                    <span className="sm:hidden">Working...</span>
                   </>
                 ) : (
                   <>
-                    <Printer size={15} /> <span>Generate &amp; Add ({totalLabelsNeeded})</span>
+                    <Printer size={15} />{' '}
+                    <span>
+                      {updateStock
+                        ? `Generate & Add Stock (${totalLabelsNeeded})`
+                        : `Generate & Print (${totalLabelsNeeded})`}
+                    </span>
                   </>
                 )}
               </button>

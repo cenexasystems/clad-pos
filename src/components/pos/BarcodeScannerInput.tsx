@@ -3,6 +3,7 @@ import { Camera, X, AlertCircle, Sparkles, ScanLine, SwitchCamera } from 'lucide
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 import { barcodeService } from '../../services/barcodeService'
 import { BRAND_EN } from '../../lib/brand'
+import { normalizeBarcode } from '../../lib/barcode'
 
 export interface ScannedItemPayload {
   product_id: number
@@ -121,7 +122,7 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
 
   // Handle scanned barcode lookup
   const processBarcode = useCallback(async (barcodeVal: string) => {
-    const clean = barcodeVal.trim()
+    const clean = normalizeBarcode(barcodeVal)
     if (!clean) return
 
     setLoading(true)

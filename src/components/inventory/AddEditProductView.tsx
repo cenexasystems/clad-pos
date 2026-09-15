@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase'
 import { useProductStore, type Product } from '../../store/store'
 import { fetchVariantsByProduct } from '../../services/variantService'
 import { inventoryService, type CategoryRecord } from '../../services/inventoryService'
+import { normalizeBarcode } from '../../lib/barcode'
 
 export const STANDARD_LETTER_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', 'Free Size'] as const
 export const STANDARD_NUMERIC_SIZES = ['28', '30', '32', '34', '36', '38', '40', '42', '44', '46', '48'] as const
@@ -259,9 +260,10 @@ export const AddEditProductView: React.FC<{
       resetForm()
       onStockUpdated?.()
       setStatusMessage({ type: 'success', text: `Product "${prodName}" deleted successfully.` })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete product:', err)
-      setStatusMessage({ type: 'error', text: err instanceof Error ? err.message : 'Failed to delete product' })
+      const msg = err?.message || (err instanceof Error ? err.message : 'Failed to delete product')
+      setStatusMessage({ type: 'error', text: msg })
     } finally {
       setLoading(false)
     }
@@ -320,12 +322,12 @@ export const AddEditProductView: React.FC<{
               name: trimmedName,
               name_ta: nameTa.trim() || '',
               category: categoryName,
-              category_id: categoryId ? Number(categoryId) : 1,
+              category_id: categoryId ? Number(categoryId) : null,
               price: priceNum,
               offer_price: priceNum,
               purchase_price: costNum,
               low_stock_alert: alertThreshold,
-              barcode: barcode.trim() || null,
+              barcode: barcode.trim() ? normalizeBarcode(barcode) : null,
               description: description.trim() || '',
               has_variants: false,
               stock_quantity: inputStock,
@@ -353,7 +355,7 @@ export const AddEditProductView: React.FC<{
           if (barcode.trim()) {
             await supabase.from('barcode_registry').upsert(
               {
-                barcode: barcode.trim(),
+                barcode: normalizeBarcode(barcode),
                 product_id: selectedProductId,
                 variant_id: null,
                 is_active: true,
@@ -387,7 +389,7 @@ export const AddEditProductView: React.FC<{
                   price: vPrice,
                   purchase_price: vCost,
                   stock: vStock,
-                  barcode: v.customBarcode?.trim() || null,
+                  barcode: v.customBarcode?.trim() ? normalizeBarcode(v.customBarcode) : null,
                   is_active: true,
                 })
                 .select()
@@ -426,7 +428,7 @@ export const AddEditProductView: React.FC<{
                   price: vPrice,
                   purchase_price: vCost,
                   stock: vStock,
-                  barcode: v.customBarcode?.trim() || null,
+                  barcode: v.customBarcode?.trim() ? normalizeBarcode(v.customBarcode) : null,
                 })
                 .eq('id', v.id)
 
@@ -454,7 +456,7 @@ export const AddEditProductView: React.FC<{
               name: trimmedName,
               name_ta: nameTa.trim() || '',
               category: categoryName,
-              category_id: categoryId ? Number(categoryId) : 1,
+              category_id: categoryId ? Number(categoryId) : null,
               price: priceNum,
               offer_price: priceNum,
               purchase_price: costNum,
@@ -483,12 +485,12 @@ export const AddEditProductView: React.FC<{
               name: trimmedName,
               name_ta: nameTa.trim() || '',
               category: categoryName,
-              category_id: categoryId ? Number(categoryId) : 1,
+              category_id: categoryId ? Number(categoryId) : null,
               price: priceNum,
               offer_price: priceNum,
               purchase_price: costNum,
               low_stock_alert: alertThreshold,
-              barcode: barcode.trim() || null,
+              barcode: barcode.trim() ? normalizeBarcode(barcode) : null,
               description: description.trim() || '',
               has_variants: false,
               stock_quantity: inputStock,
@@ -503,7 +505,7 @@ export const AddEditProductView: React.FC<{
           if (barcode.trim()) {
             await supabase.from('barcode_registry').upsert(
               {
-                barcode: barcode.trim(),
+                barcode: normalizeBarcode(barcode),
                 product_id: newProd.id,
                 variant_id: null,
                 is_active: true,
@@ -547,7 +549,7 @@ export const AddEditProductView: React.FC<{
               name: trimmedName,
               name_ta: nameTa.trim() || '',
               category: categoryName,
-              category_id: categoryId ? Number(categoryId) : 1,
+              category_id: categoryId ? Number(categoryId) : null,
               price: priceNum,
               offer_price: priceNum,
               purchase_price: costNum,
@@ -579,7 +581,7 @@ export const AddEditProductView: React.FC<{
                 price: vPrice,
                 purchase_price: vCost,
                 stock: vStock,
-                barcode: v.customBarcode?.trim() || null,
+                barcode: v.customBarcode?.trim() ? normalizeBarcode(v.customBarcode) : null,
                 is_active: true,
               })
               .select('id')
@@ -588,7 +590,7 @@ export const AddEditProductView: React.FC<{
             if (createdVar && v.customBarcode?.trim()) {
               await supabase.from('barcode_registry').upsert(
                 {
-                  barcode: v.customBarcode.trim(),
+                  barcode: normalizeBarcode(v.customBarcode),
                   product_id: newProd.id,
                   variant_id: createdVar.id,
                   is_active: true,
@@ -623,8 +625,9 @@ export const AddEditProductView: React.FC<{
 
       await fetchProducts(true)
       onStockUpdated?.()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'An error occurred while saving'
+    } catch (err: any) {
+      console.error('Save Product Error:', err)
+      const msg = err?.message || (err?.details ? `${err.message || ''} (${err.details})` : null) || (err instanceof Error ? err.message : 'An error occurred while saving')
       setStatusMessage({ type: 'error', text: msg })
     } finally {
       setLoading(false)

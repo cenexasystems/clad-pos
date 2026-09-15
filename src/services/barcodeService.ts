@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { normalizeBarcode } from '../lib/barcode'
 
 export interface BarcodeRegistryRecord {
   id: string
@@ -80,7 +81,7 @@ export const barcodeService = {
    * Lookup barcode value in registry and resolve product + variant info.
    */
   async lookupBarcode(barcodeValue: string): Promise<BarcodeRegistryRecord | null> {
-    const cleanValue = barcodeValue.trim()
+    const cleanValue = normalizeBarcode(barcodeValue)
     if (!cleanValue) return null
 
     // 1. Direct registry lookup
@@ -91,7 +92,7 @@ export const barcodeService = {
         product:products (id, name, name_ta, price, offer_price, image_url, category),
         variant:product_variants (id, variant_name, price, stock, sku)
       `)
-      .eq('barcode_value', cleanValue)
+      .ilike('barcode_value', cleanValue)
       .eq('is_active', true)
       .maybeSingle()
 
@@ -114,7 +115,7 @@ export const barcodeService = {
     const { data: varData } = await supabase
       .from('product_variants')
       .select('id, product_id, variant_name, price, stock, sku, barcode, product:products (id, name, name_ta, price, offer_price, image_url, category)')
-      .eq('barcode', cleanValue)
+      .ilike('barcode', cleanValue)
       .maybeSingle()
 
     if (varData) {
@@ -144,7 +145,7 @@ export const barcodeService = {
     const { data: prodData } = await supabase
       .from('products')
       .select('id, name, name_ta, price, offer_price, image_url, category, barcode, stock_quantity')
-      .eq('barcode', cleanValue)
+      .ilike('barcode', cleanValue)
       .maybeSingle()
 
     if (prodData) {
