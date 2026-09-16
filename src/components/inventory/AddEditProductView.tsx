@@ -355,12 +355,13 @@ export const AddEditProductView: React.FC<{
           if (barcode.trim()) {
             await supabase.from('barcode_registry').upsert(
               {
-                barcode: normalizeBarcode(barcode),
+                barcode_value: normalizeBarcode(barcode),
+                entity_type: 'product',
                 product_id: selectedProductId,
                 variant_id: null,
                 is_active: true,
               },
-              { onConflict: 'barcode' }
+              { onConflict: 'barcode_value' }
             )
           }
 
@@ -505,12 +506,13 @@ export const AddEditProductView: React.FC<{
           if (barcode.trim()) {
             await supabase.from('barcode_registry').upsert(
               {
-                barcode: normalizeBarcode(barcode),
+                barcode_value: normalizeBarcode(barcode),
+                entity_type: 'product',
                 product_id: newProd.id,
                 variant_id: null,
                 is_active: true,
               },
-              { onConflict: 'barcode' }
+              { onConflict: 'barcode_value' }
             )
           }
 
