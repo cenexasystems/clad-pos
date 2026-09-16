@@ -416,7 +416,7 @@ export const InventoryAnalyticsView: React.FC = () => {
                   <th className="p-3">Date &amp; Time</th>
                   <th className="p-3">Type</th>
                   <th className="p-3">Product / Variant</th>
-                  <th className="p-3">Barcode</th>
+                  <th className="p-3 whitespace-nowrap min-w-[280px]">Barcode</th>
                   <th className="p-3 text-center">Qty Delta</th>
                   <th className="p-3 text-center">Before → After</th>
                   <th className="p-3">User</th>
@@ -447,7 +447,7 @@ export const InventoryAnalyticsView: React.FC = () => {
                         </div>
                       )}
                     </td>
-                    <td className="p-3 font-mono text-xs font-bold text-gray-700">
+                    <td className="p-3 font-mono text-xs font-bold text-gray-700 whitespace-nowrap select-all">
                       {m.barcode_id || '—'}
                     </td>
                     <td className="p-3 text-center font-black">

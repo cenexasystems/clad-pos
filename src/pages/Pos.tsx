@@ -972,7 +972,7 @@ export default function Pos(props: PosProps = {}) {
     }))
 
     return (
-      <div className="mobile-page-shell print:bg-white print:min-h-0">
+      <div className="mobile-page-shell print:bg-white print:min-h-0 print:h-auto print:m-0 print:p-0 print:overflow-visible">
         {/* Screen UI */}
         <div className="max-w-2xl mx-auto px-4 py-6 print:hidden space-y-4">
           {/* Header */}
@@ -1074,7 +1074,7 @@ export default function Pos(props: PosProps = {}) {
         </div>
 
         {/* Print view — full A4 invoice */}
-        <div className="hidden print:block">
+        <div className="hidden print:block print:m-0 print:p-0 print:h-auto print:min-h-0 print:overflow-visible">
           <Invoice
             invoiceNo={invoice.invoiceNo}
             date={invoice.date}

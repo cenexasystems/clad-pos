@@ -203,8 +203,8 @@ export async function invoicePdfFileFromElement(
     const imageHeight = (canvas.height * pageWidth) / canvas.width
     const image = canvas.toDataURL('image/png')
 
-    if (imageHeight <= pageHeight + 10) {
-      doc.addImage(image, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'FAST')
+    if (imageHeight <= pageHeight + 35) {
+      doc.addImage(image, 'PNG', 0, 0, pageWidth, Math.min(pageHeight, imageHeight), undefined, 'FAST')
     } else {
       let offset = 0
       let page = 0

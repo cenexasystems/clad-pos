@@ -809,11 +809,6 @@ export const AddEditProductView: React.FC<{
                 <h3 className="text-sm font-bold text-black flex items-center gap-2 truncate">
                   <Package size={16} className="text-[#D4AF37] shrink-0" />
                   <span className="truncate">{selectedProductId ? 'Edit Product & Stock Details' : 'Add New Product to Catalog'}</span>
-                  {selectedProductId && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 shrink-0">
-                      Editing
-                    </span>
-                  )}
                 </h3>
                 <p className="text-[11px] text-gray-500 font-semibold truncate hidden sm:block">
                   {selectedProductId

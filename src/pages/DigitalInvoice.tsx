@@ -250,8 +250,8 @@ export default function DigitalInvoice() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto mt-4 print:mt-0 print:mb-0 print:p-0 print:max-w-full px-2 sm:px-0">
-        <div ref={invoiceElementRef} className="bg-white shadow-xl rounded-2xl overflow-hidden print:shadow-none print:rounded-none border border-sand/20 print:border-none print:m-0 print:p-0 print:overflow-visible">
+      <div className="max-w-3xl mx-auto mt-4 print:mt-0 print:mb-0 print:p-0 print:px-0 print:max-w-full px-2 sm:px-0">
+        <div ref={invoiceElementRef} className="bg-white shadow-xl rounded-2xl overflow-hidden print:shadow-none print:rounded-none border border-sand/20 print:border-none print:m-0 print:p-0 print:overflow-visible print:h-auto print:min-h-0">
           <Invoice
             invoiceNo={invoice.invoice_no}
             date={invoice.created_at}

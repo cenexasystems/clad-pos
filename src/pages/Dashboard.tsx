@@ -4499,7 +4499,7 @@ export default function Dashboard() {
 
         return (
           <div
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-3 sm:p-6"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-3 sm:p-6 print:static print:p-0 print:bg-white print:block print:inset-auto"
             role="dialog"
             aria-modal="true"
             aria-label={`Invoice ${invoicePreviewOrder.invoice_no || invoicePreviewOrder.id}`}
@@ -4507,8 +4507,8 @@ export default function Dashboard() {
               if (event.target === event.currentTarget) setInvoicePreviewOrder(null)
             }}
           >
-            <div className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-[#F9FAFB] shadow-2xl">
-              <div className="flex shrink-0 items-center justify-between border-b border-[#E5E7EB]/60 bg-white px-4 py-3 sm:px-6">
+            <div className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-[#F9FAFB] shadow-2xl print:max-h-none print:shadow-none print:rounded-none print:bg-white print:w-full print:max-w-full print:overflow-visible">
+              <div className="flex shrink-0 items-center justify-between border-b border-[#E5E7EB]/60 bg-white px-4 py-3 sm:px-6 print:hidden">
                 <div>
                   <h2 className="text-base font-black text-[#111111]">Invoice Preview</h2>
                   <p className="text-xs font-semibold text-[#6B7280]">{formatInvoiceNo(invoicePreviewOrder.invoice_no || invoicePreviewOrder.id)}</p>
@@ -4538,8 +4538,8 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-              <div className="overflow-y-auto p-2 sm:p-5">
-                <div className="mx-auto max-w-3xl overflow-hidden rounded-xl bg-white shadow-sm">
+              <div className="overflow-y-auto p-2 sm:p-5 print:p-0 print:overflow-visible print:max-h-none">
+                <div className="mx-auto max-w-3xl overflow-hidden rounded-xl bg-white shadow-sm print:shadow-none print:rounded-none print:max-w-full print:m-0 print:p-0 print:overflow-visible">
                   <Invoice
                     invoiceNo={formatInvoiceNo(invoicePreviewOrder.invoice_no || invoicePreviewOrder.id)}
                     date={invoicePreviewOrder.created_at}
