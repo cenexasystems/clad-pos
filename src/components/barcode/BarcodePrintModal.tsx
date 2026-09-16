@@ -200,7 +200,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 ${
                   isThermal
                     ? `size: ${rowWidthMm}mm ${selectedPreset.heightMm}mm !important; margin: 0mm !important; marks: none !important;`
-                    : `size: A4 portrait; margin: 10mm !important;`
+                    : `size: A4 portrait; margin: 0mm !important;`
                 }
               }
               * {
@@ -235,10 +235,13 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                   : ''
               }
               .a4-container {
-                display: flex;
-                flex-wrap: wrap;
-                align-content: flex-start;
-                gap: 3mm 4mm;
+                width: 210mm;
+                padding: 5mm;
+                display: grid;
+                grid-template-columns: repeat(${labelsPerRow}, ${selectedPreset.widthMm}mm);
+                grid-auto-rows: ${selectedPreset.heightMm}mm;
+                column-gap: ${gapMm}mm;
+                row-gap: ${selectedPreset.horizontalGapMm || gapMm}mm;
               }
               .row {
                 display: flex;

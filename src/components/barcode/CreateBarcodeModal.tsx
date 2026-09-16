@@ -471,16 +471,8 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
       }
       bodyContent = rowsHtml
     } else {
-      // Regular A4 printer container
-      let rowsHtml = ''
-      for (let i = 0; i < allStickers.length; i += labelsPerRow) {
-        rowsHtml += `<div class="row">${allStickers.slice(i, i + labelsPerRow).join('')}</div>`
-      }
-      bodyContent = `
-        <div class="a4-container">
-          ${rowsHtml}
-        </div>
-      `
+      // Regular A4 printer — flat grid, no row wrappers needed (CSS grid handles columns)
+      bodyContent = `<div class="a4-container">${allStickers.join('')}</div>`
     }
 
     doc.open()
@@ -494,7 +486,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               ${
                 isThermal
                   ? `size: ${rowWidthMm}mm ${currentSizeConfig.heightMm}mm !important; margin: 0mm !important; marks: none !important;`
-                  : `size: A4 portrait; margin: 10mm !important;`
+                  : `size: A4 portrait; margin: 0mm !important;`
               }
             }
             * {
@@ -529,10 +521,13 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
                 : ''
             }
             .a4-container {
-              display: flex;
-              flex-wrap: wrap;
-              align-content: flex-start;
-              gap: 3mm 4mm;
+              width: 210mm;
+              padding: 5mm;
+              display: grid;
+              grid-template-columns: repeat(${labelsPerRow}, ${currentSizeConfig.widthMm}mm);
+              grid-auto-rows: ${currentSizeConfig.heightMm}mm;
+              column-gap: ${gapMm}mm;
+              row-gap: ${currentSizeConfig.horizontalGapMm || gapMm}mm;
             }
             .row {
               display: flex;
