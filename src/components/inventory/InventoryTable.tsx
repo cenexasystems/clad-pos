@@ -93,9 +93,10 @@ export const InventoryTable: React.FC = () => {
       await inventoryService.deleteInventoryItem(item.product_id, item.variant_id)
       await fetchProducts(true)
       await loadData()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete inventory item:', err)
-      alert(err instanceof Error ? err.message : 'Failed to delete item')
+      const errorMsg = err?.message || (typeof err === 'string' ? err : JSON.stringify(err)) || 'Failed to delete item'
+      alert(`Delete Error: ${errorMsg}`)
       setLoading(false)
     }
   }
