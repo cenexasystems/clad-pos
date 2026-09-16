@@ -189,36 +189,46 @@ export const inventoryService = {
   },
 
   /**
-   * Deactivate / delete a product or variant from inventory and catalog.
+   * Permanently remove a catalog item.
+   *
+   * A catalog deletion must release the `(category_id, name)` unique key.  A
+   * soft delete leaves that key occupied and makes it impossible to add the
+   * same product back later.  Barcode records are removed first because older
+   * deployed schemas use RESTRICT foreign keys for them; inventory and order
+   * history retain their audit rows through their ON DELETE SET NULL links.
    */
   async deleteInventoryItem(productId: number, variantId?: string | null): Promise<void> {
     if (variantId) {
+      const { error: barcodeErr } = await supabase
+        .from('barcode_registry')
+        .delete()
+        .eq('variant_id', variantId)
+      if (barcodeErr) throw barcodeErr
+
       const { error: vErr } = await supabase
         .from('product_variants')
-        .update({ is_active: false })
+        .delete()
         .eq('id', variantId)
       if (vErr) throw vErr
-
-      await supabase
-        .from('barcode_registry')
-        .update({ is_active: false })
-        .eq('variant_id', variantId)
     } else {
+      const { error: barcodeErr } = await supabase
+        .from('barcode_registry')
+        .delete()
+        .eq('product_id', productId)
+      if (barcodeErr) throw barcodeErr
+
+      // Delete variants explicitly for compatibility with pre-cascade schemas.
+      const { error: variantsErr } = await supabase
+        .from('product_variants')
+        .delete()
+        .eq('product_id', productId)
+      if (variantsErr) throw variantsErr
+
       const { error: pErr } = await supabase
         .from('products')
-        .update({ is_active: false })
+        .delete()
         .eq('id', productId)
       if (pErr) throw pErr
-
-      await supabase
-        .from('product_variants')
-        .update({ is_active: false })
-        .eq('product_id', productId)
-
-      await supabase
-        .from('barcode_registry')
-        .update({ is_active: false })
-        .eq('product_id', productId)
     }
   },
 
