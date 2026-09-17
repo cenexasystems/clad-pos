@@ -166,9 +166,10 @@ export const ExpensesView: React.FC = () => {
       await expenseService.deleteExpense(id)
       setExpenses((prev) => prev.filter((e) => e.id !== id))
       void loadMetrics()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to delete expense:', err)
-      alert('Could not delete expense record')
+      const errorMsg = err?.message || (typeof err === 'string' ? err : JSON.stringify(err)) || 'Could not delete expense record'
+      alert(`Delete Error: ${errorMsg}`)
     }
   }
 

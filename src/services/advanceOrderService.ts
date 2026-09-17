@@ -308,8 +308,9 @@ export async function completeAdvanceOrder(
         const row = Array.isArray(data) ? data[0] : data
         result = row as { order_id: string; invoice_no: string; completed_at: string }
       }
-    } catch (err: unknown) {
-      alert(`Supabase Backend Error: ${err instanceof Error ? err.message : String(err)}`)
+    } catch (err: any) {
+      const msg = err?.message || (err instanceof Error ? err.message : (typeof err === 'object' ? JSON.stringify(err) : String(err)))
+      alert(`Supabase Backend Error: ${msg}`)
       throw err
     }
   }
