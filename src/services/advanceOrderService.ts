@@ -375,16 +375,18 @@ export async function completeAdvanceOrder(
  * has no effect on revenue calculations.
  */
 export async function deleteAdvanceOrder(order: AdvanceOrder): Promise<void> {
+  // Always remove from local storage to prevent it from reappearing on refresh 
+  // because listAdvanceOrders merges remote and local data.
+  const orders = loadLocalOrders().filter(o => o.id !== order.id)
+  saveLocalOrders(orders)
+
+  const timeline = loadLocalTimeline().filter(t => t.advance_order_id !== order.id)
+  saveLocalTimeline(timeline)
+
+  const payments = loadLocalPayments().filter(p => p.advance_order_id !== order.id)
+  saveLocalPayments(payments)
+
   if (!isSupabaseConfigured) {
-    // Local-storage offline path
-    const orders = loadLocalOrders().filter(o => o.id !== order.id)
-    saveLocalOrders(orders)
-
-    const timeline = loadLocalTimeline().filter(t => t.advance_order_id !== order.id)
-    saveLocalTimeline(timeline)
-
-    const payments = loadLocalPayments().filter(p => p.advance_order_id !== order.id)
-    saveLocalPayments(payments)
     return
   }
 
