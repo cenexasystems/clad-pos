@@ -390,7 +390,19 @@ export async function deleteAdvanceOrder(order: AdvanceOrder): Promise<void> {
     return
   }
 
-  const completedOrderId = order.status === 'completed' ? order.completed_order_id : null
+  // If the advance order was completed, a real `orders` (invoice) row was created.
+  // Deleting it removes the revenue entry from analytics & order history.
+  if (order.status === 'completed' && order.completed_order_id) {
+    const { error: invoiceError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', order.completed_order_id)
+
+    if (invoiceError) {
+      console.error('[deleteAdvanceOrder] Failed to delete linked invoice:', invoiceError)
+      throw new Error(invoiceError.message || 'Failed to delete the linked invoice from revenue.')
+    }
+  }
 
   // Delete timeline events
   const { error: timelineError } = await supabase
@@ -400,6 +412,7 @@ export async function deleteAdvanceOrder(order: AdvanceOrder): Promise<void> {
 
   if (timelineError) {
     console.error('[deleteAdvanceOrder] Failed to delete timeline:', timelineError)
+    // Non-fatal — proceed to delete order
   }
 
   // Delete payment records
@@ -410,9 +423,10 @@ export async function deleteAdvanceOrder(order: AdvanceOrder): Promise<void> {
 
   if (paymentsError) {
     console.error('[deleteAdvanceOrder] Failed to delete payments:', paymentsError)
+    // Non-fatal — proceed to delete order
   }
 
-  // Finally delete the advance order itself FIRST
+  // Finally delete the advance order itself
   const { error } = await supabase
     .from('advance_orders')
     .delete()
@@ -421,18 +435,5 @@ export async function deleteAdvanceOrder(order: AdvanceOrder): Promise<void> {
   if (error) {
     console.error('[deleteAdvanceOrder] Failed to delete advance order:', error)
     throw new Error(error.message || 'Failed to delete advance order.')
-  }
-
-  // Now delete the linked orders row
-  if (completedOrderId) {
-    const { error: invoiceError } = await supabase
-      .from('orders')
-      .delete()
-      .eq('id', completedOrderId)
-
-    if (invoiceError) {
-      console.error('[deleteAdvanceOrder] Failed to delete linked invoice:', invoiceError)
-      // no throw here
-    }
   }
 }
