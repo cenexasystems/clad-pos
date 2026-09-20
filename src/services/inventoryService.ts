@@ -456,10 +456,10 @@ export const inventoryService = {
    */
   async deleteCategory(id: number): Promise<void> {
     // First unlink all products that reference this category (set to NULL)
-    // This avoids FK constraint violation when deleting categories with linked products
+    // Also clear the legacy `category` text column so it doesn't show stale names
     const { error: unlinkError } = await supabase
       .from('products')
-      .update({ category_id: null })
+      .update({ category_id: null, category: '' })
       .eq('category_id', id)
 
     if (unlinkError) {
