@@ -110,8 +110,8 @@ export const CategoryManagerView: React.FC = () => {
       await inventoryService.deleteCategory(cat.id)
       setSuccessMessage(`Category "${cat.name_en}" deleted.`)
       await loadCategories()
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to delete category'
+    } catch (err: any) {
+      const msg = err?.message || (typeof err === 'object' ? JSON.stringify(err) : 'Failed to delete category')
       setErrorMessage(msg)
     }
   }

@@ -498,13 +498,15 @@ export function exportExpensesToCSV(expenses: ExpenseRecord[]): void {
     `"${(e.recorded_by_name || 'Staff').replace(/"/g, '""')}"`,
   ])
 
-  const csvContent =
-    'data:text/csv;charset=utf-8,\uFEFF' +
-    [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+
   const link = document.createElement('a')
-  link.href = encodeURI(csvContent)
+  link.href = url
   link.download = `CLAD-Expenses-${new Date().toISOString().slice(0, 10)}.csv`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  setTimeout(() => URL.revokeObjectURL(url), 100)
 }

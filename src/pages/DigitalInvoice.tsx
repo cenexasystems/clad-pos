@@ -193,7 +193,10 @@ export default function DigitalInvoice() {
       try {
         await navigator.share({ files: [file], title: `Invoice ${invoice.invoice_no}`, text: whatsappMessage })
         return
-      } catch { /* fall through */ }
+      } catch (err: any) {
+        if (err.name === 'AbortError') return
+        // fall through for other errors
+      }
     }
 
     const downloadUrl = URL.createObjectURL(file)
@@ -202,7 +205,7 @@ export default function DigitalInvoice() {
     link.download = file.name
     link.click()
     setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
-    window.open(toWhatsAppUrl(invoice.phone, whatsappMessage), '_blank', 'noopener,noreferrer')
+    window.location.href = toWhatsAppUrl(invoice.phone, whatsappMessage)
   }
 
   const printReceipt = () => {

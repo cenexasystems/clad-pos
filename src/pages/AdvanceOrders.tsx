@@ -167,7 +167,7 @@ export default function AdvanceOrders({ onOrderCompleted }: AdvanceOrdersProps =
         expectedDeliveryDate: created.expected_delivery_date,
         paymentMethod: form.paymentMethod,
       })
-      window.open(toWhatsAppUrl(created.phone, advanceMsg), '_blank', 'noopener,noreferrer')
+      window.location.href = toWhatsAppUrl(created.phone, advanceMsg)
     } catch (err) { setError(err instanceof Error ? err.message : 'Unable to create advance order') } finally { setSaving(false) }
   }
 
@@ -220,7 +220,7 @@ export default function AdvanceOrders({ onOrderCompleted }: AdvanceOrdersProps =
       remainingBalance: order.remaining_balance,
       expectedDeliveryDate: order.expected_delivery_date,
     })
-    window.open(toWhatsAppUrl(order.phone, message), '_blank', 'noopener,noreferrer')
+    window.location.href = toWhatsAppUrl(order.phone, message)
   }
 
   const whatsappInvoice = (order: AdvanceOrder) => {
@@ -231,7 +231,7 @@ export default function AdvanceOrders({ onOrderCompleted }: AdvanceOrdersProps =
       invoiceNumber: invNum,
       invoiceUrl: publicInvoiceUrl(invNum),
     })
-    window.open(toWhatsAppUrl(order.phone, message), '_blank', 'noopener,noreferrer')
+    window.location.href = toWhatsAppUrl(order.phone, message)
   }
 
   const addEvent = async (order: AdvanceOrder, eventType: string, label: string) => {

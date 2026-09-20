@@ -59,7 +59,7 @@ export const InventoryTable: React.FC = () => {
 
       // Alert sound and modal when viewing inventory with low stock
       const lowStockFlagged = data
-        .filter((i) => i.stock > 0 && i.stock <= (i.low_stock_threshold || 5))
+        .filter((i) => i.stock <= (i.low_stock_threshold || 5))
         .map((i) => ({
           id: i.variant_id ? `v-${i.variant_id}` : `p-${i.product_id}`,
           name: i.name,
@@ -120,7 +120,7 @@ export const InventoryTable: React.FC = () => {
 
     const threshold = item.low_stock_threshold || 5
     if (filterStatus === 'out') return item.stock <= 0
-    if (filterStatus === 'low') return item.stock > 0 && item.stock <= threshold
+    if (filterStatus === 'low') return item.stock <= threshold
     if (filterStatus === 'in_stock') return item.stock > threshold
 
     return true
@@ -130,7 +130,7 @@ export const InventoryTable: React.FC = () => {
   const totalSkus = items.length
   const totalUnits = items.reduce((sum, i) => sum + i.stock, 0)
   const outOfStockCount = items.filter((i) => i.stock <= 0).length
-  const lowStockCount = items.filter((i) => i.stock > 0 && i.stock <= (i.low_stock_threshold || 5)).length
+  const lowStockCount = items.filter((i) => i.stock <= (i.low_stock_threshold || 5)).length
   const inStockCount = items.filter((i) => i.stock > (i.low_stock_threshold || 5)).length
   const totalValuation = items.reduce((sum, i) => sum + i.stock * i.price, 0)
 

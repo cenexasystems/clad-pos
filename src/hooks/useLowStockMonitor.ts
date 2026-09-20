@@ -46,7 +46,7 @@ export function useLowStockMonitor(enabled: boolean = true, role?: string | null
         const currentStock = Number(p.stock_quantity) || 0
 
         // Only flag products that have active inventory running low (exclude 0 stock / empty inventory)
-        if (currentStock > 0 && currentStock <= threshold) {
+        if (currentStock <= threshold) {
           flagged.push({
             id: `p-${p.id}`,
             name: p.name,
@@ -75,7 +75,7 @@ export function useLowStockMonitor(enabled: boolean = true, role?: string | null
         const threshold = 5
         const currentStock = Number(v.stock) || 0
 
-        if (currentStock > 0 && currentStock <= threshold) {
+        if (currentStock <= threshold) {
           flagged.push({
             id: `v-${v.id}`,
             name: parentProd?.name ? `${parentProd.name}` : 'Product Variant',

@@ -190,7 +190,7 @@ export default function Checkout() {
       const waText = buildWhatsAppMessage(snapshot, itemsSnapshot)
       clear()
       setBooked(snapshot)
-      window.open(`${BRAND_WHATSAPP_LINK}?text=${waText}`, '_blank')
+      window.location.href = `${BRAND_WHATSAPP_LINK}?text=${waText}`
     } catch (err: unknown) {
       const msg = err instanceof Error
         ? err.message
