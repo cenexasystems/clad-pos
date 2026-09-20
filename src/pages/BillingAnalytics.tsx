@@ -336,10 +336,10 @@ export default function BillingAnalytics() {
     const billableCompleted = completedOrders.filter((order) => normalizeOrderType(order.order_type) !== 'online_request')
 
     const offlinePOS = billableCompleted.filter(
-      (order) => normalizeOrderType(order.order_type) === 'pos_sale' && normalizeOrderMode(order.order_mode) !== 'online',
+      (order) => normalizeOrderMode(order.order_mode) === 'offline' && normalizeOrderType(order.order_type) !== 'manual_sale'
     )
     const onlinePOS = billableCompleted.filter(
-      (order) => normalizeOrderType(order.order_type) === 'pos_sale' && normalizeOrderMode(order.order_mode) === 'online',
+      (order) => normalizeOrderMode(order.order_mode) === 'online'
     )
     const manualSales = billableCompleted.filter((order) => normalizeOrderType(order.order_type) === 'manual_sale')
 
@@ -497,8 +497,8 @@ export default function BillingAnalytics() {
       if (type === 'online_request') return false
 
       if (billTypeFilter === 'manual' && type !== 'manual_sale') return false
-      if (billTypeFilter === 'offline' && !(type === 'pos_sale' && mode !== 'online')) return false
-      if (billTypeFilter === 'online' && !(type === 'pos_sale' && mode === 'online')) return false
+      if (billTypeFilter === 'offline' && !(mode !== 'online' && type !== 'manual_sale')) return false
+      if (billTypeFilter === 'online' && mode !== 'online') return false
 
       if (normalizedSearch.invoiceNo && !String(order.invoice_no || '').toLowerCase().includes(normalizedSearch.invoiceNo)) return false
       if (normalizedSearch.customerName && !String(order.customer_name || '').toLowerCase().includes(normalizedSearch.customerName)) return false

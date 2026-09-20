@@ -3121,6 +3121,13 @@ export default function Dashboard() {
               if (adv) handleAdvanceOrderCompleted(adv)
               void loadData()
             }}
+            onOrderDeleted={(completedOrderId) => {
+              if (completedOrderId) {
+                setOrders(prev => prev.filter(o => o.id !== completedOrderId))
+                setSearchResults(prev => prev.filter(o => o.id !== completedOrderId))
+                void loadData()
+              }
+            }}
           />
         )}
 
