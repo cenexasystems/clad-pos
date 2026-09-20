@@ -363,3 +363,75 @@ export async function completeAdvanceOrder(
 
   return result!
 }
+
+/**
+ * Permanently delete an advance order.
+ *
+ * - For ALL statuses: deletes timeline, payments, and the advance order itself.
+ * - For COMPLETED orders: also deletes the linked `orders` row (which is the
+ *   revenue-recognized invoice) so the total revenue figures are corrected.
+ *
+ * Deposits are NOT counted as revenue, so deleting pending/cancelled orders
+ * has no effect on revenue calculations.
+ */
+export async function deleteAdvanceOrder(order: AdvanceOrder): Promise<void> {
+  if (!isSupabaseConfigured) {
+    // Local-storage offline path
+    const orders = loadLocalOrders().filter(o => o.id !== order.id)
+    saveLocalOrders(orders)
+
+    const timeline = loadLocalTimeline().filter(t => t.advance_order_id !== order.id)
+    saveLocalTimeline(timeline)
+
+    const payments = loadLocalPayments().filter(p => p.advance_order_id !== order.id)
+    saveLocalPayments(payments)
+    return
+  }
+
+  // If the advance order was completed, a real `orders` (invoice) row was created.
+  // Deleting it removes the revenue entry from analytics & order history.
+  if (order.status === 'completed' && order.completed_order_id) {
+    const { error: invoiceError } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', order.completed_order_id)
+
+    if (invoiceError) {
+      console.error('[deleteAdvanceOrder] Failed to delete linked invoice:', invoiceError)
+      throw new Error(invoiceError.message || 'Failed to delete the linked invoice from revenue.')
+    }
+  }
+
+  // Delete timeline events
+  const { error: timelineError } = await supabase
+    .from('advance_order_timeline')
+    .delete()
+    .eq('advance_order_id', order.id)
+
+  if (timelineError) {
+    console.error('[deleteAdvanceOrder] Failed to delete timeline:', timelineError)
+    // Non-fatal — proceed to delete order
+  }
+
+  // Delete payment records
+  const { error: paymentsError } = await supabase
+    .from('advance_order_payments')
+    .delete()
+    .eq('advance_order_id', order.id)
+
+  if (paymentsError) {
+    console.error('[deleteAdvanceOrder] Failed to delete payments:', paymentsError)
+    // Non-fatal — proceed to delete order
+  }
+
+  // Finally delete the advance order itself
+  const { error } = await supabase
+    .from('advance_orders')
+    .delete()
+    .eq('id', order.id)
+
+  if (error) {
+    console.error('[deleteAdvanceOrder] Failed to delete advance order:', error)
+    throw new Error(error.message || 'Failed to delete advance order.')
+  }
+}

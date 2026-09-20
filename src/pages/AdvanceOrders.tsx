@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { CalendarDays, CheckCircle2, Clock3, Download, Eye, FileText, MessageCircle, PackageCheck, Printer, RefreshCw, Search, X } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Clock3, Download, Eye, FileText, MessageCircle, PackageCheck, Printer, RefreshCw, Search, Trash2, X } from 'lucide-react'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { formatCurrency } from '../lib/retail'
 import { invoicePdfFile } from '../lib/invoicePdf'
@@ -10,7 +10,7 @@ import { toWhatsAppUrl } from '../lib/phone'
 import { advanceReceiptPdf, downloadFile, printAdvanceReceipt } from '../lib/advanceReceipt'
 import { useAdminAuthStore, useProductStore } from '../store/store'
 import {
-  addAdvanceEvent, completeAdvanceOrder, createAdvanceOrder, getAdvanceOrderHistory, listAdvanceOrders, updateAdvanceStatus,
+  addAdvanceEvent, completeAdvanceOrder, createAdvanceOrder, deleteAdvanceOrder, getAdvanceOrderHistory, listAdvanceOrders, updateAdvanceStatus,
   type AdvanceOrder, type AdvancePayment, type AdvancePaymentMethod, type AdvanceStatus, type AdvanceTimeline,
 } from '../services/advanceOrderService'
 
@@ -238,6 +238,37 @@ export default function AdvanceOrders({ onOrderCompleted }: AdvanceOrdersProps =
     try { await addAdvanceEvent(order.id, eventType, label); await openDetails(order); setNotice(`${label} added to ${order.deposit_id}.`) } catch (err) { setError(err instanceof Error ? err.message : 'Unable to add timeline event') }
   }
 
+  const handleDeleteOrder = async (order: AdvanceOrder) => {
+    const isCompleted = order.status === 'completed'
+    const warningLines = [
+      `Delete advance order ${order.deposit_id} for ${order.customer_name}?`,
+      '',
+      isCompleted
+        ? `⚠️ This order is COMPLETED. Deleting it will also remove the linked invoice (${order.invoice_number ?? ''}) and deduct ${formatCurrency(order.total_amount)} from total revenue.`
+        : `This will permanently remove the deposit record. The deposit amount (${formatCurrency(order.deposit_amount)}) is NOT part of revenue, so there is no revenue impact.`,
+      '',
+      'This action cannot be undone.',
+    ]
+    if (!window.confirm(warningLines.join('\n'))) return
+
+    setError(''); setNotice('')
+    try {
+      setSaving(true)
+      await deleteAdvanceOrder(order)
+      setOrders(prev => prev.filter(o => o.id !== order.id))
+      if (selected?.id === order.id) setSelected(null)
+      setNotice(
+        isCompleted
+          ? `Advance order ${order.deposit_id} and its invoice have been deleted. Revenue has been corrected.`
+          : `Advance order ${order.deposit_id} deleted.`
+      )
+    } catch (err: any) {
+      setError(err?.message || 'Failed to delete advance order.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const cards = [
     ['Total Deposits', analytics.total, FileText, 'text-violet-700 bg-violet-50'], ['Pending Deposit Orders', analytics.pending, Clock3, 'text-amber-700 bg-amber-50'],
     ['Total Deposit Amount', formatCurrency(analytics.deposits), RMIcon, 'text-fuchsia-700 bg-fuchsia-50'], ['Outstanding Balance', formatCurrency(analytics.outstanding), RMIcon, 'text-red-700 bg-red-50'],
@@ -358,6 +389,17 @@ export default function AdvanceOrders({ onOrderCompleted }: AdvanceOrdersProps =
                         title={order.status === 'completed' ? "Share Final Invoice via WhatsApp" : "Share Advance Receipt via WhatsApp"}
                       >
                         <MessageCircle size={15}/>
+                      </button>
+
+                      {/* Delete Order */}
+                      <button
+                        type="button"
+                        onClick={() => void handleDeleteOrder(order)}
+                        disabled={saving}
+                        className="w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors cursor-pointer shrink-0 disabled:opacity-40"
+                        title={order.status === 'completed' ? "Delete Order & Remove from Revenue" : "Delete Advance Order"}
+                      >
+                        <Trash2 size={14}/>
                       </button>
                     </div>
                   </td>
@@ -636,6 +678,15 @@ export default function AdvanceOrders({ onOrderCompleted }: AdvanceOrdersProps =
                 title="Share via WhatsApp"
               >
                 <MessageCircle size={14} /> WhatsApp
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteOrder(selected)}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-600 border border-red-200 text-xs font-bold hover:bg-red-100 cursor-pointer transition shadow-xs disabled:opacity-40"
+                title={selected.status === 'completed' ? 'Delete Order & Remove from Revenue' : 'Delete Advance Order'}
+              >
+                <Trash2 size={14} /> Delete
               </button>
             </div>
             <button
