@@ -62,6 +62,16 @@
     }
   }
 
+  /* iOS Safari auto-zooms the whole page on focus of any form control whose
+     computed font-size is below 16px. The mobile baseline above shrinks the
+     root font-size well under that, so form controls need an explicit floor
+     in absolute px (not rem, which would inherit the shrunk root size). */
+  @media (max-width: 767px) {
+    input, select, textarea {
+      font-size: 16px !important;
+    }
+  }
+
   body {
     margin: 0;
     padding: 0;

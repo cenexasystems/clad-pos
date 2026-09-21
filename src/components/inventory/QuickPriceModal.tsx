@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X, Tag, IndianRupee, AlertCircle, Barcode, Check } from 'lucide-react'
 import { updateItemPrice } from '../../services/productService'
 import type { InventoryStockItem } from '../../services/inventoryService'
+import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 
 interface Props {
   isOpen: boolean
@@ -43,6 +44,9 @@ export const QuickPriceModal: React.FC<Props> = ({ isOpen, item, onClose, onSucc
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])
+
+  const vvh = useVisualViewportHeight()
+  const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
 
   if (!isOpen || !item) return null
 
@@ -87,9 +91,12 @@ export const QuickPriceModal: React.FC<Props> = ({ isOpen, item, onClose, onSucc
   }
 
   return createPortal(
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+      style={modalHeightVar}
+    >
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-none sm:rounded-2xl w-full max-w-md h-screen h-[100dvh] sm:h-auto sm:max-h-[92vh] shadow-2xl overflow-hidden border-0 sm:border border-[#E8D399]/50 animate-in fade-in zoom-in-95 flex flex-col">
+      <div className="relative z-10 bg-white rounded-none sm:rounded-2xl w-full max-w-md h-screen h-[var(--modal-vvh,100dvh)] sm:h-auto sm:max-h-[92vh] shadow-2xl overflow-hidden border-0 sm:border border-[#E8D399]/50 animate-in fade-in zoom-in-95 flex flex-col">
         {/* Header */}
         <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-[#FBFAF6] shrink-0">
           <div className="flex items-center gap-2.5">

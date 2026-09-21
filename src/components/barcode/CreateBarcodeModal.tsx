@@ -28,6 +28,7 @@ import {
 import { BRAND_EN } from '../../lib/brand'
 import { barcodeService } from '../../services/barcodeService'
 import { fetchVariantsByProduct, type ProductVariant } from '../../services/variantService'
+import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 import { BarcodeSettingsDrawer } from './BarcodeSettingsDrawer'
 import { BarcodeSheetPreviewModal } from './BarcodeSheetPreviewModal'
 import { useProductStore } from '../../store/store'
@@ -653,13 +654,19 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
   }
 }
 
+  const vvh = useVisualViewportHeight()
+  const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
+
   if (!isOpen) return null
 
   return createPortal(
     <>
-      <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150">
+      <div
+        className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+        style={modalHeightVar}
+      >
         <div className="absolute inset-0" onClick={onClose} />
-        <div className="relative z-10 bg-white w-full max-w-6xl h-screen h-[100dvh] sm:h-auto sm:max-h-[94vh] rounded-none sm:rounded-3xl border-0 sm:border border-gray-200 shadow-2xl overflow-hidden flex flex-col">
+        <div className="relative z-10 bg-white w-full max-w-6xl h-screen h-[var(--modal-vvh,100dvh)] sm:h-auto sm:max-h-[94vh] rounded-none sm:rounded-3xl border-0 sm:border border-gray-200 shadow-2xl overflow-hidden flex flex-col">
           {/* TOP BAR matching Screenshot 195106 */}
           <div className="flex items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 border-b border-gray-200 bg-[#0A0A0A] text-white shrink-0">
             <div className="flex items-center gap-2">

@@ -28,9 +28,11 @@ export interface ThermalReceiptData {
 
 export function printThermalReceipt(data: ThermalReceiptData) {
   try {
-    // Create an isolated print iframe protected from third-party extension observers
+    // Create an isolated print iframe protected from third-party extension observers.
+    // iOS Safari refuses to render/print an iframe that has zero width/height or
+    // visibility:hidden, so it is pushed off-screen with real dimensions instead.
     const iframe = document.createElement('iframe')
-    iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;'
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:302px;height:600px;border:0;'
     iframe.setAttribute('aria-hidden', 'true')
     iframe.setAttribute('tabindex', '-1')
     iframe.setAttribute('data-gramm', 'false')

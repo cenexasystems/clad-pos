@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { inventoryService, type InventoryStockItem } from '../../services/inventoryService'
 import { BRAND_EN } from '../../lib/brand'
+import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 
 export interface AdjustStockModalProps {
   isOpen: boolean
@@ -66,6 +67,12 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])
+
+  // iOS Safari keeps 100dvh at its pre-keyboard value, so the modal (and its
+  // bottom Save button) must be re-measured against the visual viewport to stay
+  // fully visible once the on-screen keyboard opens.
+  const vvh = useVisualViewportHeight()
+  const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
 
   if (!isOpen || !item) return null
 
@@ -150,9 +157,12 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
   }
 
   return createPortal(
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+      style={modalHeightVar}
+    >
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-none sm:rounded-3xl max-w-lg w-full h-screen h-[100dvh] sm:h-auto sm:max-h-[92vh] border-0 sm:border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative z-10 bg-white rounded-none sm:rounded-3xl max-w-lg w-full h-screen h-[var(--modal-vvh,100dvh)] sm:h-auto sm:max-h-[92vh] border-0 sm:border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
         {/* Header */}
         <div className="shrink-0 bg-[#0A0A0A] px-4 py-3 sm:px-5 sm:py-3.5 border-b border-[#D4AF37]/30 flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">

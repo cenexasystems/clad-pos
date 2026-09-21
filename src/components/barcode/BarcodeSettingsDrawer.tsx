@@ -12,6 +12,7 @@ import {
   saveStoredBarcodeSettings,
 } from '../../lib/barcode'
 import { CreateCustomSizeModal } from './CreateCustomSizeModal'
+import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 
 interface BarcodeSettingsDrawerProps {
   isOpen: boolean
@@ -62,6 +63,9 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
     }
   }, [isOpen])
 
+  const vvh = useVisualViewportHeight()
+  const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
+
   if (!isOpen) return null
 
   const handlePrinterChange = (type: 'label' | 'regular') => {
@@ -96,9 +100,12 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
   return (
     <>
       {createPortal(
-        <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div
+          className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150"
+          style={modalHeightVar}
+        >
           <div className="absolute inset-0" onClick={onClose} />
-          <div className="relative z-10 w-full max-w-sm bg-white h-screen h-[100dvh] shadow-2xl flex flex-col border-l border-gray-200 animate-in slide-in-from-right duration-200">
+          <div className="relative z-10 w-full max-w-sm bg-white h-screen h-[var(--modal-vvh,100dvh)] shadow-2xl flex flex-col border-l border-gray-200 animate-in slide-in-from-right duration-200">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-[#0A0A0A] text-white shrink-0">
             <h3 className="text-sm font-black tracking-wide text-white">Barcode Settings</h3>

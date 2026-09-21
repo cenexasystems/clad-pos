@@ -13,6 +13,7 @@ import {
   addAdvanceEvent, completeAdvanceOrder, createAdvanceOrder, deleteAdvanceOrder, getAdvanceOrderHistory, listAdvanceOrders, updateAdvanceStatus,
   type AdvanceOrder, type AdvancePayment, type AdvancePaymentMethod, type AdvanceStatus, type AdvanceTimeline,
 } from '../services/advanceOrderService'
+import { useVisualViewportHeight } from '../hooks/useVisualViewportHeight'
 
 // Custom Malaysian Ringgit icon
 const RMIcon = ({ size = 20, className = '' }: { size?: number; className?: string }) => (
@@ -67,6 +68,9 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
   const [availableCoupons, setAvailableCoupons] = useState<{ code: string; percentage: number }[]>([])
   const [manualDiscount, setManualDiscount] = useState('')
   const [manualDiscountType, setManualDiscountType] = useState<'rm' | '%'>('rm')
+
+  const vvh = useVisualViewportHeight()
+  const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -414,7 +418,10 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
     </div>
 
     {createOpen && createPortal(
-      <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div
+        className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+        style={modalHeightVar}
+      >
         <form onSubmit={create} className="max-h-[92vh] w-full max-w-4xl overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
           <div className="mb-5 flex items-center justify-between">
             <div>
@@ -451,7 +458,10 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
     )}
 
     {paymentOrder && createPortal(
-      <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+      <div
+        className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+        style={modalHeightVar}
+      >
         <form onSubmit={receivePayment} className="w-full max-w-md max-h-[92vh] overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
           <div className="mb-5 flex items-start justify-between">
             <div>

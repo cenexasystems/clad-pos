@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Calendar, Tag, AlertCircle, Edit2 } from 'lucide-react'
 import { expenseService, type ExpenseCategory, type ExpenseRecord } from '../../services/expenseService'
+import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 
 interface RecordExpenseModalProps {
   isOpen: boolean
@@ -65,6 +66,9 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
     }
   }, [isOpen])
 
+  const vvh = useVisualViewportHeight()
+  const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
+
   if (!isOpen) return null
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,7 +118,10 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
   }
 
   return createPortal(
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+      style={modalHeightVar}
+    >
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92vh] border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
         {/* Header */}

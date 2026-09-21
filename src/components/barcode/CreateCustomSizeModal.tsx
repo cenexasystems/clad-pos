@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Info } from 'lucide-react'
 import { type LabelSizeConfig, saveStoredCustomSize } from '../../lib/barcode'
+import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 
 interface CreateCustomSizeModalProps {
   isOpen: boolean
@@ -36,6 +37,9 @@ export const CreateCustomSizeModal: React.FC<CreateCustomSizeModalProps> = ({
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])
+
+  const vvh = useVisualViewportHeight()
+  const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
 
   if (!isOpen) return null
 
@@ -78,9 +82,12 @@ export const CreateCustomSizeModal: React.FC<CreateCustomSizeModalProps> = ({
   const numGap = parseFloat(horizontalGapMm) || 2
 
   return createPortal(
-    <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150">
+    <div
+      className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+      style={modalHeightVar}
+    >
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-screen h-[100dvh] sm:h-auto sm:max-h-[90vh] border-0 sm:border border-[#E5E7EB] shadow-2xl overflow-hidden flex flex-col">
+      <div className="relative z-10 bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-screen h-[var(--modal-vvh,100dvh)] sm:h-auto sm:max-h-[90vh] border-0 sm:border border-[#E5E7EB] shadow-2xl overflow-hidden flex flex-col">
         {/* Header - fixed top */}
         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-gray-200 bg-[#0A0A0A] text-white shrink-0">
           <h3 className="text-base font-black tracking-wide text-white">Create Custom Size</h3>
