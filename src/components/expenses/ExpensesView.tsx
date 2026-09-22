@@ -283,13 +283,13 @@ export const ExpensesView: React.FC = () => {
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
               {/* Search Box */}
               <div className="relative flex-1 min-w-0">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search description, category, staff, amount..."
-                  className="w-full h-10 pl-9 pr-8 rounded-xl border border-gray-200 bg-[#F9FAFB] text-xs font-semibold text-gray-900 placeholder-gray-400 outline-none focus:border-[#D4AF37] focus:bg-white transition-colors"
+                  className="w-full h-10 pl-8.5 sm:pl-9 pr-8 rounded-xl border border-gray-200 bg-[#F9FAFB] text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] focus:bg-white transition-colors"
                 />
                 {searchQuery && (
                   <button
@@ -303,13 +303,13 @@ export const ExpensesView: React.FC = () => {
               </div>
 
               {/* Controls Group: Category Dropdown, Date Preset Dropdown, Filters Toggle */}
-              <div className="grid grid-cols-3 sm:flex items-center gap-2 shrink-0">
+              <div className="grid grid-cols-3 sm:flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {/* Category Dropdown */}
                 <div className="relative min-w-0">
                   <select
                     value={selectedCategoryId}
                     onChange={(e) => setSelectedCategoryId(e.target.value)}
-                    className="w-full sm:w-36 lg:w-40 h-10 appearance-none pl-3 pr-7 rounded-xl bg-[#F9FAFB] border border-gray-200 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#D4AF37] cursor-pointer hover:bg-gray-100 transition-colors truncate"
+                    className="w-full sm:w-36 lg:w-40 h-10 appearance-none pl-2 sm:pl-3 pr-5 sm:pr-7 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[10.5px] sm:text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#D4AF37] cursor-pointer hover:bg-gray-100 transition-colors truncate"
                   >
                     <option value="all">All Categories</option>
                     {categories.map((cat) => (
@@ -318,7 +318,7 @@ export const ExpensesView: React.FC = () => {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <ChevronDown size={11} className="absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                 </div>
 
                 {/* Date Preset Dropdown */}
@@ -329,7 +329,7 @@ export const ExpensesView: React.FC = () => {
                       const val = e.target.value as 'all' | 'today' | 'week' | 'month' | 'custom'
                       applyDatePreset(val)
                     }}
-                    className="w-full sm:w-32 lg:w-36 h-10 appearance-none pl-3 pr-7 rounded-xl bg-[#F9FAFB] border border-gray-200 text-xs font-bold text-gray-800 focus:outline-none focus:border-[#D4AF37] cursor-pointer hover:bg-gray-100 transition-colors truncate"
+                    className="w-full sm:w-32 lg:w-36 h-10 appearance-none pl-2 sm:pl-3 pr-5 sm:pr-7 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[10.5px] sm:text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#D4AF37] cursor-pointer hover:bg-gray-100 transition-colors truncate"
                   >
                     <option value="all">All Dates</option>
                     <option value="today">Today</option>
@@ -337,28 +337,28 @@ export const ExpensesView: React.FC = () => {
                     <option value="month">This Month</option>
                     <option value="custom">Custom...</option>
                   </select>
-                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <ChevronDown size={11} className="absolute right-1.5 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                 </div>
 
                 {/* Detailed Filters Toggle Button */}
                 <button
                   type="button"
                   onClick={() => setShowAdvancedFilters((v) => !v)}
-                  className={`w-full sm:w-auto h-10 px-2.5 sm:px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer min-w-0 shrink-0 ${
+                  className={`w-full sm:w-auto h-10 px-2 sm:px-3 rounded-xl border text-[10.5px] sm:text-xs font-semibold flex items-center justify-center gap-1 sm:gap-1.5 transition-colors cursor-pointer min-w-0 shrink-0 ${
                     showAdvancedFilters || activeFiltersCount > 0
                       ? 'bg-[#0A0A0A] text-white border-[#0A0A0A]'
                       : 'bg-[#F9FAFB] text-gray-700 border-gray-200 hover:bg-gray-100'
                   }`}
                   title="Toggle detailed filters"
                 >
-                  <SlidersHorizontal size={12} className="shrink-0" />
+                  <SlidersHorizontal size={11} className="shrink-0" />
                   <span className="truncate">Filters</span>
                   {activeFiltersCount > 0 && (
-                    <span className="w-4 h-4 rounded-full bg-[#D4AF37] text-black text-[9px] font-black flex items-center justify-center shrink-0">
+                    <span className="w-3.5 h-3.5 rounded-full bg-[#D4AF37] text-black text-[9px] font-black flex items-center justify-center shrink-0">
                       {activeFiltersCount}
                     </span>
                   )}
-                  <ChevronDown size={11} className={`transition-transform duration-200 shrink-0 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={10} className={`transition-transform duration-200 shrink-0 ${showAdvancedFilters ? 'rotate-180' : ''}`} />
                 </button>
               </div>
 
@@ -376,8 +376,8 @@ export const ExpensesView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => exportExpensesToCSV(filteredExpenses)}
-                  disabled={filteredExpenses.length === 0}
-                  className="h-10 px-3 sm:px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-xs font-bold text-gray-800 hover:bg-gray-100 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-40 shrink-0 shadow-xs"
+                  className="h-10 px-3 sm:px-3.5 rounded-xl border border-gray-200 bg-[#F9FAFB] text-[11px] sm:text-xs font-semibold text-gray-800 hover:bg-gray-100 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs active:scale-95"
+                  title="Export expenses to CSV"
                 >
                   <Download size={13} />
                   <span className="hidden sm:inline">Export</span> CSV

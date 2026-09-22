@@ -354,7 +354,7 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
             value={manualCode}
             onChange={(e) => setManualCode(e.target.value)}
             disabled={disabled || loading}
-            className="w-full pl-10 pr-24 py-3 rounded-2xl border-2 border-[#E8D399] bg-[#FBFAF6] font-bold text-sm text-black placeholder:text-gray-400 outline-none focus:border-[#0A0A0A] focus:bg-white shadow-xs transition-all"
+            className={`w-full pl-10 ${manualCode ? 'pr-24' : 'pr-12'} py-2.5 sm:py-3 rounded-2xl border-2 border-[#E8D399] bg-[#FBFAF6] font-medium text-xs sm:text-xs text-black placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A] focus:bg-white shadow-xs transition-all`}
           />
 
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">

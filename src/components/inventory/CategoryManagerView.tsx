@@ -142,13 +142,13 @@ export const CategoryManagerView: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <div className="relative flex-1 sm:w-64">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               type="text"
               placeholder="Search categories..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-300 bg-[#FBFAF6] text-xs font-bold text-gray-900 outline-none focus:border-[#0A0A0A] focus:bg-white"
+              className="w-full pl-8 sm:pl-9 pr-3 py-2 rounded-xl border border-gray-300 bg-[#FBFAF6] text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A] focus:bg-white"
             />
           </div>
           <button
@@ -214,7 +214,7 @@ export const CategoryManagerView: React.FC = () => {
                 placeholder="e.g. Linen Shirts, Sarees, Trousers"
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-gray-300 bg-white text-xs font-bold text-gray-900 outline-none focus:border-[#0A0A0A]"
+                className="w-full h-10 px-3 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A]"
               />
             </div>
 
@@ -227,7 +227,7 @@ export const CategoryManagerView: React.FC = () => {
                 placeholder="e.g. சட்டை வகைகள்"
                 value={nameTa}
                 onChange={(e) => setNameTa(e.target.value)}
-                className="w-full h-10 px-3 rounded-xl border border-gray-300 bg-white text-xs font-bold text-gray-900 outline-none focus:border-[#0A0A0A]"
+                className="w-full h-10 px-3 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A]"
               />
             </div>
 
@@ -240,7 +240,7 @@ export const CategoryManagerView: React.FC = () => {
                   type="number"
                   value={sortOrder}
                   onChange={(e) => setSortOrder(parseInt(e.target.value) || 0)}
-                  className="w-full h-10 px-3 rounded-xl border border-gray-300 bg-white text-xs font-black text-gray-900 outline-none focus:border-[#0A0A0A]"
+                  className="w-full h-10 px-3 rounded-xl border border-gray-300 bg-white text-xs font-semibold text-gray-900 outline-none focus:border-[#0A0A0A]"
                 />
               </div>
 

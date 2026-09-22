@@ -98,6 +98,14 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Global placeholder typography: ensure all placeholders remain crisp, clean, and normal weight instead of inheriting input font-bold/font-black */
+  input::placeholder,
+  textarea::placeholder {
+    font-weight: 400 !important;
+    color: #9CA3AF !important;
+    opacity: 1;
+  }
+
   /* Prevent native date/time inputs from overflowing containers on iOS/WebKit */
   input[type="date"],
   input[type="time"],

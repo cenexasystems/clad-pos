@@ -137,7 +137,7 @@ export const ExpenseCategoriesView: React.FC<ExpenseCategoriesViewProps> = ({
                 placeholder="e.g. Utility Bills, Packaging"
                 value={catName}
                 onChange={(e) => setCatName(e.target.value)}
-                className="w-full h-11 px-3 rounded-xl border border-gray-300 bg-[#FAFAFA] text-xs font-bold text-gray-900 outline-none focus:border-[#0A0A0A] focus:bg-white transition-all"
+                className="w-full h-10 px-3 rounded-xl border border-gray-300 bg-[#FAFAFA] text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A] focus:bg-white transition-all"
               />
             </div>
 
@@ -145,7 +145,7 @@ export const ExpenseCategoriesView: React.FC<ExpenseCategoriesViewProps> = ({
               <button
                 type="submit"
                 disabled={loading || !catName.trim()}
-                className="flex-1 h-11 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-bold hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="flex-1 h-10 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-bold hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {editingCategory ? (
                   <>

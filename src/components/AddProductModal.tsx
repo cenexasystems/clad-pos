@@ -145,8 +145,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
               type="text"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full px-4 py-3 bg-[#FBFAF6] border-2 border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-sm font-bold text-black"
-              placeholder="E.g. Men Slim Fit Cotton Shirt"
+              className="w-full h-10 px-3.5 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
+              placeholder="e.g. Men Slim Fit Cotton Shirt"
               required
             />
           </div>
@@ -159,7 +159,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                   <select
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="flex-1 w-full px-3 py-3 bg-[#FBFAF6] border-2 border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-bold appearance-none text-black"
+                    className="flex-1 w-full h-10 px-3 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-semibold appearance-none text-black cursor-pointer"
                   >
                     <option value="">Select Category</option>
                     {existingCategories.map(cat => (
@@ -169,7 +169,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                   <button
                     type="button"
                     onClick={() => { setCategoryMode('new'); setFormData(f => ({...f, category: ''})) }}
-                    className="px-2.5 py-3 text-xs font-black text-[#0A0A0A] bg-[#FBFAF6] border-2 border-[#E8D399] rounded-xl hover:bg-amber-100 transition-colors shrink-0"
+                    className="h-10 px-3 text-xs font-black text-[#0A0A0A] bg-[#FBFAF6] border border-[#E8D399] rounded-xl hover:bg-amber-100 transition-colors shrink-0 cursor-pointer"
                     title="Add new category"
                   >+</button>
                 </div>
@@ -179,13 +179,13 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                     type="text"
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="flex-1 w-full px-3 py-3 bg-[#FBFAF6] border-2 border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-bold text-black"
+                    className="flex-1 w-full h-10 px-3 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
                     placeholder="Type Category"
                   />
                   <button
                     type="button"
                     onClick={() => { setCategoryMode('select'); setFormData(f => ({...f, category: ''})) }}
-                    className="px-2.5 py-3 text-xs font-black text-gray-700 bg-[#FBFAF6] border-2 border-[#E8D399] rounded-xl hover:bg-gray-200 transition-colors shrink-0"
+                    className="h-10 px-3 text-xs font-black text-gray-700 bg-[#FBFAF6] border border-[#E8D399] rounded-xl hover:bg-gray-200 transition-colors shrink-0 cursor-pointer"
                     title="Pick from existing"
                   >↩</button>
                 </div>
@@ -198,8 +198,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                 step="0.01"
                 value={formData.price}
                 onChange={e => setFormData({...formData, price: e.target.value})}
-                className="w-full px-4 py-3 bg-[#FBFAF6] border-2 border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-sm font-bold text-right text-black"
-                placeholder="0"
+                className="w-full h-10 px-3.5 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-right text-black placeholder:text-gray-400 placeholder:font-normal"
+                placeholder="0.00"
                 required
               />
             </div>
@@ -215,7 +215,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                 min="0"
                 value={formData.stock}
                 onChange={e => setFormData({...formData, stock: e.target.value})}
-                className="w-full px-4 py-2.5 bg-emerald-50/40 border-2 border-emerald-300 rounded-xl focus:outline-none focus:border-emerald-600 focus:bg-white text-sm font-black text-emerald-950"
+                className="w-full h-10 px-3.5 bg-emerald-50/40 border border-emerald-300 rounded-xl focus:outline-none focus:border-emerald-600 focus:bg-white text-xs sm:text-[13px] font-semibold text-emerald-950 placeholder:text-emerald-700/60 placeholder:font-normal"
                 placeholder="0"
               />
             </div>
@@ -228,7 +228,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                 min="1"
                 value={formData.lowStockAlert}
                 onChange={e => setFormData({...formData, lowStockAlert: e.target.value})}
-                className="w-full px-4 py-2.5 bg-[#FBFAF6] border-2 border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-sm font-bold text-black"
+                className="w-full h-10 px-3.5 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
                 placeholder="5"
               />
             </div>

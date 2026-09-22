@@ -490,23 +490,24 @@ export const expenseService = {
 // 6. CSV Ledger Export Utility
 export function exportExpensesToCSV(expenses: ExpenseRecord[]): void {
   const headers = ['Date', 'Category', 'Description', 'Amount (INR)', 'Recorded By']
-  const rows = expenses.map((e) => [
-    e.expense_date,
+  const rows = (expenses || []).map((e) => [
+    e.expense_date || '',
     `"${(e.category_name || 'Uncategorized').replace(/"/g, '""')}"`,
     `"${(e.description || '').replace(/"/g, '""')}"`,
     Number(e.amount || 0).toFixed(2),
     `"${(e.recorded_by_name || 'Staff').replace(/"/g, '""')}"`,
   ])
-
-  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+  const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n')
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const filename = `CLAD-Expenses-${new Date().toISOString().slice(0, 10)}.csv`
   const url = URL.createObjectURL(blob)
 
   const link = document.createElement('a')
   link.href = url
-  link.download = `CLAD-Expenses-${new Date().toISOString().slice(0, 10)}.csv`
+  link.setAttribute('download', filename)
+  link.style.display = 'none'
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
-  setTimeout(() => URL.revokeObjectURL(url), 100)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
