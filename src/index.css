@@ -62,14 +62,9 @@
     }
   }
 
-  /* iOS Safari auto-zooms the whole page on focus of any form control whose
-     computed font-size is below 16px. The mobile baseline above shrinks the
-     root font-size well under that, so form controls need an explicit floor
-     in absolute px (not rem, which would inherit the shrunk root size). */
-  @media (max-width: 767px) {
-    input, select, textarea {
-      font-size: 16px !important;
-    }
+  /* Ensure inputs and selects respect compact typography utility classes */
+  input, select, textarea {
+    font-family: 'DM Sans', 'Outfit', 'Noto Sans Tamil', system-ui, -apple-system, sans-serif;
   }
 
   body {
@@ -98,12 +93,29 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Global placeholder typography: ensure all placeholders remain crisp, clean, and normal weight instead of inheriting input font-bold/font-black */
+  /* Global placeholder typography: ensure all placeholders remain crisp, clean, and normal weight across browsers */
+  ::placeholder {
+    font-weight: 400 !important;
+    color: #9CA3AF !important;
+    opacity: 0.85;
+  }
   input::placeholder,
   textarea::placeholder {
     font-weight: 400 !important;
     color: #9CA3AF !important;
-    opacity: 1;
+    opacity: 0.85;
+  }
+  input::-webkit-input-placeholder,
+  textarea::-webkit-input-placeholder {
+    font-weight: 400 !important;
+    color: #9CA3AF !important;
+    opacity: 0.85;
+  }
+  input::-moz-placeholder,
+  textarea::-moz-placeholder {
+    font-weight: 400 !important;
+    color: #9CA3AF !important;
+    opacity: 0.85;
   }
 
   /* Prevent native date/time inputs from overflowing containers on iOS/WebKit */
