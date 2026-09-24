@@ -305,13 +305,13 @@ export const InventoryTable: React.FC = () => {
           <div className="bg-white border border-[#E8D399] rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             {/* Search */}
             <div className="relative flex-1 max-w-md">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search SKU name, variant, barcode, category..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 sm:pl-9 pr-3 py-2 sm:py-2.5 rounded-xl border border-gray-300 bg-[#FBFAF6] text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A] focus:bg-white"
+                className="w-full pl-10 pr-3 py-2 sm:py-2.5 rounded-xl border border-gray-300 bg-[#FBFAF6] text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A] focus:bg-white"
               />
             </div>
 

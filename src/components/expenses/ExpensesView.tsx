@@ -283,13 +283,13 @@ export const ExpensesView: React.FC = () => {
             <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2.5">
               {/* Search Box */}
               <div className="relative flex-1 min-w-0">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search description, category, staff, amount..."
-                  className="w-full h-10 pl-8.5 sm:pl-9 pr-8 rounded-xl border border-gray-200 bg-[#F9FAFB] text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] focus:bg-white transition-colors"
+                  className="w-full h-10 pl-10 pr-8 rounded-xl border border-gray-200 bg-[#F9FAFB] text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] focus:bg-white transition-colors"
                 />
                 {searchQuery && (
                   <button

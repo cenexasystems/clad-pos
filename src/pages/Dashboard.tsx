@@ -3152,10 +3152,10 @@ export default function Dashboard() {
                   {/* Smart Quick Search + Search Button */}
                   <div className="flex items-center gap-2 flex-1">
                     <div className="relative flex-1 min-w-0">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       <input
                         type="text"
-                        className="w-full h-10 sm:h-11 pl-8 sm:pl-9 pr-8 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[11px] sm:text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all"
+                        className="w-full h-10 sm:h-11 pl-10 pr-8 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[11px] sm:text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all"
                         placeholder={l('Search by Invoice, Customer, Phone...', 'பில் எண், வாடிக்கையாளர், போன் எண்...')}
                         value={historyQuickSearch}
                         onChange={e => setHistoryQuickSearch(e.target.value)}

@@ -181,11 +181,11 @@ export default function CatalogModal({ isOpen, onClose, onAdd }: CatalogModalPro
             </div>
             <div className="p-3 sm:p-4 border-b border-[#E5E7EB]/40 bg-white space-y-3">
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#374151]" />
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#374151]" />
                 <input type="text" value={search}
                   onChange={e => setSearch(e.target.value)}
                   placeholder="Search by product name, Tamil name, or category..."
-                  className="w-full h-10 pl-9 pr-3.5 bg-[#FAFAFA] border border-[#E5E7EB]/60 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs sm:text-[13px] font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal" />
+                  className="w-full h-10 pl-10 pr-3.5 bg-[#FAFAFA] border border-[#E5E7EB]/60 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs sm:text-[13px] font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal" />
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {categories.map(cat => (
