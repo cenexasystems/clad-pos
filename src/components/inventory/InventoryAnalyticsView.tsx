@@ -15,6 +15,8 @@ import {
   type InventoryMovement,
   type InventoryStockItem,
 } from '../../services/inventoryService'
+import { getDateRange } from '../../lib/dateRange'
+import { useDebouncedValue } from '../../lib/debounce'
 
 export const InventoryAnalyticsView: React.FC = () => {
   const [range, setRange] = useState<'all' | 'today' | 'week' | 'month'>('all')
@@ -30,22 +32,15 @@ export const InventoryAnalyticsView: React.FC = () => {
   })
   const [filterType, setFilterType] = useState<string>('all')
   const [search, setSearch] = useState('')
+  const [debouncedSearch] = useDebouncedValue(search, 300)
 
   const computeDateRange = () => {
-    const now = new Date()
-    if (range === 'today') {
-      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
-      return { start, end: undefined }
+    if (range === 'all') return { start: undefined, end: undefined }
+    const dateRange = getDateRange(range, new Date())
+    return {
+      start: dateRange.start?.toISOString(),
+      end: dateRange.end?.toISOString(),
     }
-    if (range === 'week') {
-      const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString()
-      return { start, end: undefined }
-    }
-    if (range === 'month') {
-      const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-      return { start, end: undefined }
-    }
-    return { start: undefined, end: undefined }
   }
 
   const loadAnalytics = useCallback(async () => {
@@ -68,8 +63,8 @@ export const InventoryAnalyticsView: React.FC = () => {
   // Filter movements for the table
   const filteredMovements = data.movements.filter((m) => {
     if (filterType !== 'all' && m.movement_type !== filterType) return false
-    if (search.trim()) {
-      const q = search.toLowerCase().trim()
+    if (debouncedSearch.trim()) {
+      const q = debouncedSearch.toLowerCase().trim()
       const prodName = m.product?.name?.toLowerCase() || ''
       const varName = m.variant?.variant_name?.toLowerCase() || ''
       const barcode = m.barcode_id?.toLowerCase() || ''

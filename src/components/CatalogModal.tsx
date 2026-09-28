@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react'
 import { X, Search, ShoppingBag, Edit2, Trash2 } from 'lucide-react'
 import { useProductStore, type Product } from '../store/store'
 import { supabase } from '../lib/supabase'
+import { useDebouncedValue } from '../lib/debounce'
 
 interface CatalogModalProps {
   isOpen: boolean
@@ -14,6 +15,7 @@ type CategoryOption = { id: string | number; name_en: string; is_active?: boolea
 export default function CatalogModal({ isOpen, onClose, onAdd }: CatalogModalProps) {
   const { fetchProducts, products, loading, error } = useProductStore()
   const [search, setSearch] = useState('')
+  const [debouncedSearch] = useDebouncedValue(search, 300)
   const [activeCategory, setActiveCategory] = useState('All')
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editForm, setEditForm] = useState({ name: '', category: '', price: '' })
@@ -71,7 +73,7 @@ export default function CatalogModal({ isOpen, onClose, onAdd }: CatalogModalPro
   }, [categoryOptions, products])
 
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase()
+    const q = debouncedSearch.trim().toLowerCase()
     let src = products.filter(p => p.isActive)
     if (activeCategory !== 'All') src = src.filter(p => p.category === activeCategory)
     if (q) src = src.filter(p =>
@@ -80,7 +82,7 @@ export default function CatalogModal({ isOpen, onClose, onAdd }: CatalogModalPro
       p.category.toLowerCase().includes(q)
     )
     return src
-  }, [products, search, activeCategory])
+  }, [products, debouncedSearch, activeCategory])
 
   const startEdit = (p: Product) => {
     setEditingProduct(p)
@@ -217,21 +219,23 @@ export default function CatalogModal({ isOpen, onClose, onAdd }: CatalogModalPro
                     <div key={product.id}
                       className="bg-white border border-[#E5E7EB]/60 rounded-2xl p-3 flex flex-col justify-between gap-2.5 hover:border-[#D4AF37]/40 hover:shadow-md transition-all group">
                       <div onClick={() => onAdd(product)} className="cursor-pointer w-full">
-                        <h4 className="text-[13px] font-black text-[#111111] leading-snug group-hover:text-[#D4AF37] transition-colors break-words line-clamp-2">
+                        <h4 className="text-[13px] font-black text-[#111111] leading-snug group-hover:text-[#D4AF37] transition-colors whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">
                           {product.name}
                         </h4>
                         {product.nameTa && (
-                          <p className="text-[10px] font-bold text-[#374151] mt-0.5 truncate">
+                          <p className="text-[10px] font-bold text-[#374151] mt-0.5 whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">
                             {product.nameTa}
                           </p>
                         )}
                       </div>
                       <div className="pt-2 border-t border-[#E5E7EB]/40 flex items-center justify-between gap-1.5">
-                        <div onClick={() => onAdd(product)} className="cursor-pointer flex flex-col min-w-0">
+                        <div onClick={() => onAdd(product)} className="cursor-pointer flex flex-col min-w-0 flex-1">
                           <span className="text-[14px] font-black text-[#111111] tabular-nums">₹{product.price}</span>
-                          <span className="text-[9px] font-bold text-[#374151] uppercase tracking-wider bg-[#F9FAFB] px-1.5 py-0.5 rounded border border-[#E5E7EB]/40 truncate max-w-[80px]">
-                            {product.category}
-                          </span>
+                          {product.category && (
+                            <span className="text-[9px] font-bold text-[#374151] uppercase tracking-wider bg-[#F9FAFB] px-1.5 py-0.5 rounded border border-[#E5E7EB]/40 whitespace-normal [overflow-wrap:anywhere] [word-break:break-word] w-fit max-w-full leading-tight mt-0.5">
+                              {product.category}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <button

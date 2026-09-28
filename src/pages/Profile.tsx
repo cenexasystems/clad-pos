@@ -5,7 +5,7 @@ import { useLangStore } from '../store/langStore'
 import { Package, User, LogOut, ChevronDown, ChevronUp, ShoppingBag, Settings, Edit2, Check, X, Camera } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
 import { formatCurrency, formatQuantityDisplay, normalizeStructuredOrderItem } from '../lib/retail'
-import { isValidPhone } from '../lib/phone'
+import { isValidPhone, formatPhone } from '../lib/phone'
 
 
 
@@ -466,7 +466,7 @@ export default function Profile() {
                                 <div>
                                   <p className="text-xs text-textMuted font-bold uppercase mb-1">Customer</p>
                                   <p className="font-medium text-textMain">{o.customer_name}</p>
-                                  <p className="text-textMuted">{o.phone}</p>
+                                  <p className="text-textMuted">{formatPhone(o.phone)}</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-textMuted font-bold uppercase mb-1">Address</p>

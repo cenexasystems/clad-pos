@@ -731,8 +731,8 @@ export const AddEditProductView: React.FC<{
                     }`}
                   >
                     <div className="flex-1 min-w-0 pr-1">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-xs text-gray-900 truncate" title={p.name}>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs text-gray-900 whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]" title={p.name}>
                           {p.name}
                         </span>
                         {isSelected && (
@@ -741,7 +741,7 @@ export const AddEditProductView: React.FC<{
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] text-gray-500 font-medium truncate mt-0.5">
+                      <div className="text-[10px] text-gray-500 font-medium whitespace-normal [overflow-wrap:anywhere] [word-break:break-word] mt-0.5">
                         {p.category || 'General'} {p.hasVariants ? '• Multi-variant' : ''}
                       </div>
                     </div>

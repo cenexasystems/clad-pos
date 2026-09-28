@@ -25,6 +25,7 @@ import { formatCurrency } from '../../lib/retail'
 import { useProductStore, useAdminAuthStore } from '../../store/store'
 import { useAlarmStore } from '../../store/alarmStore'
 import { alarmSound } from '../../lib/alarmAudio'
+import { useDebouncedValue } from '../../lib/debounce'
 import { CategoryManagerView } from './CategoryManagerView'
 import { InventoryAnalyticsView } from './InventoryAnalyticsView'
 import { AddEditProductView } from './AddEditProductView'
@@ -38,6 +39,7 @@ export const InventoryTable: React.FC = () => {
   const [items, setItems] = useState<InventoryStockItem[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [debouncedSearch] = useDebouncedValue(search, 300)
   const [filterStatus, setFilterStatus] = useState<'all' | 'in_stock' | 'low' | 'out'>('all')
 
   // Modals state
@@ -107,7 +109,7 @@ export const InventoryTable: React.FC = () => {
 
   // Filter items for Stock Management view
   const filtered = items.filter((item) => {
-    const q = search.toLowerCase().trim()
+    const q = debouncedSearch.toLowerCase().trim()
     const matchesSearch =
       !q ||
       item.name.toLowerCase().includes(q) ||
@@ -188,67 +190,75 @@ export const InventoryTable: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* NAVIGATION / HEADER */}
-      <div className="bg-white border border-[#E8D399] rounded-2xl p-2 sm:p-2.5 shadow-sm flex items-center justify-between gap-3 overflow-x-auto hide-scrollbar">
-        <div className="flex items-center gap-1.5 p-1 bg-[#FBFAF6] border border-gray-200 rounded-xl shrink-0">
-          <button
-            type="button"
-            onClick={() => setActiveTab('stock')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === 'stock'
-                ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
-                : 'text-gray-600 hover:text-black hover:bg-gray-100'
-            }`}
-          >
-            <Box size={14} /> Stock Management
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('products')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === 'products'
-                ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
-                : 'text-gray-600 hover:text-black hover:bg-gray-100'
-            }`}
-          >
-            <Package size={14} /> Add / Edit Products
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('categories')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === 'categories'
-                ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
-                : 'text-gray-600 hover:text-black hover:bg-gray-100'
-            }`}
-          >
-            <Tag size={14} /> Categories
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab('analytics')}
-            className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
-              activeTab === 'analytics'
-                ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
-                : 'text-gray-600 hover:text-black hover:bg-gray-100'
-            }`}
-          >
-            <BarChart3 size={14} /> Analytics &amp; Reports
-          </button>
+      <div className="bg-white border border-[#E8D399] rounded-2xl p-2 sm:p-2.5 shadow-sm flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0 overflow-x-auto hide-scrollbar">
+            <div className="flex items-center gap-1.5 p-1 bg-[#FBFAF6] border border-gray-200 rounded-xl w-max">
+              <button
+                type="button"
+                onClick={() => setActiveTab('stock')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  activeTab === 'stock'
+                    ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
+                    : 'text-gray-600 hover:text-black hover:bg-gray-100'
+                }`}
+              >
+                <Box size={14} /> Stock Management
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('products')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  activeTab === 'products'
+                    ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
+                    : 'text-gray-600 hover:text-black hover:bg-gray-100'
+                }`}
+              >
+                <Package size={14} /> Add / Edit Products
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('categories')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  activeTab === 'categories'
+                    ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
+                    : 'text-gray-600 hover:text-black hover:bg-gray-100'
+                }`}
+              >
+                <Tag size={14} /> Categories
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('analytics')}
+                className={`px-3.5 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer whitespace-nowrap ${
+                  activeTab === 'analytics'
+                    ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
+                    : 'text-gray-600 hover:text-black hover:bg-gray-100'
+                }`}
+              >
+                <BarChart3 size={14} /> Analytics &amp; Reports
+              </button>
+            </div>
+          </div>
+          {/* Add Barcode: right-of-tabs on sm+, hidden on xs (Row 2 below handles xs) */}
+          {role === 'admin' && (
+            <button
+              type="button"
+              onClick={() => { setSelectedForReceive(null); setShowReceiveModal(true) }}
+              className="hidden sm:flex shrink-0 min-h-[44px] px-4 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black hover:bg-[#1A1A1A] transition-all shadow-md items-center gap-2 cursor-pointer whitespace-nowrap"
+              title="Generate &amp; print barcodes for items"
+            >
+              <Printer size={15} /> Add Barcode
+            </button>
+          )}
         </div>
-
-        {/* Global Add Barcode CTA (Admin Only) */}
+        {/* Row 2: mobile only (< sm), admin only */}
         {role === 'admin' && (
           <button
             type="button"
-            onClick={() => {
-              setSelectedForReceive(null)
-              setShowReceiveModal(true)
-            }}
-            className="px-4 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black hover:bg-[#1A1A1A] transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
-            title="Generate & print barcodes for items"
+            onClick={() => { setSelectedForReceive(null); setShowReceiveModal(true) }}
+            className="sm:hidden w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+            title="Generate &amp; print barcodes for items"
           >
             <Printer size={15} /> Add Barcode
           </button>

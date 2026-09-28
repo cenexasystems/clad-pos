@@ -107,6 +107,17 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
   }
 
   const handlePrint = () => {
+    // Detect in-app browsers that block iframe printing (Instagram, Facebook, etc.)
+    const ua = navigator.userAgent
+    const isInAppBrowser = /FBAN|FBAV|Instagram|Twitter|Line\/|MicroMessenger/.test(ua)
+
+    if (isInAppBrowser) {
+      alert(
+        'Printing is not available in this in-app browser.\nPlease open this page in Chrome or Safari to print barcode labels.'
+      )
+      return
+    }
+
     try {
       const iframe = document.createElement('iframe')
       iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;'
@@ -244,32 +255,48 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
       const cleanup = () => { try { if (iframe.parentNode) iframe.parentNode.removeChild(iframe) } catch {} }
 
-      setTimeout(() => {
-        try {
-          if (iframe.contentWindow) {
-            iframe.contentWindow.onbeforeunload = null
-            iframe.contentWindow.onunload = null
-            iframe.contentWindow.onafterprint = cleanup
-            iframe.contentWindow.focus()
-            iframe.contentWindow.print()
+      // Use requestAnimationFrame so the print() stays as close to the
+      // user-gesture chain as possible. This is safer than setTimeout(200)
+      // on iOS Safari which blocks programmatic print() after a delay.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          try {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.onbeforeunload = null
+              iframe.contentWindow.onunload = null
+              iframe.contentWindow.onafterprint = cleanup
+              iframe.contentWindow.focus()
+              iframe.contentWindow.print()
+            }
+          } catch (err) {
+            console.warn('[BarcodePrintModal] Failed to execute print:', err)
+          } finally {
+            setTimeout(cleanup, 2500)
           }
-        } catch (err) {
-          console.warn('[BarcodePrintModal] Failed to execute print:', err)
-        } finally {
-          setTimeout(cleanup, 2500)
-        }
-      }, 200)
+        })
+      })
     } catch (err) {
       console.warn('[BarcodePrintModal] Failed to execute print:', err)
     }
   }
+  // Use inline style for dvh-based heights so they work regardless of whether
+  // Tailwind purges the arbitrary class. On Android Chrome, 100dvh correctly
+  // excludes the browser toolbar, preventing the footer from being clipped.
+  const overlayStyle: React.CSSProperties = {
+    ...(modalHeightVar ?? {}),
+    height: vvh ? `${vvh}px` : '100dvh',
+  }
+
   return createPortal(
     <div
-      className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
-      style={modalHeightVar}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+      style={overlayStyle}
     >
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-none sm:rounded-3xl max-w-2xl sm:max-w-3xl w-full h-screen h-[var(--modal-vvh,100dvh)] sm:h-auto sm:max-h-[92vh] border-0 sm:border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+      <div
+        className="relative z-10 bg-white rounded-none sm:rounded-3xl max-w-2xl sm:max-w-3xl w-full sm:h-auto sm:max-h-[92dvh] border-0 sm:border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150"
+        style={{ height: window.innerWidth < 640 ? (vvh ? `${vvh}px` : '100dvh') : undefined }}
+      >
         {/* Header */}
         <div className="bg-[#0A0A0A] px-4 py-3 sm:px-6 sm:py-4 border-b border-[#D4AF37]/30 flex items-center justify-between text-white shrink-0">
           <div className="flex items-center gap-3">
@@ -471,22 +498,27 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="bg-[#FBFAF6] px-4 py-3 sm:px-6 sm:py-3.5 border-t border-[#E8D399] flex items-center justify-between shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] gap-2">
+        {/* Footer – sticky so it's always visible while body scrolls.
+             pb uses safe-area-inset-bottom to clear the iPhone gesture bar
+             and Android navigation bar. */}
+        <div
+          className="bg-[#FBFAF6] px-4 py-3 sm:px-6 sm:py-3.5 border-t border-[#E8D399] flex items-center justify-between shrink-0 gap-2 z-10"
+          style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+        >
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-xs sm:text-sm hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+            className="flex-1 sm:flex-none px-4 py-3 sm:px-5 sm:py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-xs sm:text-sm hover:bg-gray-100 transition-colors cursor-pointer min-h-[48px] sm:min-h-0"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="flex items-center gap-1.5 sm:gap-2 px-4 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] font-black hover:bg-[#1A1A1A] transition-all shadow-md cursor-pointer hover:scale-[1.02] text-xs sm:text-sm shrink-0"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-4 py-3 sm:px-6 sm:py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] font-black hover:bg-[#1A1A1A] transition-all shadow-md cursor-pointer hover:scale-[1.02] text-xs sm:text-sm min-h-[48px] sm:min-h-0"
           >
             <Printer size={16} />
-            Print {quantity || '1'} {quantity === '1' ? 'Sticker' : 'Stickers'}
+            Print {quantity || '1'} {(parseInt(quantity, 10) || 1) === 1 ? 'Sticker' : 'Stickers'}
           </button>
         </div>
       </div>

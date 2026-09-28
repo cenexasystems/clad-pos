@@ -117,13 +117,18 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
     }
   }
 
+  const overlayStyle: React.CSSProperties = {
+    ...(modalHeightVar ?? {}),
+    height: vvh ? `${vvh}px` : '100dvh',
+  }
+
   return createPortal(
     <div
-      className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150"
-      style={modalHeightVar}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+      style={overlayStyle}
     >
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92vh] border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+      <div className="relative z-10 bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92dvh] border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-[#FBFAF6]">
           <div className="flex items-center gap-2">
@@ -146,7 +151,8 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto min-h-0 flex-1 p-4 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="overflow-y-auto min-h-0 flex-1 p-4 sm:p-6 space-y-4">
           {errorMsg && (
             <div className="flex items-center gap-2 text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 p-3 rounded-xl">
               <AlertCircle size={15} className="text-rose-600 shrink-0" />
@@ -225,19 +231,24 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
             />
           </div>
 
-          {/* Modal Actions */}
-          <div className="flex items-center gap-3 pt-2">
+          </div>
+
+          {/* Sticky Modal Actions */}
+          <div
+            className="shrink-0 sticky bottom-0 z-20 px-5 py-3.5 bg-[#FBFAF6] border-t border-gray-100 flex items-center gap-3"
+            style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+          >
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 h-10 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="flex-1 h-11 sm:h-10 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer min-h-[48px] sm:min-h-0 flex items-center justify-center"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-[1.5] h-10 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-bold hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              className="flex-[1.5] h-11 sm:h-10 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-bold hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 min-h-[48px] sm:min-h-0"
             >
               {loading
                 ? expenseToEdit

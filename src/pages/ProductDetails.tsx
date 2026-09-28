@@ -424,7 +424,7 @@ export default function ProductDetails() {
                   />
                 </div>
                 <div className="space-y-1.5 p-2.5">
-                  <p className="line-clamp-2 text-[11px] font-bold leading-snug text-[#2c392a]">{item.name}</p>
+                  <p className="text-[11px] font-bold leading-snug text-[#2c392a] whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{item.name}</p>
                   <p className="text-[10px] font-black text-[#7daa8f]">{formatCurrency(item.offerPrice || item.price)}</p>
                 </div>
               </button>

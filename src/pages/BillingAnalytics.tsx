@@ -41,7 +41,9 @@ const RMIcon = ({ size = 16, className = '' }: { size?: number; className?: stri
 )
 import { useAuthStore, useProductStore, type Product } from '../store/store'
 import { formatCurrency, normalizeOrderMode, toNumber } from '../lib/retail'
-import { formatPhoneForCSV } from '../lib/phone'
+import { formatPhoneForCSV, formatPhone } from '../lib/phone'
+import { getDateRange, isInRange } from '../lib/dateRange'
+import { useDebouncedValue } from '../lib/debounce'
 import { BRAND_EN, BRAND_LOGO, BRAND_ICON } from '../lib/brand'
 
 type BillingOrder = {
@@ -225,6 +227,7 @@ export default function BillingAnalytics() {
     dateFrom: '',
     dateTo: '',
   })
+  const [debouncedBillSearch] = useDebouncedValue(billSearch, 300)
 
   const isAdmin = user?.role === 'admin'
 
@@ -254,23 +257,9 @@ export default function BillingAnalytics() {
     }
     if (preset === 'custom') return
 
-    const today = new Date()
-    const todayStr = today.toISOString().slice(0, 10)
-    if (preset === 'today') {
-      setAnalyticsDateFrom(todayStr)
-      setAnalyticsDateTo(todayStr)
-    } else if (preset === 'week') {
-      const weekAgo = new Date(today)
-      weekAgo.setDate(today.getDate() - 6)
-      setAnalyticsDateFrom(weekAgo.toISOString().slice(0, 10))
-      setAnalyticsDateTo(todayStr)
-    } else if (preset === 'month') {
-      setAnalyticsDateFrom(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`)
-      setAnalyticsDateTo(todayStr)
-    } else if (preset === 'year') {
-      setAnalyticsDateFrom(`${today.getFullYear()}-01-01`)
-      setAnalyticsDateTo(todayStr)
-    }
+    const range = getDateRange(preset, new Date())
+    setAnalyticsDateFrom(range.startDateStr || '')
+    setAnalyticsDateTo(range.endDateStr || '')
   }
 
   const loadData = useCallback(async () => {
@@ -326,10 +315,18 @@ export default function BillingAnalytics() {
     void loadData()
   }, [isAdmin, loadData])
 
+  const analyticsDateRange = useMemo(() => {
+    return getDateRange(analyticsDatePreset, new Date(), {
+      from: analyticsDateFrom,
+      to: analyticsDateTo,
+    })
+  }, [analyticsDatePreset, analyticsDateFrom, analyticsDateTo])
+
   const analytics = useMemo<AnalyticsModel>(() => {
     let dated = orders
-    if (analyticsDateFrom) dated = dated.filter((order) => order.created_at >= `${analyticsDateFrom}T00:00:00`)
-    if (analyticsDateTo) dated = dated.filter((order) => order.created_at <= `${analyticsDateTo}T23:59:59`)
+    if (analyticsDatePreset || analyticsDateFrom || analyticsDateTo) {
+      dated = dated.filter((order) => isInRange(order.created_at, analyticsDateRange))
+    }
 
     const nonCancelled = dated.filter((order) => normalizeStatus(order.status) !== 'cancelled')
     const completedOrders = nonCancelled.filter((order) => isCompletedStatus(order.status))
@@ -484,11 +481,18 @@ export default function BillingAnalytics() {
     }
   }, [analyticsDateFrom, analyticsDateTo, orderItems, orders, products])
 
+  const billDateRange = useMemo(() => {
+    return getDateRange('custom', new Date(), {
+      from: debouncedBillSearch.dateFrom,
+      to: debouncedBillSearch.dateTo,
+    })
+  }, [debouncedBillSearch.dateFrom, debouncedBillSearch.dateTo])
+
   const filteredBills = useMemo(() => {
     const normalizedSearch = {
-      invoiceNo: billSearch.invoiceNo.trim().toLowerCase(),
-      customerName: billSearch.customerName.trim().toLowerCase(),
-      phone: billSearch.phone.trim().toLowerCase(),
+      invoiceNo: debouncedBillSearch.invoiceNo.trim().toLowerCase(),
+      customerName: debouncedBillSearch.customerName.trim().toLowerCase(),
+      phone: debouncedBillSearch.phone.trim().toLowerCase(),
     }
 
     return orders.filter((order) => {
@@ -503,12 +507,13 @@ export default function BillingAnalytics() {
       if (normalizedSearch.invoiceNo && !String(order.invoice_no || '').toLowerCase().includes(normalizedSearch.invoiceNo)) return false
       if (normalizedSearch.customerName && !String(order.customer_name || '').toLowerCase().includes(normalizedSearch.customerName)) return false
       if (normalizedSearch.phone && !String(order.phone || '').toLowerCase().includes(normalizedSearch.phone)) return false
-      if (billSearch.dateFrom && order.created_at < `${billSearch.dateFrom}T00:00:00`) return false
-      if (billSearch.dateTo && order.created_at > `${billSearch.dateTo}T23:59:59`) return false
+      if (debouncedBillSearch.dateFrom || debouncedBillSearch.dateTo) {
+        if (!isInRange(order.created_at, billDateRange)) return false
+      }
 
       return true
     })
-  }, [billSearch, billTypeFilter, orders])
+  }, [debouncedBillSearch, billTypeFilter, orders, billDateRange])
 
   const summaryCards = [
     {
@@ -814,7 +819,7 @@ export default function BillingAnalytics() {
                       <tr key={order.id} className="hover:bg-[#F9FAFB]/50">
                         <td className="whitespace-nowrap px-3 py-3 font-bold text-[#10B981]">{order.invoice_no || '—'}</td>
                         <td className="max-w-[140px] truncate px-3 py-3 font-semibold text-[#111111]">{order.customer_name}</td>
-                        <td className="whitespace-nowrap px-3 py-3 text-[#374151]">{order.phone}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-[#374151]">{formatPhone(order.phone)}</td>
                         <td className="px-3 py-3">
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-black uppercase ${billTypeClass}`}>{billTypeLabel}</span>
                         </td>

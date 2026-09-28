@@ -659,14 +659,22 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
 
   if (!isOpen) return null
 
+  const overlayStyle: React.CSSProperties = {
+    ...(modalHeightVar ?? {}),
+    height: vvh ? `${vvh}px` : '100dvh',
+  }
+
   return createPortal(
     <>
       <div
-        className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
-        style={modalHeightVar}
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+        style={overlayStyle}
       >
         <div className="absolute inset-0" onClick={onClose} />
-        <div className="relative z-10 bg-white w-full max-w-6xl h-screen h-[var(--modal-vvh,100dvh)] sm:h-auto sm:max-h-[94vh] rounded-none sm:rounded-3xl border-0 sm:border border-gray-200 shadow-2xl overflow-hidden flex flex-col">
+        <div
+          className="relative z-10 bg-white w-full max-w-6xl sm:h-auto sm:max-h-[94dvh] rounded-none sm:rounded-3xl border-0 sm:border border-gray-200 shadow-2xl overflow-hidden flex flex-col"
+          style={{ height: typeof window !== 'undefined' && window.innerWidth < 640 ? (vvh ? `${vvh}px` : '100dvh') : undefined }}
+        >
           {/* TOP BAR matching Screenshot 195106 */}
           <div className="flex items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4 border-b border-gray-200 bg-[#0A0A0A] text-white shrink-0">
             <div className="flex items-center gap-2">
@@ -1316,11 +1324,14 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
           </div>
 
           {/* MODAL FOOTER matching Screenshot 195637 */}
-          <div className="px-3 py-2.5 sm:px-6 sm:py-4 border-t border-gray-200 bg-white flex items-center justify-between shrink-0 gap-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <div
+            className="px-3 py-2.5 sm:px-6 sm:py-4 border-t border-gray-200 bg-white flex flex-wrap sm:flex-nowrap items-center justify-between shrink-0 sticky bottom-0 z-20 gap-2"
+            style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+          >
             <button
               type="button"
               onClick={onClose}
-              className="px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0"
+              className="px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer shrink-0 min-h-[44px] sm:min-h-0 flex items-center justify-center"
             >
               Close
             </button>
@@ -1350,7 +1361,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
                 type="button"
                 onClick={handleGenerateAndCommitStock}
                 disabled={generating || queue.filter((it) => it.selected).length === 0}
-                className="px-3 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-[11px] sm:text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md flex items-center gap-1.5 sm:gap-2 cursor-pointer disabled:opacity-50 text-center justify-center shrink-0"
+                className="px-3 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-[11px] sm:text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md flex items-center gap-1.5 sm:gap-2 cursor-pointer disabled:opacity-50 text-center justify-center shrink-0 min-h-[44px] sm:min-h-0"
               >
                 {generating ? (
                   <>

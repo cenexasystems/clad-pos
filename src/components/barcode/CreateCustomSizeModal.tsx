@@ -81,13 +81,21 @@ export const CreateCustomSizeModal: React.FC<CreateCustomSizeModalProps> = ({
   const numHeight = parseFloat(heightMm) || 25
   const numGap = parseFloat(horizontalGapMm) || 2
 
+  const overlayStyle: React.CSSProperties = {
+    ...(modalHeightVar ?? {}),
+    height: vvh ? `${vvh}px` : '100dvh',
+  }
+
   return createPortal(
     <div
-      className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
-      style={modalHeightVar}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-0 sm:p-4 overflow-hidden animate-in fade-in duration-150"
+      style={overlayStyle}
     >
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-none sm:rounded-2xl max-w-2xl w-full h-screen h-[var(--modal-vvh,100dvh)] sm:h-auto sm:max-h-[90vh] border-0 sm:border border-[#E5E7EB] shadow-2xl overflow-hidden flex flex-col">
+      <div
+        className="relative z-10 bg-white rounded-none sm:rounded-2xl max-w-2xl w-full sm:h-auto sm:max-h-[90dvh] border-0 sm:border border-[#E5E7EB] shadow-2xl overflow-hidden flex flex-col"
+        style={{ height: typeof window !== 'undefined' && window.innerWidth < 640 ? (vvh ? `${vvh}px` : '100dvh') : undefined }}
+      >
         {/* Header - fixed top */}
         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-3.5 border-b border-gray-200 bg-[#0A0A0A] text-white shrink-0">
           <h3 className="text-base font-black tracking-wide text-white">Create Custom Size</h3>
@@ -256,17 +264,20 @@ export const CreateCustomSizeModal: React.FC<CreateCustomSizeModalProps> = ({
           </div>
 
           {/* Footer Action - fixed at bottom of modal */}
-          <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-4 py-3 sm:px-6 sm:py-3.5 bg-gray-50/80 shrink-0 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <div
+            className="flex items-center justify-between sm:justify-end gap-3 border-t border-gray-200 px-4 py-3 sm:px-6 sm:py-3.5 bg-gray-50/80 shrink-0 sticky bottom-0 z-20"
+            style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
+          >
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-3 sm:py-2 rounded-xl border border-gray-300 text-xs font-bold text-gray-700 hover:bg-gray-100 transition-colors cursor-pointer min-h-[48px] sm:min-h-0 flex items-center justify-center"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 sm:px-6 py-2 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md cursor-pointer"
+              className="flex-1 sm:flex-none px-5 sm:px-6 py-3 sm:py-2 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md cursor-pointer min-h-[48px] sm:min-h-0 flex items-center justify-center"
             >
               Save Custom Size
             </button>

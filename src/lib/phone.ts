@@ -82,3 +82,29 @@ export function formatPhoneForCSV(input?: string | null): string {
   return `\t${trimmed}`
 }
 
+/**
+ * Shared customer phone display formatter for bills, invoices, tables, and cards.
+ * Formats Indian numbers as "91 XXXXXXXXXX" (country code 91, space, 10 digits).
+ * Foreign or non-standard inputs are returned as entered without truncation.
+ */
+export function formatPhone(raw?: string | null, fallback: string = '—'): string {
+  if (raw === null || raw === undefined) return fallback
+  const str = String(raw).trim()
+  if (!str) return fallback
+
+  const digits = str.replace(/\D/g, '')
+
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `91 ${digits.slice(2)}`
+  }
+
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return `91 ${digits.slice(1)}`
+  }
+
+  if (digits.length === 10) {
+    return `91 ${digits}`
+  }
+
+  return str
+}

@@ -433,7 +433,7 @@ export default function Checkout() {
                         className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-grow min-w-0">
-                      <p className="font-bold text-sm text-textMain truncate">{pName}</p>
+                      <p className="font-bold text-sm text-textMain whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{pName}</p>
                       <p className="text-xs text-textMuted">{formatQuantityDisplay(item.qty, item.selectedUnit, item.unitType)}</p>
                     </div>
                     <p className="font-bold text-sm text-textMain shrink-0">{formatCurrency(item.lineTotal)}</p>

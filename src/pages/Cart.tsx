@@ -113,9 +113,9 @@ export default function Cart() {
                   const dbName = lang === 'ta' && i.nameTa ? i.nameTa : i.name;
                   return (
                     <div key={i.id} className="flex justify-between text-sm gap-2 items-center">
-                      <span className="text-textMuted truncate flex items-center gap-1">
+                      <span className="text-textMuted flex items-center gap-1 flex-wrap min-w-0 flex-1 whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">
                         <span>{dbName}</span>
-                        <span className="text-xs font-semibold">×{i.variantId ? String(i.qty) : formatQuantityDisplay(i.qty, i.selectedUnit, i.unitType)}</span>
+                        <span className="text-xs font-semibold shrink-0">×{i.variantId ? String(i.qty) : formatQuantityDisplay(i.qty, i.selectedUnit, i.unitType)}</span>
                       </span>
                       <span className="font-bold text-textMain shrink-0 whitespace-nowrap">{formatCurrency(i.lineTotal)}</span>
                     </div>

@@ -22,6 +22,8 @@ import {
   type ExpenseRecord,
   type ExpenseSummaryMetrics,
 } from '../../services/expenseService'
+import { getDateRange } from '../../lib/dateRange'
+import { useDebouncedValue } from '../../lib/debounce'
 import { RecordExpenseModal } from './RecordExpenseModal'
 import { ExpenseCategoriesView } from './ExpenseCategoriesView'
 
@@ -50,6 +52,7 @@ export const ExpensesView: React.FC = () => {
   const [activePreset, setActivePreset] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all')
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery] = useDebouncedValue(searchQuery, 300)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   const loadMetrics = useCallback(async () => {
@@ -102,11 +105,11 @@ export const ExpensesView: React.FC = () => {
     return count
   }, [selectedCategoryId, activePreset])
 
-  // Filter expenses list by search query
+  // Filter expenses list by debounced search query
   const filteredExpenses = useMemo(() => {
     let list = expenses
-    if (!searchQuery.trim()) return list
-    const q = searchQuery.toLowerCase().trim()
+    if (!debouncedSearchQuery.trim()) return list
+    const q = debouncedSearchQuery.toLowerCase().trim()
     return list.filter(
       (e) =>
         e.description?.toLowerCase().includes(q) ||
@@ -115,32 +118,20 @@ export const ExpensesView: React.FC = () => {
         e.recorded_by_name?.toLowerCase().includes(q) ||
         String(e.amount).includes(q)
     )
-  }, [expenses, searchQuery])
+  }, [expenses, debouncedSearchQuery])
 
-  // Handle Preset Clicks (Synchronizes FROM and TO dates)
+  // Handle Preset Clicks (Synchronizes FROM and TO dates with local calendar)
   const applyDatePreset = (preset: 'all' | 'today' | 'week' | 'month' | 'custom') => {
     setActivePreset(preset)
-    const today = new Date()
-    const todayStr = today.toISOString().slice(0, 10)
-
     if (preset === 'all') {
       setFromDate('')
       setToDate('')
-    } else if (preset === 'today') {
-      setFromDate(todayStr)
-      setToDate(todayStr)
-    } else if (preset === 'week') {
-      const dayOfWeek = (today.getDay() + 6) % 7
-      const monday = new Date(today)
-      monday.setDate(today.getDate() - dayOfWeek)
-      setFromDate(monday.toISOString().slice(0, 10))
-      setToDate(todayStr)
-    } else if (preset === 'month') {
-      const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
-      setFromDate(monthStart)
-      setToDate(todayStr)
     } else if (preset === 'custom') {
       setShowAdvancedFilters(true)
+    } else {
+      const range = getDateRange(preset, new Date())
+      setFromDate(range.startDateStr || '')
+      setToDate(range.endDateStr || '')
     }
   }
 
@@ -420,7 +411,11 @@ export const ExpensesView: React.FC = () => {
                         type="date"
                         value={fromDate}
                         onChange={(e) => {
-                          setFromDate(e.target.value)
+                          const val = e.target.value
+                          setFromDate(val)
+                          if (toDate && val && val > toDate) {
+                            setToDate(val)
+                          }
                           setActivePreset('custom')
                         }}
                         className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-200 bg-[#F9FAFB] text-xs font-semibold text-gray-800 outline-none focus:border-[#D4AF37] focus:bg-white"
@@ -439,7 +434,11 @@ export const ExpensesView: React.FC = () => {
                         type="date"
                         value={toDate}
                         onChange={(e) => {
-                          setToDate(e.target.value)
+                          const val = e.target.value
+                          setToDate(val)
+                          if (fromDate && val && val < fromDate) {
+                            setFromDate(val)
+                          }
                           setActivePreset('custom')
                         }}
                         className="w-full h-10 pl-9 pr-3 rounded-xl border border-gray-200 bg-[#F9FAFB] text-xs font-semibold text-gray-800 outline-none focus:border-[#D4AF37] focus:bg-white"

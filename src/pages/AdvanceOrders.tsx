@@ -6,7 +6,9 @@ import { formatCurrency } from '../lib/retail'
 import { invoicePdfFile } from '../lib/invoicePdf'
 import { printThermalReceipt } from '../lib/thermalPrint'
 import { buildAdvanceDepositWhatsAppMessage, buildProfessionalWhatsAppMessage, publicInvoiceUrl } from '../lib/whatsappMessage'
-import { toWhatsAppUrl } from '../lib/phone'
+import { toWhatsAppUrl, formatPhone } from '../lib/phone'
+import { getDateRange, isInRange } from '../lib/dateRange'
+import { useDebouncedValue } from '../lib/debounce'
 import { advanceReceiptPdf, downloadFile, printAdvanceReceipt } from '../lib/advanceReceipt'
 import { useAdminAuthStore, useProductStore } from '../store/store'
 import {
@@ -55,6 +57,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
   const [form, setForm] = useState(initialForm)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
+  const [debouncedSearch] = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
   const [selected, setSelected] = useState<AdvanceOrder | null>(null)
@@ -71,6 +74,10 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
 
   const vvh = useVisualViewportHeight()
   const modalHeightVar = vvh ? ({ '--modal-vvh': `${vvh}px` } as React.CSSProperties) : undefined
+  const overlayStyle: React.CSSProperties = {
+    ...(modalHeightVar ?? {}),
+    height: vvh ? `${vvh}px` : '100dvh',
+  }
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -136,8 +143,12 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
     completed: orders.filter(o => o.status === 'completed').length,
   }), [orders])
 
+  const activeDateRange = useMemo(() => {
+    return getDateRange(dateFilter, new Date())
+  }, [dateFilter])
+
   const filtered = useMemo(() => orders.filter(order => {
-    const query = search.trim().toLowerCase()
+    const query = debouncedSearch.trim().toLowerCase()
     const searchable = [order.deposit_id, order.customer_name, order.phone, order.product_name, STATUS_LABELS[order.status]].join(' ').toLowerCase()
     if (query && !searchable.includes(query)) return false
     if (statusFilter === 'pending' && !['pending_deposit', 'waiting_final_payment'].includes(order.status)) return false
@@ -145,13 +156,10 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
     if (statusFilter === 'completed' && order.status !== 'completed') return false
     if (statusFilter === 'cancelled' && order.status !== 'cancelled') return false
     if (dateFilter !== 'all') {
-      const created = new Date(order.created_at); const now = new Date()
-      if (dateFilter === 'today' && dateKey(created) !== dateKey(now)) return false
-      if (dateFilter === 'week' && created < new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6)) return false
-      if (dateFilter === 'month' && (created.getMonth() !== now.getMonth() || created.getFullYear() !== now.getFullYear())) return false
+      if (!isInRange(order.created_at, activeDateRange)) return false
     }
     return true
-  }), [orders, search, statusFilter, dateFilter])
+  }), [orders, debouncedSearch, statusFilter, dateFilter, activeDateRange])
 
   const create = async (event: FormEvent) => {
     event.preventDefault(); setSaving(true); setError(''); setNotice('')
@@ -313,11 +321,11 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
                   </td>
                   <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                     <p className="font-bold text-[#273126]">{order.customer_name}</p>
-                    <p className="text-xs text-[#727970]">{order.phone}</p>
+                    <p className="text-xs text-[#727970]">{formatPhone(order.phone)}</p>
                   </td>
-                  <td className="max-w-[180px] px-4 py-3.5 align-middle">
-                    <p className="truncate font-semibold text-[#273126]">{order.product_name}</p>
-                    <p className="truncate text-xs text-[#858C83]">{order.category || 'Uncategorised'}</p>
+                  <td className="max-w-[200px] px-4 py-3.5 align-middle">
+                    <p className="font-semibold text-[#273126] whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{order.product_name}</p>
+                    <p className="text-xs text-[#858C83] whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{order.category || 'Uncategorised'}</p>
                   </td>
                   <td className="px-4 py-3.5 text-xs align-middle whitespace-nowrap">
                     <p className="text-gray-700">Total: <b>{formatCurrency(order.total_amount)}</b></p>
@@ -419,10 +427,10 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
 
     {createOpen && createPortal(
       <div
-        className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-        style={modalHeightVar}
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+        style={overlayStyle}
       >
-        <form onSubmit={create} className="max-h-[92vh] w-full max-w-4xl overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
+        <form onSubmit={create} className="max-h-[92dvh] w-full max-w-4xl overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h3 className="text-xl font-black text-[#0A0A0A]">Create Advance Order</h3>
@@ -459,10 +467,10 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
 
     {paymentOrder && createPortal(
       <div
-        className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[var(--modal-vvh,100dvh)] z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
-        style={modalHeightVar}
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+        style={overlayStyle}
       >
-        <form onSubmit={receivePayment} className="w-full max-w-md max-h-[92vh] overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
+        <form onSubmit={receivePayment} className="w-full max-w-md max-h-[92dvh] overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
           <div className="mb-5 flex items-start justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-wider text-emerald-600 font-mono">{paymentOrder.deposit_id}</p>
@@ -543,12 +551,12 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
     )}
 
     {selected && createPortal(
-      <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+      <div className="fixed inset-0 z-[9999] flex justify-end bg-black/60 backdrop-blur-xs animate-in fade-in duration-150" style={overlayStyle}>
         {/* Backdrop click dismiss */}
         <div className="absolute inset-0" onClick={() => setSelected(null)} />
 
         {/* Drawer Panel covering full view height */}
-        <div className="relative z-10 h-screen h-[100dvh] w-full max-w-xl bg-white shadow-2xl flex flex-col border-l border-[#E8D399] animate-in slide-in-from-right duration-200">
+        <div className="relative z-10 w-full max-w-xl bg-white shadow-2xl flex flex-col border-l border-[#E8D399] animate-in slide-in-from-right duration-200" style={{ height: vvh ? `${vvh}px` : '100dvh' }}>
           {/* Sticky Drawer Header */}
           <div className="shrink-0 px-6 py-4 border-b border-gray-200 bg-[#0A0A0A] text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -580,7 +588,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
             <div className="grid grid-cols-2 gap-3">
               {[
                 ['Customer', selected.customer_name],
-                ['Phone', selected.phone],
+                ['Phone', formatPhone(selected.phone)],
                 ['Address', selected.address || '-'],
                 ['Product', selected.product_name],
                 ['Category', selected.category || '-'],
@@ -673,7 +681,10 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
           </div>
 
           {/* Sticky Drawer Footer */}
-          <div className="shrink-0 px-6 py-4 border-t border-gray-200 bg-[#FBFAF6] flex items-center justify-between gap-3">
+          <div
+            className="shrink-0 px-6 py-4 border-t border-gray-200 bg-[#FBFAF6] flex items-center justify-between gap-3 sticky bottom-0 z-20"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+          >
             <div className="flex gap-2">
               <button
                 type="button"

@@ -203,6 +203,14 @@ function AppShell() {
             }
           />
           <Route
+            path="/invoice"
+            element={
+              <Suspense fallback={<LoadingSpinner />}>
+                <DigitalInvoice />
+              </Suspense>
+            }
+          />
+          <Route
             path="/invoice/:id"
             element={
               <Suspense fallback={<LoadingSpinner />}>

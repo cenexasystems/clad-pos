@@ -28,7 +28,7 @@ import {
   formatInvoiceNo,
 } from '../lib/retail'
 import { buildProfessionalWhatsAppMessage, buildAdvanceDepositWhatsAppMessage, publicInvoiceUrl } from '../lib/whatsappMessage'
-import { normalizePhone, toWhatsAppUrl } from '../lib/phone'
+import { normalizePhone, toWhatsAppUrl, formatPhone } from '../lib/phone'
 import { useLangStore } from '../store/langStore'
 import { fetchVariantsByProduct, type ProductVariant } from '../services/variantService'
 import { BarcodeScannerInput, type ScannedItemPayload } from '../components/pos/BarcodeScannerInput'
@@ -1012,7 +1012,7 @@ export default function Pos(props: PosProps = {}) {
               {invoice.phone && (
                 <div>
                   <span className="text-[10px] text-gray-400 font-bold uppercase block">Phone</span>
-                  <span className="font-semibold text-gray-700 block">{invoice.phone}</span>
+                  <span className="font-semibold text-gray-700 block">{formatPhone(invoice.phone)}</span>
                 </div>
               )}
             </div>
@@ -1392,8 +1392,8 @@ export default function Pos(props: PosProps = {}) {
                           className="w-full px-3 py-2 bg-[#FAFAFA] border border-gray-200 rounded-lg text-xs sm:text-[13px] font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-[#D4AF37]"
                         />
                       ) : (
-                        <div className="px-3 py-2 w-full truncate border border-transparent flex items-center gap-2">
-                          <span className="text-[13px] font-bold text-[#111111] truncate">{item.name} {item.variantName ? `- ${item.variantName}` : ''}</span>
+                        <div className="px-3 py-2 w-full border border-transparent flex items-center gap-2 min-w-0">
+                          <span className="text-[13px] font-bold text-[#111111] whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{item.name} {item.variantName ? `- ${item.variantName}` : ''}</span>
                         </div>
                       )}
                       {item.source !== 'manual' && (
@@ -1495,9 +1495,9 @@ export default function Pos(props: PosProps = {}) {
 {items.length > 0 && (
                   <div className="px-3 py-2 bg-[#FAFAFA] space-y-1 border-b border-gray-200 max-h-[80px] overflow-y-auto">
                     {items.map(item => (
-                <div key={item.id} className="flex justify-between text-[#111111] text-[11px]">
-                        <span className="truncate pr-2">{item.qty}x {item.name}</span>
-                        <span>{formatCurrency(item.lineTotal)}</span>
+                <div key={item.id} className="flex justify-between text-[#111111] text-[11px] gap-2">
+                        <span className="pr-2 whitespace-normal [overflow-wrap:anywhere] [word-break:break-word] min-w-0">{item.qty}x {item.name}</span>
+                        <span className="shrink-0">{formatCurrency(item.lineTotal)}</span>
                       </div>
                     ))}
                   </div>
@@ -1886,7 +1886,7 @@ export default function Pos(props: PosProps = {}) {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-gray-900">Edit Item Price</h3>
-                  <p className="text-xs text-gray-500 truncate max-w-[260px]">{priceEditModal.item.name}</p>
+                  <p className="text-xs text-gray-500 whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{priceEditModal.item.name}</p>
                 </div>
               </div>
               <button

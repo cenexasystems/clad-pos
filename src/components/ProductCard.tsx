@@ -133,7 +133,7 @@ export default function ProductCard({ product }: { product: Product }) {
             onClick={openModal}
             className="text-left w-full focus:outline-none"
           >
-            <h3 className="line-clamp-2 min-h-[2.4rem] text-[12px] font-semibold leading-[1.4] text-[#111111] ta-text hover:text-[#1e2817]">
+            <h3 className="min-h-[2.4rem] text-[12px] font-semibold leading-[1.4] text-[#111111] ta-text hover:text-[#1e2817] whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">
               {displayName}
             </h3>
           </button>
