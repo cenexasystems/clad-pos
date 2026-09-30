@@ -12,6 +12,7 @@ import {
   type QuantityOption,
 } from '../lib/retail'
 import { onImgError, resolveProductImage } from '../lib/productImages'
+import { lockScroll, unlockScroll } from '../lib/scrollLock'
 
 
 const buildUsageNote = (product: Product) => {
@@ -90,10 +91,9 @@ export default function ProductDetailModal({
       if (event.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleKey)
-    const original = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
     return () => {
-      document.body.style.overflow = original
+      unlockScroll()
       document.removeEventListener('keydown', handleKey)
     }
   }, [open, onClose])

@@ -14,6 +14,7 @@ import {
 import { inventoryService, type InventoryStockItem } from '../../services/inventoryService'
 import { BRAND_EN } from '../../lib/brand'
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
+import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
 export interface AdjustStockModalProps {
   isOpen: boolean
@@ -55,15 +56,14 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
   // Close on Escape key & lock body scrolling when open
   useEffect(() => {
     if (!isOpen) return
-    const originalOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.body.style.overflow = originalOverflow
+      unlockScroll()
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])

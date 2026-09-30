@@ -2240,16 +2240,16 @@ export default function Dashboard() {
 
                                     {/* Items table */}
                                     {its.length > 0 && (
-                                      <div className="overflow-x-auto">
-                                        <table className="w-full text-[12px] min-w-[540px] bg-white rounded-xl overflow-hidden border border-blue-100">
+                                      <div className="overflow-x-auto w-full invoice-billing-table-wrapper">
+                                        <table className="w-full text-[12px] min-w-[540px] bg-white rounded-xl overflow-hidden border border-blue-100 invoice-billing-table">
                                           <thead className="bg-[#F9FAFB]">
-                                            <tr className="text-left text-[#374151] font-black text-[10px] uppercase tracking-wider">
-                                              <th className="px-4 py-2.5">{l('Product', 'பொருள்')}</th>
-                                              <th className="px-4 py-2.5">{l('Variant', 'வகைப்படி')}</th>
-                                              <th className="px-4 py-2.5">{l('Size / Weight', 'அளவு / எடை')}</th>
-                                              <th className="px-4 py-2.5 text-center">{l('Qty', 'அளவு')}</th>
-                                              <th className="px-4 py-2.5">{l('Unit Price', 'ஒரு விலை')}</th>
-                                              <th className="px-4 py-2.5 text-right">{l('Line Total', 'வரி மொத்தம்')}</th>
+                                            <tr className="text-left text-[#374151] font-black text-[9px] sm:text-[10px] uppercase tracking-wider">
+                                              <th className="px-2.5 py-2 sm:px-4 sm:py-2.5 min-w-[120px] w-auto whitespace-normal invoice-product-col" style={{ minWidth: '120px', width: 'auto' }}>{l('Product', 'பொருள்')}</th>
+                                              <th className="px-2.5 py-2 sm:px-4 sm:py-2.5">{l('Variant', 'வகைப்படி')}</th>
+                                              <th className="px-2.5 py-2 sm:px-4 sm:py-2.5">{l('Size / Weight', 'அளவு / எடை')}</th>
+                                              <th className="px-2.5 py-2 sm:px-4 sm:py-2.5 text-center">{l('Qty', 'அளவு')}</th>
+                                              <th className="px-2.5 py-2 sm:px-4 sm:py-2.5">{l('Unit Price', 'ஒரு விலை')}</th>
+                                              <th className="px-2.5 py-2 sm:px-4 sm:py-2.5 text-right">{l('Line Total', 'வரி மொத்தம்')}</th>
                                             </tr>
                                           </thead>
                                           <tbody className="divide-y divide-[#E5E7EB]/20">
@@ -2272,12 +2272,16 @@ export default function Dashboard() {
                                               const priceLabel = formatCurrency(basePrice)
                                               return (
                                                 <tr key={idx} className="hover:bg-blue-50/20">
-                                                  <td className="px-4 py-2.5 font-bold text-[#111111]">{prodName}</td>
-                                                  <td className="px-4 py-2.5 text-[#374151]">{variant}</td>
-                                                  <td className="px-4 py-2.5 text-[#374151]">{sizeLabel}</td>
-                                                  <td className="px-4 py-2.5 text-center font-bold">{qty}</td>
-                                                  <td className="px-4 py-2.5 text-[#374151]">{priceLabel}</td>
-                                                  <td className="px-4 py-2.5 font-black text-[#111111] text-right">{formatCurrency(lineTotal)}</td>
+                                                  <td className="px-2.5 py-2 sm:px-4 sm:py-2.5 font-bold text-[#111111] min-w-[120px] w-auto invoice-product-cell" style={{ minWidth: '120px', width: 'auto', whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none' }}>
+                                                    <span className="invoice-product-qty-name" style={{ display: 'inline', whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none' }}>
+                                                      {prodName}
+                                                    </span>
+                                                  </td>
+                                                  <td className="px-2.5 py-2 sm:px-4 sm:py-2.5 text-[#374151]">{variant}</td>
+                                                  <td className="px-2.5 py-2 sm:px-4 sm:py-2.5 text-[#374151]">{sizeLabel}</td>
+                                                  <td className="px-2.5 py-2 sm:px-4 sm:py-2.5 text-center font-bold">{qty}</td>
+                                                  <td className="px-2.5 py-2 sm:px-4 sm:py-2.5 text-[#374151]">{priceLabel}</td>
+                                                  <td className="px-2.5 py-2 sm:px-4 sm:py-2.5 font-black text-[#111111] text-right">{formatCurrency(lineTotal)}</td>
                                                 </tr>
                                               )
                                             })}

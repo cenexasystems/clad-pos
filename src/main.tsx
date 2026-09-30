@@ -3,9 +3,13 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
+import { installScrollLockSafetyReset } from './lib/scrollLock'
 
 // Global deployment chunk recovery & benign error suppression
 if (typeof window !== 'undefined') {
+  // Install scroll-lock safety reset so returning from WhatsApp doesn't freeze scrolling
+  installScrollLockSafetyReset()
+
   const forceFreshReload = () => {
     try {
       if ('serviceWorker' in navigator) {

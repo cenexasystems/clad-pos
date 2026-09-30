@@ -32,6 +32,7 @@ import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 import { BarcodeSettingsDrawer } from './BarcodeSettingsDrawer'
 import { BarcodeSheetPreviewModal } from './BarcodeSheetPreviewModal'
 import { useProductStore } from '../../store/store'
+import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
 interface ProductOption {
   id: number
@@ -81,12 +82,12 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
   // Prevent background scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden'
+      lockScroll()
     } else {
-      document.body.style.overflow = ''
+      unlockScroll()
     }
     return () => {
-      document.body.style.overflow = ''
+      unlockScroll()
     }
   }, [isOpen])
 

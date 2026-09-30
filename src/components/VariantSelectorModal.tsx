@@ -6,6 +6,7 @@ import { formatCurrency, variantLineTotal } from '../lib/retail'
 import { getProductImage, onImgError } from '../lib/productImages'
 import { useLangStore } from '../store/langStore'
 import type { ProductVariant } from '../services/variantService'
+import { lockScroll, unlockScroll } from '../lib/scrollLock'
 
 function variantToProduct(base: Product, v: ProductVariant): Product {
   return {
@@ -58,14 +59,13 @@ export default function VariantSelectormodal({
 
   useEffect(() => {
     if (!open) return
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handleKey)
     return () => {
-      document.body.style.overflow = prev
+      unlockScroll()
       document.removeEventListener('keydown', handleKey)
     }
   }, [open, onClose])

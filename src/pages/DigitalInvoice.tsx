@@ -9,6 +9,7 @@ import { uploadInvoicePdf } from '../lib/storage'
 import { isUuid, normalizeStructuredOrderItem, formatInvoiceNo } from '../lib/retail'
 import { buildProfessionalWhatsAppMessage } from '../lib/whatsappMessage'
 import { toWhatsAppUrl } from '../lib/phone'
+import { forceUnlockScroll } from '../lib/scrollLock'
 
 export function extractInvoiceCandidates(rawInput: string): string[] {
   if (!rawInput) return []
@@ -444,6 +445,9 @@ export default function DigitalInvoice() {
         if (typeof err === 'object' && err !== null && 'name' in err && (err as { name: string }).name === 'AbortError') {
           return
         }
+      } finally {
+        // Ensure scroll is never left locked after share sheet closes (works even on cancel)
+        forceUnlockScroll()
       }
     }
 
@@ -453,6 +457,8 @@ export default function DigitalInvoice() {
     link.download = file.name
     link.click()
     setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+    // Force-unlock scroll before navigating to WhatsApp so returning to the app never freezes scrolling
+    forceUnlockScroll()
     window.location.href = toWhatsAppUrl(invoice.phone, whatsappMessage)
   }
 

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X, Info } from 'lucide-react'
 import { type LabelSizeConfig, saveStoredCustomSize } from '../../lib/barcode'
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
+import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
 interface CreateCustomSizeModalProps {
   isOpen: boolean
@@ -25,15 +26,14 @@ export const CreateCustomSizeModal: React.FC<CreateCustomSizeModalProps> = ({
   // Close on Escape key & lock body scrolling when open
   useEffect(() => {
     if (!isOpen) return
-    const originalOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.body.style.overflow = originalOverflow
+      unlockScroll()
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])

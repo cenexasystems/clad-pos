@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, ArrowRight, X, ZoomIn } from 'lucide-react'
 import { galleryImages, type GalleryImage } from '../data/galleryImages'
+import { lockScroll, unlockScroll } from '../lib/scrollLock'
 import { BRAND_EN } from '../lib/brand'
 
 // ── Lightbox ────────────────────────────────────────────────────────────────
@@ -27,11 +28,10 @@ function Lightbox({
       if (e.key === 'ArrowRight') next()
     }
     window.addEventListener('keydown', onKey)
-    const original = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = original
+      unlockScroll()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

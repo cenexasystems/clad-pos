@@ -6,6 +6,7 @@ import {
   type LabelSizeConfig,
   renderBarcodeSvg,
 } from '../../lib/barcode'
+import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
 interface BarcodeSheetPreviewModalProps {
   isOpen: boolean
@@ -73,15 +74,14 @@ export const BarcodeSheetPreviewModal: React.FC<BarcodeSheetPreviewModalProps> =
   // Lock body scrolling and close on Escape
   useEffect(() => {
     if (!isOpen) return
-    const originalOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
+    lockScroll()
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.body.style.overflow = originalOverflow
+      unlockScroll()
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])

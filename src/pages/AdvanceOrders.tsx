@@ -11,6 +11,7 @@ import { getDateRange, isInRange } from '../lib/dateRange'
 import { useDebouncedValue } from '../lib/debounce'
 import { advanceReceiptPdf, downloadFile, printAdvanceReceipt } from '../lib/advanceReceipt'
 import { useAdminAuthStore, useProductStore } from '../store/store'
+import { lockScroll, unlockScroll } from '../lib/scrollLock'
 import {
   addAdvanceEvent, completeAdvanceOrder, createAdvanceOrder, deleteAdvanceOrder, getAdvanceOrderHistory, listAdvanceOrders, updateAdvanceStatus,
   type AdvanceOrder, type AdvancePayment, type AdvancePaymentMethod, type AdvanceStatus, type AdvanceTimeline,
@@ -120,12 +121,12 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
   useEffect(() => {
     const isAnyOpen = !!(selected || createOpen || paymentOrder)
     if (isAnyOpen) {
-      document.body.style.overflow = 'hidden'
+      lockScroll()
     } else {
-      document.body.style.overflow = ''
+      unlockScroll()
     }
     return () => {
-      document.body.style.overflow = ''
+      unlockScroll()
     }
   }, [selected, createOpen, paymentOrder])
 
@@ -296,12 +297,22 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{cards.map(([label, value, Icon, color]) => <div key={label} className="rounded-2xl border border-[#ECE9E2] bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><div><p className="text-[11px] font-black uppercase tracking-wide text-[#879086]">{label}</p><p className="mt-2 text-2xl font-black text-[#273126]">{value}</p></div><div className={`rounded-xl p-3 ${color}`}><Icon size={21}/></div></div></div>)}</div>
     <div className="rounded-2xl border border-[#ECE9E2] bg-white p-4 shadow-sm"><div className="grid gap-3 lg:grid-cols-[1fr_auto_auto]"><label className="relative"><Search className="absolute left-3 top-3 text-[#9CA3AF]" size={17}/><input className={`${inputClass} pl-10`} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Deposit ID, customer, phone, product or status"/></label><div className="flex flex-wrap gap-2">{(['all','pending','ready','completed','cancelled'] as StatusFilter[]).map(value => <button key={value} onClick={() => setStatusFilter(value)} className={`rounded-lg px-3 py-2 text-xs font-black capitalize ${statusFilter === value ? 'bg-[#7e22ce] text-white' : 'bg-[#F5F3F7] text-[#626B61]'}`}>{value}</button>)}</div><select className={inputClass} value={dateFilter} onChange={e => setDateFilter(e.target.value as DateFilter)}><option value="all">All Dates</option><option value="today">Today</option><option value="week">This Week</option><option value="month">This Month</option></select></div></div>
     <div className="overflow-hidden rounded-2xl border border-[#ECE9E2] bg-white shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[#F8F7F4] text-[10px] font-black uppercase tracking-wider text-[#737B72]">
+      <div className="overflow-x-auto w-full invoice-billing-table-wrapper">
+        <table className="w-full min-w-[700px] text-left text-xs sm:text-sm invoice-billing-table">
+          <thead className="bg-[#F8F7F4] text-[9px] sm:text-[10px] font-black uppercase tracking-wider text-[#737B72]">
             <tr>
               {['Deposit ID / Created','Customer','Product','Total / Deposit / Balance','Delivery','Status','Actions'].map(h => (
-                <th key={h} className="px-4 py-3.5 whitespace-nowrap">{h}</th>
+                <th
+                  key={h}
+                  className={`px-2.5 py-2.5 sm:px-4 sm:py-3.5 ${
+                    h === 'Product'
+                      ? 'min-w-[120px] w-auto whitespace-normal invoice-product-col'
+                      : 'whitespace-nowrap'
+                  }`}
+                  style={h === 'Product' ? { minWidth: '120px', width: 'auto' } : undefined}
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -313,36 +324,62 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
             ) : (
               filtered.map(order => (
                 <tr key={order.id} className="hover:bg-violet-50/30 transition-colors">
-                  <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                  <td className="px-2.5 py-2.5 sm:px-4 sm:py-3.5 align-middle whitespace-nowrap text-xs sm:text-sm">
                     <p className="font-black text-violet-700">{order.deposit_id}</p>
-                    <p className="text-[11px] text-[#8B9389]">
+                    <p className="text-[10px] sm:text-[11px] text-[#8B9389]">
                       {new Date(order.created_at).toLocaleDateString('en-IN')} • {new Date(order.created_at).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}
                     </p>
                   </td>
-                  <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                  <td className="px-2.5 py-2.5 sm:px-4 sm:py-3.5 align-middle whitespace-nowrap text-xs sm:text-sm">
                     <p className="font-bold text-[#273126]">{order.customer_name}</p>
-                    <p className="text-xs text-[#727970]">{formatPhone(order.phone)}</p>
+                    <p className="text-[11px] sm:text-xs text-[#727970]">{formatPhone(order.phone)}</p>
                   </td>
-                  <td className="max-w-[200px] px-4 py-3.5 align-middle">
-                    <p className="font-semibold text-[#273126] whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{order.product_name}</p>
-                    <p className="text-xs text-[#858C83] whitespace-normal [overflow-wrap:anywhere] [word-break:break-word]">{order.category || 'Uncategorised'}</p>
+                  <td
+                    className="min-w-[120px] w-auto px-2.5 py-2.5 sm:px-4 sm:py-3.5 align-middle invoice-product-cell"
+                    style={{ minWidth: '120px', width: 'auto' }}
+                  >
+                    <div style={{ whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none' }}>
+                      <p
+                        className="font-semibold text-[#273126] text-xs sm:text-sm invoice-product-qty-name"
+                        style={{
+                          display: 'inline',
+                          whiteSpace: 'normal',
+                          wordBreak: 'normal',
+                          overflowWrap: 'break-word',
+                          hyphens: 'none',
+                        }}
+                      >
+                        {order.product_name}
+                      </p>
+                      <p
+                        className="text-[11px] sm:text-xs text-[#858C83] mt-0.5 invoice-product-desc"
+                        style={{
+                          whiteSpace: 'normal',
+                          wordBreak: 'normal',
+                          overflowWrap: 'break-word',
+                          hyphens: 'none',
+                        }}
+                      >
+                        {order.category || 'Uncategorised'}
+                      </p>
+                    </div>
                   </td>
-                  <td className="px-4 py-3.5 text-xs align-middle whitespace-nowrap">
+                  <td className="px-2.5 py-2.5 sm:px-4 sm:py-3.5 text-[11px] sm:text-xs align-middle whitespace-nowrap">
                     <p className="text-gray-700">Total: <b>{formatCurrency(order.total_amount)}</b></p>
                     <p className="text-violet-700">Paid: <b>{formatCurrency(order.deposit_amount)}</b></p>
                     <p className="text-red-600 font-bold">Balance: <b>{formatCurrency(order.remaining_balance)}</b></p>
                   </td>
-                  <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
-                      <CalendarDays size={14} className="text-gray-400 shrink-0" />
+                  <td className="px-2.5 py-2.5 sm:px-4 sm:py-3.5 align-middle whitespace-nowrap text-xs sm:text-sm">
+                    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold text-gray-700">
+                      <CalendarDays size={13} className="text-gray-400 shrink-0" />
                       <span>{new Date(`${order.expected_delivery_date}T00:00:00`).toLocaleDateString('en-IN')}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                  <td className="px-2.5 py-2.5 sm:px-4 sm:py-3.5 align-middle whitespace-nowrap">
                     <select
                       value={order.status}
                       onChange={e => void changeStatus(order, e.target.value as AdvanceStatus)}
-                      className={`rounded-xl border px-2.5 py-1.5 text-xs font-black outline-none shadow-xs transition-colors cursor-pointer ${STATUS_STYLES[order.status]}`}
+                      className={`rounded-xl border px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-black outline-none shadow-xs transition-colors cursor-pointer ${STATUS_STYLES[order.status]}`}
                     >
                       <option value="pending_deposit">Pending Deposit</option>
                       <option value="waiting_final_payment">Waiting for Final Payment</option>
@@ -351,14 +388,14 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </td>
-                  <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
+                  <td className="px-2.5 py-2.5 sm:px-4 sm:py-3.5 align-middle whitespace-nowrap">
+                    <div className="flex items-center gap-1 sm:gap-1.5">
                       {/* Receive Balance Button (if balance is due) */}
                       {order.status !== 'completed' && order.status !== 'cancelled' && (
                         <button
                           type="button"
                           onClick={() => setPaymentOrder(order)}
-                          className="flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1.5 text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+                          className="flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 sm:px-2.5 sm:py-1.5 text-[11px] sm:text-xs font-black shadow-xs transition-all active:scale-95 cursor-pointer whitespace-nowrap"
                           title="Receive Remaining Balance"
                         >
                           <span>Receive Balance</span>

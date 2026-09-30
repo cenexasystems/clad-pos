@@ -141,15 +141,15 @@ export const Invoice: React.FC<InvoiceProps> = ({
       <div style={{ borderTop: '1px dashed #d0d0d0', marginBottom: 20 }} />
 
       {/* ── ITEMS TABLE ──────────────────────────────────────────── */}
-      <div className="w-full overflow-x-auto">
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 320 }}>
+      <div className="w-full overflow-x-auto invoice-billing-table-wrapper">
+        <table className="invoice-billing-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 380 }}>
           <thead>
             <tr style={{ background: '#0A0A0A', borderRadius: 8 }}>
-              <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 28 }}>#</th>
-              <th style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8 }}>Item / SKU</th>
-              <th style={{ padding: '8px 10px', textAlign: 'center', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 45 }}>Qty</th>
-              <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 75 }}>Rate</th>
-              <th style={{ padding: '8px 10px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 85 }}>Amount</th>
+              <th style={{ padding: '8px 6px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 28 }}>#</th>
+              <th className="invoice-product-col" style={{ padding: '8px 6px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, minWidth: 120, width: 'auto' }}>Item / SKU</th>
+              <th style={{ padding: '8px 6px', textAlign: 'center', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 45 }}>Qty</th>
+              <th style={{ padding: '8px 6px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 75 }}>Rate</th>
+              <th style={{ padding: '8px 6px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 85 }}>Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -158,20 +158,22 @@ export const Invoice: React.FC<InvoiceProps> = ({
               const displayName = normalized.tamil_name || item.nameTa || normalized.name
               return (
                 <tr key={idx} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={{ padding: '10px 8px', fontSize: 11, color: '#999', verticalAlign: 'top' }}>{idx + 1}</td>
-                  <td style={{ padding: '10px 8px', verticalAlign: 'top' }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0A0A0A' }}>{normalized.name}</div>
-                    {displayName && displayName !== normalized.name && <div style={{ fontSize: 10, color: '#888', marginTop: 2 }}>{displayName}</div>}
+                  <td style={{ padding: '8px 6px', fontSize: 11, color: '#999', verticalAlign: 'top' }}>{idx + 1}</td>
+                  <td className="invoice-product-cell" style={{ padding: '8px 6px', verticalAlign: 'top', minWidth: 120, width: 'auto' }}>
+                    <div className="invoice-product-name" style={{ fontSize: 12, fontWeight: 700, color: '#0A0A0A', whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none' }}>{normalized.name}</div>
+                    {displayName && displayName !== normalized.name && (
+                      <div className="invoice-product-desc" style={{ fontSize: 10, color: '#888', marginTop: 2, whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none' }}>{displayName}</div>
+                    )}
                     {item.offerPrice && item.price !== item.offerPrice && (
                       <div style={{ fontSize: 10, color: '#aaa', textDecoration: 'line-through', marginTop: 2 }}>MRP ₹{item.price}</div>
                     )}
-                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                    <div className="invoice-product-desc" style={{ fontSize: 10, color: '#6b7280', marginTop: 2, whiteSpace: 'normal', wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none' }}>
                       {normalized.unit} · {formatCurrency(normalized.base_price)}
                     </div>
                   </td>
-                  <td style={{ padding: '10px 8px', fontSize: 12, fontWeight: 600, textAlign: 'center', verticalAlign: 'top' }}>{formatQuantityDisplay(normalized.quantity, normalized.unit, normalized.unit_type)}</td>
-                  <td style={{ padding: '10px 8px', fontSize: 12, fontWeight: 600, textAlign: 'right', verticalAlign: 'top', color: '#555', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(normalized.base_price)}</td>
-                  <td style={{ padding: '10px 8px', fontSize: 13, fontWeight: 800, textAlign: 'right', verticalAlign: 'top', color: '#0A0A0A', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(normalized.line_total)}</td>
+                  <td style={{ padding: '8px 6px', fontSize: 12, fontWeight: 600, textAlign: 'center', verticalAlign: 'top' }}>{formatQuantityDisplay(normalized.quantity, normalized.unit, normalized.unit_type)}</td>
+                  <td style={{ padding: '8px 6px', fontSize: 12, fontWeight: 600, textAlign: 'right', verticalAlign: 'top', color: '#555', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(normalized.base_price)}</td>
+                  <td style={{ padding: '8px 6px', fontSize: 13, fontWeight: 800, textAlign: 'right', verticalAlign: 'top', color: '#0A0A0A', fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(normalized.line_total)}</td>
                 </tr>
               )
             })}
