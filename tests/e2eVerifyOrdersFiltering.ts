@@ -26,7 +26,7 @@ if (todayBills.length !== 2) throw new Error('Today should only return bills fro
 
 // 2. Test "This Week" on Monday 28/09/2026
 const weekRange = getDateRange('week', now)!
-console.log(`2. Week Range start: ${weekRange.start.toLocaleString()} -> end: ${weekRange.end.toLocaleString()}`)
+console.log(`2. Week Range start: ${weekRange.start?.toLocaleString()} -> end: ${weekRange.end?.toLocaleString()}`)
 const weekBills = sampleBills.filter(b => isInRange(b.created_at, weekRange))
 console.log(`   This Week bills count: ${weekBills.length}`)
 console.log('   This Week bills:', weekBills.map(b => b.invoice_no))
@@ -39,7 +39,7 @@ console.log('   ✓ Verified: NO previous week bills (24/9-27/9) returned on Mon
 
 // 3. Test "This Month"
 const monthRange = getDateRange('month', now)!
-console.log(`3. Month Range start: ${monthRange.start.toLocaleString()} -> end: ${monthRange.end.toLocaleString()}`)
+console.log(`3. Month Range start: ${monthRange.start?.toLocaleString()} -> end: ${monthRange.end?.toLocaleString()}`)
 const monthBills = sampleBills.filter(b => isInRange(b.created_at, monthRange))
 console.log(`   This Month bills count: ${monthBills.length}`)
 // Must include September bills (1-7), but exclude October (8)
