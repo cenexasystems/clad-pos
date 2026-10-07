@@ -151,7 +151,7 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
         name_ta: prod.name_ta,
         variant_name: varnt?.variant_name,
         price: price,
-        offer_price: prod.offer_price ? Number(prod.offer_price) : undefined,
+        offer_price: record.variant_id ? undefined : (prod.offer_price ? Number(prod.offer_price) : undefined),
         stock: effectiveStock,
         barcode: clean,
         image_url: prod.image_url,
