@@ -21,7 +21,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
     category: '',
     price: '',
     stock: '0',
-    lowStockAlert: '5',
+    lowStockAlert: '',
   })
 
   const existingCategories = categoryOptions.length > 0
@@ -74,7 +74,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
         }
       }
 
-      const alertThreshold = Number(formData.lowStockAlert) > 0 ? Number(formData.lowStockAlert) : 5
+      const alertThreshold = formData.lowStockAlert.trim() !== '' && Number(formData.lowStockAlert) > 0 ? Number(formData.lowStockAlert) : null
       const stockNum = Math.max(0, parseInt(formData.stock) || 0)
 
       const { data: newProd, error: dbErr } = await supabase

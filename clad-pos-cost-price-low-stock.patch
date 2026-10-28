@@ -1,0 +1,172 @@
+diff --git a/src/components/AddProductModal.tsx b/src/components/AddProductModal.tsx
+index 7ae9170..9d0f117 100644
+--- a/src/components/AddProductModal.tsx
++++ b/src/components/AddProductModal.tsx
+@@ -21,7 +21,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
+     category: '',
+     price: '',
+     stock: '0',
+-    lowStockAlert: '5',
++    lowStockAlert: '',
+   })
+ 
+   const existingCategories = categoryOptions.length > 0
+@@ -74,7 +74,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
+         }
+       }
+ 
+-      const alertThreshold = Number(formData.lowStockAlert) > 0 ? Number(formData.lowStockAlert) : 5
++      const alertThreshold = formData.lowStockAlert.trim() !== '' && Number(formData.lowStockAlert) > 0 ? Number(formData.lowStockAlert) : null
+       const stockNum = Math.max(0, parseInt(formData.stock) || 0)
+ 
+       const { data: newProd, error: dbErr } = await supabase
+diff --git a/src/components/inventory/AddEditProductView.tsx b/src/components/inventory/AddEditProductView.tsx
+index 0f57e6f..43f383d 100644
+--- a/src/components/inventory/AddEditProductView.tsx
++++ b/src/components/inventory/AddEditProductView.tsx
+@@ -51,7 +51,7 @@ export const AddEditProductView: React.FC<{
+   const [price, setPrice] = useState<string>('')
+   const [purchasePrice, setPurchasePrice] = useState<string>('')
+   const [stockQuantity, setStockQuantity] = useState<string>('0')
+-  const [lowStockAlert, setLowStockAlert] = useState<string>('5')
++  const [lowStockAlert, setLowStockAlert] = useState<string>('')
+   const [barcode, setBarcode] = useState<string>('')
+   const [description, setDescription] = useState<string>('')
+   const [hasVariants, setHasVariants] = useState<boolean>(false)
+@@ -75,7 +75,7 @@ export const AddEditProductView: React.FC<{
+     setPrice('')
+     setPurchasePrice('')
+     setStockQuantity('0')
+-    setLowStockAlert('5')
++    setLowStockAlert('')
+     setBarcode('')
+     setDescription('')
+     setHasVariants(false)
+@@ -102,9 +102,9 @@ export const AddEditProductView: React.FC<{
+     setCategoryId(matchedCatId)
+ 
+     setPrice(String(p.price || ''))
+-    setPurchasePrice(String(p.purchasePrice || ''))
++    setPurchasePrice(p.purchasePrice != null && p.purchasePrice > 0 ? String(p.purchasePrice) : '')
+     setStockQuantity(String(p.stockQuantity ?? p.stock ?? 0))
+-    setLowStockAlert(p.lowStockAlert ? String(p.lowStockAlert) : '5')
++    setLowStockAlert(p.lowStockAlert != null && p.lowStockAlert > 0 ? String(p.lowStockAlert) : '')
+     setBarcode(p.barcode || '')
+     setDescription(p.description || '')
+     setHasVariants(Boolean(p.hasVariants))
+@@ -282,7 +282,9 @@ export const AddEditProductView: React.FC<{
+     const validVariants = variantRows.filter((v) => v.variantName.trim() !== '')
+     const firstVariant = validVariants[0]
+     const priceNum = hasVariants && firstVariant ? (Number(firstVariant.price) || 0) : (parseFloat(price) || 0)
+-    const costNum = hasVariants && firstVariant ? (Number(firstVariant.costPrice) || 0) : (parseFloat(purchasePrice) || 0)
++    // Cost / purchase price is optional: blank is stored as NULL
++    const costInput = hasVariants && firstVariant ? Number(firstVariant.costPrice) : parseFloat(purchasePrice)
++    const costNum: number | null = Number.isFinite(costInput) && costInput >= 0 && (hasVariants ? costInput > 0 : purchasePrice.trim() !== '') ? costInput : null
+ 
+     if (!hasVariants && priceNum <= 0) {
+       setStatusMessage({ type: 'error', text: 'Price must be greater than 0' })
+@@ -296,7 +298,8 @@ export const AddEditProductView: React.FC<{
+ 
+     const selectedCat = categories.find((c) => Number(c.id) === Number(categoryId))
+     const categoryName = selectedCat ? selectedCat.name_en : 'General'
+-    const alertThreshold = Number(lowStockAlert) > 0 ? Number(lowStockAlert) : 5
++    // Low stock threshold is optional: blank is stored as NULL (alerts fall back to 5)
++    const alertThreshold: number | null = lowStockAlert.trim() !== '' && Number(lowStockAlert) > 0 ? Number(lowStockAlert) : null
+ 
+     setLoading(true)
+ 
+@@ -935,7 +938,7 @@ export const AddEditProductView: React.FC<{
+ 
+               <div>
+                 <label className="block text-[11px] font-bold text-gray-700 mb-1.5 h-4 flex items-center">
+-                  Low Stock Alert Threshold
++                  Low Stock Alert Threshold <span className="text-gray-400 font-medium ml-1">(optional)</span>
+                 </label>
+                 <input
+                   type="number"
+@@ -969,7 +972,7 @@ export const AddEditProductView: React.FC<{
+ 
+                 <div>
+                   <label className="block text-[11px] font-bold text-gray-700 mb-1.5 h-4 flex items-center">
+-                    Purchase / Cost Price (₹)
++                    Purchase / Cost Price (₹) <span className="text-gray-400 font-medium ml-1">(optional)</span>
+                   </label>
+                   <input
+                     type="number"
+diff --git a/src/hooks/useLowStockMonitor.ts b/src/hooks/useLowStockMonitor.ts
+index c120fc1..54e5c0a 100644
+--- a/src/hooks/useLowStockMonitor.ts
++++ b/src/hooks/useLowStockMonitor.ts
+@@ -25,7 +25,7 @@ export function useLowStockMonitor(enabled: boolean = true, role?: string | null
+       // 2. Fetch active variants
+       const { data: variants, error: varErr } = await supabase
+         .from('product_variants')
+-        .select('id, variant_name, stock, barcode, product_id, is_active, products(name, category, category_id, is_active)')
++        .select('id, variant_name, stock, barcode, product_id, is_active, products(name, category, category_id, is_active, low_stock_alert)')
+         .eq('is_active', true)
+ 
+       if (varErr) {
+@@ -72,7 +72,8 @@ export function useLowStockMonitor(enabled: boolean = true, role?: string | null
+           continue
+         }
+ 
+-        const threshold = 5
++        const parentThreshold = Number(parentProd?.low_stock_alert)
++        const threshold = parentThreshold > 0 ? parentThreshold : 5
+         const currentStock = Number(v.stock) || 0
+ 
+         if (currentStock <= threshold) {
+diff --git a/src/services/productService.ts b/src/services/productService.ts
+index 190b3fb..cbfab42 100644
+--- a/src/services/productService.ts
++++ b/src/services/productService.ts
+@@ -11,6 +11,7 @@ const PRODUCT_COLUMNS = [
+   'predefined_options', 'is_active', 'sort_order', 'unit', 'rating',
+   'description', 'description_ta', 'benefits', 'benefits_ta',
+   'image_url', 'image', 'has_variants', 'barcode', 'sku',
++  'purchase_price', 'low_stock_alert',
+ ].join(', ')
+ 
+ export function fetchAllCategories() {
+diff --git a/src/store/store.ts b/src/store/store.ts
+index 2fddcc4..998d474 100644
+--- a/src/store/store.ts
++++ b/src/store/store.ts
+@@ -256,11 +256,11 @@ const mapDbProduct = (input: unknown, categoriesById: Record<string, string> = {
+     sku: readString(p.sku),
+     barcode: readString(p.barcode),
+     brand: readString(p.brand),
+-    purchasePrice: toNumber(p.purchase_price, 0),
++    purchasePrice: p.purchase_price == null ? undefined : toNumber(p.purchase_price, 0),
+     mrp: toNumber(p.mrp, 0),
+     gstPercent: toNumber(p.gst_percent, 0),
+     openingStock: toNumber(p.opening_stock, 0),
+-    lowStockAlert: toNumber(p.low_stock_alert, 5),
++    lowStockAlert: p.low_stock_alert == null ? undefined : toNumber(p.low_stock_alert, 5),
+     supplier: readString(p.supplier),
+     size: readString(p.size),
+     color: readString(p.color),
+diff --git a/supabase/migrations/20261028_0027_optional_cost_price_low_stock_threshold.sql b/supabase/migrations/20261028_0027_optional_cost_price_low_stock_threshold.sql
+new file mode 100644
+index 0000000..909c908
+--- /dev/null
++++ b/supabase/migrations/20261028_0027_optional_cost_price_low_stock_threshold.sql
+@@ -0,0 +1,18 @@
++-- Optional cost price (purchase price) + low stock threshold.
++-- "Cost price" and "purchase price" are the SAME value -> one column: purchase_price.
++-- Safe to run multiple times.
++
++ALTER TABLE public.products
++  ADD COLUMN IF NOT EXISTS purchase_price  NUMERIC(12,2),
++  ADD COLUMN IF NOT EXISTS low_stock_alert NUMERIC(12,3);
++
++ALTER TABLE public.product_variants
++  ADD COLUMN IF NOT EXISTS purchase_price NUMERIC(12,2);
++
++-- Make both optional (blank in the form is stored as NULL)
++ALTER TABLE public.products ALTER COLUMN purchase_price  DROP NOT NULL;
++ALTER TABLE public.products ALTER COLUMN purchase_price  DROP DEFAULT;
++ALTER TABLE public.products ALTER COLUMN low_stock_alert DROP NOT NULL;
++ALTER TABLE public.products ALTER COLUMN low_stock_alert DROP DEFAULT;
++
++NOTIFY pgrst, 'reload schema';

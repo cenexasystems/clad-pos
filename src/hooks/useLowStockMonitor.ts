@@ -25,7 +25,7 @@ export function useLowStockMonitor(enabled: boolean = true, role?: string | null
       // 2. Fetch active variants
       const { data: variants, error: varErr } = await supabase
         .from('product_variants')
-        .select('id, variant_name, stock, barcode, product_id, is_active, products(name, category, category_id, is_active)')
+        .select('id, variant_name, stock, barcode, product_id, is_active, products(name, category, category_id, is_active, low_stock_alert)')
         .eq('is_active', true)
 
       if (varErr) {
@@ -72,7 +72,8 @@ export function useLowStockMonitor(enabled: boolean = true, role?: string | null
           continue
         }
 
-        const threshold = 5
+        const parentThreshold = Number(parentProd?.low_stock_alert)
+        const threshold = parentThreshold > 0 ? parentThreshold : 5
         const currentStock = Number(v.stock) || 0
 
         if (currentStock <= threshold) {

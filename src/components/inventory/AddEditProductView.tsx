@@ -51,7 +51,7 @@ export const AddEditProductView: React.FC<{
   const [price, setPrice] = useState<string>('')
   const [purchasePrice, setPurchasePrice] = useState<string>('')
   const [stockQuantity, setStockQuantity] = useState<string>('0')
-  const [lowStockAlert, setLowStockAlert] = useState<string>('5')
+  const [lowStockAlert, setLowStockAlert] = useState<string>('')
   const [barcode, setBarcode] = useState<string>('')
   const [description, setDescription] = useState<string>('')
   const [hasVariants, setHasVariants] = useState<boolean>(false)
@@ -75,7 +75,7 @@ export const AddEditProductView: React.FC<{
     setPrice('')
     setPurchasePrice('')
     setStockQuantity('0')
-    setLowStockAlert('5')
+    setLowStockAlert('')
     setBarcode('')
     setDescription('')
     setHasVariants(false)
@@ -102,9 +102,9 @@ export const AddEditProductView: React.FC<{
     setCategoryId(matchedCatId)
 
     setPrice(String(p.price || ''))
-    setPurchasePrice(String(p.purchasePrice || ''))
+    setPurchasePrice(p.purchasePrice != null ? String(p.purchasePrice) : '')
     setStockQuantity(String(p.stockQuantity ?? p.stock ?? 0))
-    setLowStockAlert(p.lowStockAlert ? String(p.lowStockAlert) : '5')
+    setLowStockAlert(p.lowStockAlert != null && p.lowStockAlert > 0 ? String(p.lowStockAlert) : '')
     setBarcode(p.barcode || '')
     setDescription(p.description || '')
     setHasVariants(Boolean(p.hasVariants))
@@ -282,7 +282,9 @@ export const AddEditProductView: React.FC<{
     const validVariants = variantRows.filter((v) => v.variantName.trim() !== '')
     const firstVariant = validVariants[0]
     const priceNum = hasVariants && firstVariant ? (Number(firstVariant.price) || 0) : (parseFloat(price) || 0)
-    const costNum = hasVariants && firstVariant ? (Number(firstVariant.costPrice) || 0) : (parseFloat(purchasePrice) || 0)
+    // Cost / purchase price is optional: blank is stored as NULL
+    const costInput = hasVariants && firstVariant ? Number(firstVariant.costPrice) : parseFloat(purchasePrice)
+    const costNum: number | null = Number.isFinite(costInput) && costInput >= 0 && (hasVariants ? costInput > 0 : purchasePrice.trim() !== '') ? costInput : null
 
     if (!hasVariants && priceNum <= 0) {
       setStatusMessage({ type: 'error', text: 'Price must be greater than 0' })
@@ -296,7 +298,8 @@ export const AddEditProductView: React.FC<{
 
     const selectedCat = categories.find((c) => Number(c.id) === Number(categoryId))
     const categoryName = selectedCat ? selectedCat.name_en : 'General'
-    const alertThreshold = Number(lowStockAlert) > 0 ? Number(lowStockAlert) : 5
+    // Low stock threshold is optional: blank is stored as NULL (alerts fall back to 5)
+    const alertThreshold: number | null = lowStockAlert.trim() !== '' && Number(lowStockAlert) > 0 ? Number(lowStockAlert) : null
 
     setLoading(true)
 
@@ -935,7 +938,7 @@ export const AddEditProductView: React.FC<{
 
               <div>
                 <label className="block text-[11px] font-bold text-gray-700 mb-1.5 h-4 flex items-center">
-                  Low Stock Alert Threshold
+                  Low Stock Alert Threshold <span className="text-gray-400 font-medium ml-1">(optional)</span>
                 </label>
                 <input
                   type="number"
@@ -969,7 +972,7 @@ export const AddEditProductView: React.FC<{
 
                 <div>
                   <label className="block text-[11px] font-bold text-gray-700 mb-1.5 h-4 flex items-center">
-                    Purchase / Cost Price (₹)
+                    Purchase / Cost Price (₹) <span className="text-gray-400 font-medium ml-1">(optional)</span>
                   </label>
                   <input
                     type="number"
