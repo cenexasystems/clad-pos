@@ -471,9 +471,12 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     let bodyContent = ''
     if (isThermal) {
       let rowsHtml = ''
+      // Each .label-row is one print page with exactly `labelsPerRow` labels;
+      // the last row is padded with blank labels so the columns never shift.
       for (let i = 0; i < allStickers.length; i += labelsPerRow) {
-        const rowHtml = allStickers.slice(i, i + labelsPerRow).join('')
-        rowsHtml += `<div class="page-wrapper"><div class="row">${rowHtml}</div></div>`
+        const row = allStickers.slice(i, i + labelsPerRow)
+        while (row.length < labelsPerRow) row.push('<div class="label-sticker blank"></div>')
+        rowsHtml += `<div class="label-row">${row.join('')}</div>`
       }
       bodyContent = rowsHtml
     } else {
@@ -488,12 +491,12 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
         <head>
           <title>CLAD Barcode Labels</title>
           <style>
-            @page {
-              ${
-                isThermal
-                  ? `size: ${rowWidthMm}mm ${pageHeightMm}mm !important; margin: 0mm !important; marks: none !important;`
-                  : `size: A4 portrait; margin: 0mm !important;`
-              }
+            ${
+              isThermal
+                ? `@media print {
+              @page { size: ${rowWidthMm}mm ${pageHeightMm}mm; margin: 0; }
+            }`
+                : `@page { size: A4 portrait; margin: 0mm !important; }`
             }
             * {
               box-sizing: border-box;
@@ -511,23 +514,28 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
             ${
               isThermal
                 ? `
-            .page-wrapper {
-              width: ${rowWidthMm}mm !important;
-              height: ${pageHeightMm}mm !important;
-              overflow: hidden !important;
-              page-break-after: always !important;
-              break-after: page !important;
+            .label-row {
+              width: ${rowWidthMm}mm;
+              height: ${pageHeightMm}mm;
+              display: grid;
+              grid-template-columns: repeat(${labelsPerRow}, 1fr);
+              grid-template-rows: ${currentSizeConfig.heightMm}mm;
+              column-gap: ${gapMm}mm;
+              break-after: page;
+              page-break-after: always;
+              overflow: hidden;
+              ${offsetXMm !== 0 || offsetYMm !== 0 ? `position: relative; left: ${offsetXMm}mm; top: ${offsetYMm}mm;` : ''}
             }
-            .page-wrapper:last-child {
-              page-break-after: auto !important;
-              break-after: auto !important;
+            .label-row:last-child {
+              break-after: auto;
+              page-break-after: auto;
             }
-            .row { transform: translate(${offsetXMm}mm, ${offsetYMm}mm); }
-            @media print {
-              .page-wrapper {
-                width: ${rowWidthMm}mm !important;
-                height: ${pageHeightMm}mm !important;
-              }
+            .label-row .label-sticker {
+              width: auto !important;
+              max-width: none !important;
+              min-width: 0;
+              height: ${currentSizeConfig.heightMm}mm !important;
+              overflow: hidden;
             }`
                 : ''
             }
@@ -539,17 +547,6 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               grid-auto-rows: ${currentSizeConfig.heightMm}mm;
               column-gap: ${gapMm}mm;
               row-gap: ${currentSizeConfig.horizontalGapMm || gapMm}mm;
-            }
-            .row {
-              display: flex;
-              flex-direction: row;
-              align-items: stretch;
-              width: ${rowWidthMm}mm;
-              height: ${currentSizeConfig.heightMm}mm;
-              justify-content: space-between;
-              gap: 0;
-              break-inside: avoid !important;
-              page-break-inside: avoid !important;
             }
             .label-sticker {
               width: ${currentSizeConfig.widthMm}mm !important;

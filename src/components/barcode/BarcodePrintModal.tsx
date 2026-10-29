@@ -198,23 +198,26 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       const pageHeightMm = selectedPreset.heightMm + (isThermal ? rowGapMm : 0)
       const allStickersHtml = Array.from({ length: validQuantity }, () => singleStickerHtml).join('')
 
-      // Thermal roll: EXACTLY one row of labels per page, so every row lands on one physical label row
+      // Thermal roll: each .label-row is one print page holding exactly `labelsPerRow`
+      // labels (the last row is padded with blank labels so the columns never shift).
+      const blankLabelHtml = '<div class="sticker blank"></div>'
       let thermalRowsHtml = ''
       for (let i = 0; i < validQuantity; i += labelsPerRow) {
         const count = Math.min(labelsPerRow, validQuantity - i)
-        thermalRowsHtml += `<div class="page-wrapper"><div class="row">${singleStickerHtml.repeat(count)}</div></div>`
+        thermalRowsHtml += `<div class="label-row">${singleStickerHtml.repeat(count)}${blankLabelHtml.repeat(labelsPerRow - count)}</div>`
       }
+      const hasOffset = offsetXMm !== 0 || offsetYMm !== 0
 
       const html = `<!DOCTYPE html>
 <html>
   <head>
     <title>Print Barcode - ${barcodeValue}</title>
     <style>
-      @page { 
-        ${isThermal 
-          ? `size: ${rowWidthMm}mm ${pageHeightMm}mm; margin: 0mm !important;` // exactly one label row per page
-          : `size: A4 portrait; margin: ${marginMm}mm !important;`
-        }
+      ${isThermal
+        ? `@media print {
+        @page { size: ${rowWidthMm}mm ${pageHeightMm}mm; margin: 0; }
+      }`
+        : `@page { size: A4 portrait; margin: ${marginMm}mm !important; }`
       }
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html, body { 
@@ -235,10 +238,20 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
         width: fit-content;
       }
       ${isThermal ? `
-      .page-wrapper { width: ${rowWidthMm}mm; height: ${pageHeightMm}mm; overflow: hidden; break-after: page; page-break-after: always; }
-      .page-wrapper:last-child { break-after: auto; page-break-after: auto; }
-      .row { display: flex; flex-direction: row; width: ${rowWidthMm}mm; height: ${selectedPreset.heightMm}mm; column-gap: ${gapMm}mm; transform: translate(${offsetXMm}mm, ${offsetYMm}mm); }
-      .row .sticker { flex: 0 0 ${selectedPreset.widthMm}mm; }
+      .label-row {
+        width: ${rowWidthMm}mm;
+        height: ${pageHeightMm}mm;
+        display: grid;
+        grid-template-columns: repeat(${labelsPerRow}, 1fr);
+        grid-template-rows: ${selectedPreset.heightMm}mm;
+        column-gap: ${gapMm}mm;
+        break-after: page;
+        page-break-after: always;
+        overflow: hidden;
+        ${hasOffset ? `position: relative; left: ${offsetXMm}mm; top: ${offsetYMm}mm;` : ''}
+      }
+      .label-row:last-child { break-after: auto; page-break-after: auto; }
+      .label-row .sticker { width: auto; min-width: 0; height: ${selectedPreset.heightMm}mm; overflow: hidden; }
       ` : ''}
       .sticker { 
         width: ${colWidthMm}mm; 
