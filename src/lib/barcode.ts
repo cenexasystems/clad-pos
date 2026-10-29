@@ -13,6 +13,8 @@ export interface LabelSizeConfig {
   heightMm: number
   horizontalGapMm: number
   isCustom?: boolean
+  /** Roll printers: full roll width including the bare liner at both edges. The label row is centred inside it. */
+  rollWidthMm?: number
 }
 
 export const DEFAULT_LABEL_SIZES: LabelSizeConfig[] = [
@@ -24,8 +26,8 @@ export const DEFAULT_LABEL_SIZES: LabelSizeConfig[] = [
   { id: '1_100x50', name: '100 × 50 mm (Large Carton / Box)', labelsPerRow: 1, widthMm: 100, heightMm: 50, horizontalGapMm: 0 },
   { id: '4_35x22_2up', name: '35 × 22 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
   { id: '4_50x25_2up', name: '50 × 25 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 50, heightMm: 25, horizontalGapMm: 2 },
-  // 3-up roll: 3 × 35 mm + 2 × 2.5 mm gap = 110 mm, matching the "Clad 3 up" 110 × 22 mm printer stock
-  { id: '4_35x22_3up', name: '35 × 22 mm × 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 35, heightMm: 22, horizontalGapMm: 2.5 },
+  // 3-up roll ("Clad 3 up" stock): 110 mm roll = 1.3 mm liner + 35 + 1.2 gap + 35 + 1.2 gap + 35 + 1.3 mm liner
+  { id: '4_35x22_3up', name: '35 × 22 mm × 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 35, heightMm: 22, horizontalGapMm: 1.2, rollWidthMm: 110 },
   // A4 sheet presets — matches standard 4-column Avery/generic Indian label sheets
   { id: 'a4_4up_48x25', name: 'A4 Sheet — 4 columns × 48 × 25 mm', labelsPerRow: 4, widthMm: 48, heightMm: 25, horizontalGapMm: 2 },
   { id: 'a4_4up_48x30', name: 'A4 Sheet — 4 columns × 48 × 30 mm', labelsPerRow: 4, widthMm: 48, heightMm: 30, horizontalGapMm: 2 },
@@ -306,6 +308,38 @@ export function generateBarcodeSvgString(
     return svg.outerHTML || new XMLSerializer().serializeToString(svg)
   } catch (err) {
     console.error('[generateBarcodeSvgString] Failed to generate barcode SVG string:', err)
+    return ''
+  }
+}
+
+/** One dot of a 203 dpi thermal printer, in mm (the common resolution for roll label printers). */
+const PRINTER_DOT_MM = 25.4 / 203
+
+/**
+ * Barcode bars for roll (thermal) labels. Each bar module is a whole number of
+ * printer dots (2 when it fits), so the printer doesn't round bars to uneven
+ * widths, which makes barcodes hard to scan. Returns an SVG that is exactly
+ * `widthMm` wide and stretches to its container's height. No text: the
+ * number is printed separately as HTML.
+ */
+export function generateThermalBarcodeSvg(value: string, availableWidthMm: number): string {
+  if (typeof document === 'undefined' || !value) return ''
+  try {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    renderBarcodeSvg(svg, value, { width: 1, height: 100, displayValue: false, margin: 0 })
+    const modules = Number((svg.getAttribute('viewBox') || '').split(' ')[2]) || 0
+    if (!modules) return ''
+    const dots = Math.min(3, Math.floor(availableWidthMm / (modules * PRINTER_DOT_MM)))
+    const moduleMm = dots >= 2 ? dots * PRINTER_DOT_MM : availableWidthMm / modules
+    svg.setAttribute('class', 'bc-bars')
+    svg.setAttribute('preserveAspectRatio', 'none')
+    svg.setAttribute('shape-rendering', 'crispEdges')
+    svg.removeAttribute('height')
+    svg.setAttribute('width', `${(modules * moduleMm).toFixed(3)}mm`)
+    svg.setAttribute('style', `width:${(modules * moduleMm).toFixed(3)}mm`)
+    return svg.outerHTML
+  } catch (err) {
+    console.error('[generateThermalBarcodeSvg] Failed to generate barcode SVG:', err)
     return ''
   }
 }

@@ -7,6 +7,7 @@ import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 import {
   getAllLabelSizes,
   generateBarcodeSvgString,
+  generateThermalBarcodeSvg,
   getStoredBarcodeSettings,
   saveStoredBarcodeSettings,
   subscribeCustomSizes,
@@ -32,6 +33,7 @@ type LabelSizePreset = {
   heightMm: number
   labelsPerRow: number
   horizontalGapMm: number
+  rollWidthMm?: number
 }
 
 const getAvailablePresets = (): LabelSizePreset[] => {
@@ -43,6 +45,7 @@ const getAvailablePresets = (): LabelSizePreset[] => {
     heightMm: s.heightMm,
     labelsPerRow: Math.max(1, s.labelsPerRow || 1),
     horizontalGapMm: s.horizontalGapMm || 0,
+    rollWidthMm: s.rollWidthMm,
   }))
 }
 
@@ -163,7 +166,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       const priceFontSize = isSmall ? '8pt' : isLarge ? '12pt' : '9.5pt'
       const stickerPadding = isThermal
         // Roll printers can't print the outer ~1.3 mm of the roll, so keep content clear of the label edges
-        ? (isSmall ? '2mm 2.8mm 0.6mm' : '2.2mm 2.8mm 0.8mm')
+        ? (isSmall ? '3.4mm 2mm 1mm' : '3.4mm 2.4mm 1mm')
         : (isSmall ? '0.8mm 2mm' : '1.0mm 1.6mm')
 
       const parsedQty = parseInt(quantity.trim(), 10)
@@ -178,7 +181,9 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             <div class="brand">${BRAND_EN}</div>
             <div class="prod-title">${fullTitle}</div>
           </div>
-          <div class="barcode-box">${svgMarkup}</div>
+          ${isThermal
+            ? `<div class="barcode-box thermal">${generateThermalBarcodeSvg(barcodeValue, selectedPreset.widthMm - 4)}<div class="bc-text">${barcodeValue}</div></div>`
+            : `<div class="barcode-box">${svgMarkup}</div>`}
           <div class="footer">
             <span>${mrpLine}</span>
             <span class="price">\u20b9${price}</span>
@@ -197,6 +202,9 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       // Calculate layout metrics
       const marginMm = isThermal ? 0 : 8
       const rowWidthMm = selectedPreset.widthMm * labelsPerRow + gapMm * (labelsPerRow - 1)
+      // Page = full roll width; the label row is centred so the bare liner edges stay blank
+      const pageWidthMm = Math.max(rowWidthMm, selectedPreset.rollWidthMm || 0)
+      const sideMarginMm = (pageWidthMm - rowWidthMm) / 2
       const colWidthMm = isThermal ? selectedPreset.widthMm : Math.floor(((210 - marginMm * 2) - gapMm * (labelsPerRow - 1)) / labelsPerRow)
 
       const pageHeightMm = selectedPreset.heightMm + (isThermal ? rowGapMm : 0)
@@ -219,7 +227,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
     <style>
       ${isThermal
         ? `@media print {
-        @page { size: ${rowWidthMm}mm ${pageHeightMm}mm; margin: 0; }
+        @page { size: ${pageWidthMm}mm ${pageHeightMm}mm; margin: 0; }
       }`
         : `@page { size: A4 portrait; margin: ${marginMm}mm !important; }`
       }
@@ -231,7 +239,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
         font-family: Arial, Helvetica, sans-serif; 
         -webkit-print-color-adjust: exact; 
         print-color-adjust: exact; 
-        ${isThermal ? `width: ${rowWidthMm}mm;` : ''}
+        ${isThermal ? `width: ${pageWidthMm}mm;` : ''}
       }
       .grid { 
         display: grid; 
@@ -243,7 +251,8 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       }
       ${isThermal ? `
       .label-row {
-        width: ${rowWidthMm}mm;
+        width: ${pageWidthMm}mm;
+        padding: 0 ${sideMarginMm}mm;
         height: ${pageHeightMm}mm;
         display: grid;
         grid-template-columns: repeat(${labelsPerRow}, 1fr);
@@ -279,8 +288,11 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       .barcode-box { width: 100%; flex: 1; min-height: 0; display: flex; justify-content: center;
         align-items: center; margin: 0.4mm 0; overflow: hidden; }
       .barcode-box svg { display: block; margin: 0 auto; max-width: 98%; max-height: 100%; width: auto; height: auto; }
+      .barcode-box.thermal { flex-direction: column; justify-content: center; }
+      .barcode-box svg.bc-bars { flex: 1 1 0; min-height: 0; height: auto; max-width: none; max-height: none; }
+      .bc-text { font-size: 5.5pt; line-height: 1; letter-spacing: 0.2px; margin-top: 0.3mm; color: #000; flex-shrink: 0; }
       .footer { width: 100%; display: flex; justify-content: space-between; align-items: center;
-        border-top: 0.6pt solid #000; padding-top: 0.5mm; line-height: 1; flex-shrink: 0; }
+        border-top: 0.6pt solid #000; padding-top: 0.5mm; line-height: 1; flex-shrink: 0; font-size: ${tagFontSize}; }
       .retail-tag { font-size: ${tagFontSize}; font-weight: 800; color: #444; }
       .mrp { text-decoration: line-through; color: #555; font-size: ${tagFontSize}; font-weight: 600; }
       .price { font-size: ${priceFontSize}; font-weight: 900; color: #000; }

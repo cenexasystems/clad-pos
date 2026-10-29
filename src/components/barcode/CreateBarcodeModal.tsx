@@ -23,6 +23,7 @@ import {
   fetchRemoteCustomSizes,
   renderBarcodeSvg,
   generateBarcodeSvgString,
+  generateThermalBarcodeSvg,
   normalizeBarcode,
 } from '../../lib/barcode'
 import { BRAND_EN } from '../../lib/brand'
@@ -427,7 +428,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     const priceFontSize = isSmall ? '8pt' : isLarge ? '12pt' : '9.5pt'
     const stickerPadding = isThermal
       // Roll printers can't print the outer ~1.3 mm of the roll, so keep content clear of the label edges
-      ? (isSmall ? '2mm 2.8mm 0.6mm' : '2.2mm 2.8mm 0.8mm')
+      ? (isSmall ? '3.4mm 2mm 1mm' : '3.4mm 2.4mm 1mm')
       : (isSmall ? '0.8mm 2mm' : '1.0mm 1.6mm')
 
     // Generate individual sticker cards HTML with pre-rendered SVGs
@@ -445,14 +446,15 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
         textMargin: 1.5,
         displayValue: true,
       })
+      const thermalSvg = isThermal ? generateThermalBarcodeSvg(item.barcodeValue, currentSizeConfig.widthMm - 4) : ''
       for (let i = 0; i < count; i++) {
         allStickers.push(`
           <div class="label-sticker">
             ${settings.showCompanyName ? `<div class="header">${item.header || BRAND_EN}</div>` : ''}
             ${settings.showItemName ? `<div class="prod-title">${fullTitle}</div>` : ''}
-            <div class="barcode-box">
-              ${svgMarkup}
-            </div>
+            ${isThermal
+              ? `<div class="barcode-box thermal">${thermalSvg}<div class="bc-text">${item.barcodeValue}</div></div>`
+              : `<div class="barcode-box">${svgMarkup}</div>`}
             <div class="footer">
               <span>${item.line2 ? `<span class="tag">${item.line2}</span>` : '<span class="tag">CLAD RETAIL</span>'}</span>
               ${settings.showSalePrice ? `<span class="price">₹${item.price}</span>` : ''}
@@ -467,6 +469,9 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     const labelsPerRow = Math.max(1, currentSizeConfig.labelsPerRow || 1)
     const gapMm = currentSizeConfig.horizontalGapMm || 0
     const rowWidthMm = currentSizeConfig.widthMm * labelsPerRow + gapMm * (labelsPerRow - 1)
+    // Page = full roll width; the label row is centred so the bare liner edges stay blank
+    const pageWidthMm = Math.max(rowWidthMm, currentSizeConfig.rollWidthMm || 0)
+    const sideMarginMm = (pageWidthMm - rowWidthMm) / 2
     const rowGapMm = Math.max(0, Number(settings.rowGapMm) || 0)
     const offsetXMm = Number(settings.offsetXMm) || 0
     const offsetYMm = Number(settings.offsetYMm) || 0
@@ -498,7 +503,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
             ${
               isThermal
                 ? `@media print {
-              @page { size: ${rowWidthMm}mm ${pageHeightMm}mm; margin: 0; }
+              @page { size: ${pageWidthMm}mm ${pageHeightMm}mm; margin: 0; }
             }`
                 : `@page { size: A4 portrait; margin: 0mm !important; }`
             }
@@ -519,7 +524,8 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               isThermal
                 ? `
             .label-row {
-              width: ${rowWidthMm}mm;
+              width: ${pageWidthMm}mm;
+              padding: 0 ${sideMarginMm}mm;
               height: ${pageHeightMm}mm;
               display: grid;
               grid-template-columns: repeat(${labelsPerRow}, 1fr);
@@ -608,6 +614,9 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               width: auto;
               height: auto;
             }
+            .barcode-box.thermal { flex-direction: column; justify-content: center; }
+            .barcode-box svg.bc-bars { flex: 1 1 0; min-height: 0; height: auto; max-width: none; max-height: none; }
+            .bc-text { font-size: 5.5pt; line-height: 1; letter-spacing: 0.2px; margin-top: 0.3mm; color: #000; flex-shrink: 0; }
             .footer {
               width: 100%;
               display: flex;
@@ -617,6 +626,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               padding-top: 0.5mm;
               line-height: 1;
               flex-shrink: 0;
+              font-size: ${tagFontSize};
             }
             .tag {
               font-size: ${tagFontSize};
