@@ -256,6 +256,8 @@ export interface BarcodeRenderOptions {
   font?: string
   textMargin?: number
   margin?: number
+  /** Extra space under the human-readable text so it is not clipped */
+  marginBottom?: number
   lineColor?: string
   background?: string
 }
@@ -280,6 +282,7 @@ export function renderBarcodeSvg(
       font: options?.font ?? 'monospace',
       textMargin: options?.textMargin ?? 1,
       margin: options?.margin ?? 4,
+      ...(options?.marginBottom !== undefined ? { marginBottom: options.marginBottom } : {}),
       lineColor: options?.lineColor ?? '#000000',
       background: options?.background ?? '#ffffff',
     })

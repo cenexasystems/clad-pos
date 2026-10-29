@@ -438,6 +438,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
         fontSize: barcodeFontSize,
         font: 'Arial, sans-serif',
         margin: 0,
+        marginBottom: 2,
         textMargin: 1.5,
         displayValue: true,
       })
