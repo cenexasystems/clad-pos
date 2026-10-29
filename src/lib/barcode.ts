@@ -316,28 +316,68 @@ export function generateBarcodeSvgString(
 const PRINTER_DOT_MM = 25.4 / 203
 
 /**
- * Barcode bars for roll (thermal) labels. Each bar module is a whole number of
- * printer dots (2 when it fits), so the printer doesn't round bars to uneven
- * widths, which makes barcodes hard to scan. Returns an SVG that is exactly
- * `widthMm` wide and stretches to its container's height. No text: the
- * number is printed separately as HTML.
+ * Dot widths for Code 128 elements (bars and gaps are 1-4 modules wide), tried
+ * from widest to narrowest. "2,4,6,8" is the ideal 2 dots per module. "2,4,5,7"
+ * keeps narrow elements at 2 dots and trims the wide ones slightly, so a
+ * CLAD + 7 digit code fits a 35 mm label and still scans reliably.
+ */
+const THERMAL_DOT_MAPS: number[][] = [
+  [3, 6, 9, 12],
+  [2, 4, 6, 8],
+  [2, 4, 5, 7],
+  [2, 3, 5, 7],
+]
+
+/**
+ * Barcode bars for roll (thermal) labels. Every bar and gap is drawn as a whole
+ * number of printer dots, so the printer never has to round bars to uneven
+ * widths (the main reason thermal barcodes fail to scan). Returns an SVG that
+ * stretches to its container's height. No text: the number is printed as HTML.
  */
 export function generateThermalBarcodeSvg(value: string, availableWidthMm: number): string {
   if (typeof document === 'undefined' || !value) return ''
   try {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-    renderBarcodeSvg(svg, value, { width: 1, height: 100, displayValue: false, margin: 0 })
-    const modules = Number((svg.getAttribute('viewBox') || '').split(' ')[2]) || 0
-    if (!modules) return ''
-    const dots = Math.min(3, Math.floor(availableWidthMm / (modules * PRINTER_DOT_MM)))
-    const moduleMm = dots >= 2 ? dots * PRINTER_DOT_MM : availableWidthMm / modules
-    svg.setAttribute('class', 'bc-bars')
-    svg.setAttribute('preserveAspectRatio', 'none')
-    svg.setAttribute('shape-rendering', 'crispEdges')
-    svg.removeAttribute('height')
-    svg.setAttribute('width', `${(modules * moduleMm).toFixed(3)}mm`)
-    svg.setAttribute('style', `width:${(modules * moduleMm).toFixed(3)}mm`)
-    return svg.outerHTML
+    const src = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    renderBarcodeSvg(src, value, { width: 1, height: 100, displayValue: false, margin: 0 })
+    const modules = Number((src.getAttribute('viewBox') || '').split(' ')[2]) || 0
+    // Bars in module units, from the barcode group (skips the white background rect)
+    const bars = Array.from(src.querySelectorAll('g rect')).map((r) => ({
+      x: Math.round(Number(r.getAttribute('x'))),
+      w: Math.round(Number(r.getAttribute('width'))),
+    }))
+    if (!modules || bars.length === 0) return ''
+
+    // Elements alternate bar / gap; each is 1-4 modules wide in Code 128
+    const elements: { bar: boolean; modules: number }[] = []
+    let end = 0
+    for (const b of bars) {
+      if (b.x > end) elements.push({ bar: false, modules: b.x - end })
+      elements.push({ bar: true, modules: b.w })
+      end = b.x + b.w
+    }
+    const widthDots = (map: number[]) =>
+      elements.reduce((sum, e) => sum + (map[e.modules - 1] ?? e.modules * map[0]), 0)
+    const maxDots = Math.floor(availableWidthMm / PRINTER_DOT_MM)
+    const map = THERMAL_DOT_MAPS.find((m) => widthDots(m) <= maxDots)
+
+    let rects = ''
+    let totalDots: number
+    if (map) {
+      let x = 0
+      for (const e of elements) {
+        const w = map[e.modules - 1] ?? e.modules * map[0]
+        if (e.bar) rects += `<rect x="${x}" y="0" width="${w}" height="100"/>`
+        x += w
+      }
+      totalDots = x
+    } else {
+      // Too long to fit at 2 dots per module: scale evenly (best effort)
+      const scale = maxDots / modules
+      for (const b of bars) rects += `<rect x="${(b.x * scale).toFixed(3)}" y="0" width="${(b.w * scale).toFixed(3)}" height="100"/>`
+      totalDots = maxDots
+    }
+    const widthMm = (totalDots * PRINTER_DOT_MM).toFixed(3)
+    return `<svg class="bc-bars" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalDots} 100" width="${widthMm}mm" style="width:${widthMm}mm" preserveAspectRatio="none" shape-rendering="crispEdges"><rect x="0" y="0" width="${totalDots}" height="100" fill="#fff"/><g fill="#000">${rects}</g></svg>`
   } catch (err) {
     console.error('[generateThermalBarcodeSvg] Failed to generate barcode SVG:', err)
     return ''

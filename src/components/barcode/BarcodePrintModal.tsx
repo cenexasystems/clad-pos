@@ -182,7 +182,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
             <div class="prod-title">${fullTitle}</div>
           </div>
           ${isThermal
-            ? `<div class="barcode-box thermal">${generateThermalBarcodeSvg(barcodeValue, selectedPreset.widthMm - 4)}<div class="bc-text">${barcodeValue}</div></div>`
+            ? `<div class="barcode-box thermal">${generateThermalBarcodeSvg(barcodeValue, selectedPreset.widthMm - 3.4)}<div class="bc-text">${barcodeValue}</div></div>`
             : `<div class="barcode-box">${svgMarkup}</div>`}
           <div class="footer">
             <span>${mrpLine}</span>
@@ -290,7 +290,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       .barcode-box { width: 100%; flex: 1; min-height: 0; display: flex; justify-content: center;
         align-items: center; margin: 0.4mm 0; overflow: hidden; }
       .barcode-box svg { display: block; margin: 0 auto; max-width: 98%; max-height: 100%; width: auto; height: auto; }
-      .barcode-box.thermal { flex-direction: column; justify-content: center; }
+      .barcode-box.thermal { flex-direction: column; justify-content: center; width: calc(100% + 1.2mm); margin-left: -0.6mm; margin-right: -0.6mm; }
       .barcode-box svg.bc-bars { flex: 1 1 0; min-height: 0; height: auto; max-width: none; max-height: none; }
       .bc-text { font-size: 5.5pt; line-height: 1; letter-spacing: 0.2px; margin-top: 0.3mm; color: #000; flex-shrink: 0; }
       .footer { width: 100%; display: flex; justify-content: space-between; align-items: center;

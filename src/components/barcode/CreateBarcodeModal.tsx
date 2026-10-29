@@ -446,7 +446,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
         textMargin: 1.5,
         displayValue: true,
       })
-      const thermalSvg = isThermal ? generateThermalBarcodeSvg(item.barcodeValue, currentSizeConfig.widthMm - 4) : ''
+      const thermalSvg = isThermal ? generateThermalBarcodeSvg(item.barcodeValue, currentSizeConfig.widthMm - 3.4) : ''
       for (let i = 0; i < count; i++) {
         allStickers.push(`
           <div class="label-sticker">
@@ -618,7 +618,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               width: auto;
               height: auto;
             }
-            .barcode-box.thermal { flex-direction: column; justify-content: center; }
+            .barcode-box.thermal { flex-direction: column; justify-content: center; width: calc(100% + 1.2mm); margin-left: -0.6mm; margin-right: -0.6mm; }
             .barcode-box svg.bc-bars { flex: 1 1 0; min-height: 0; height: auto; max-width: none; max-height: none; }
             .bc-text { font-size: 5.5pt; line-height: 1; letter-spacing: 0.2px; margin-top: 0.3mm; color: #000; flex-shrink: 0; }
             .footer {
