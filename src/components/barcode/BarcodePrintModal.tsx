@@ -166,7 +166,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       const priceFontSize = isSmall ? '8pt' : isLarge ? '12pt' : '9.5pt'
       const stickerPadding = isThermal
         // Roll printers can't print the outer ~1.3 mm of the roll, so keep content clear of the label edges
-        ? (isSmall ? '3.4mm 2mm 1mm' : '3.4mm 2.4mm 1mm')
+        ? (isSmall ? '3.8mm 2mm 0.6mm' : '3.8mm 2.4mm 0.6mm')
         : (isSmall ? '0.8mm 2mm' : '1.0mm 1.6mm')
 
       const parsedQty = parseInt(quantity.trim(), 10)
@@ -218,7 +218,9 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
         const count = Math.min(labelsPerRow, validQuantity - i)
         thermalRowsHtml += `<div class="label-row">${singleStickerHtml.repeat(count)}${blankLabelHtml.repeat(labelsPerRow - count)}</div>`
       }
-      const hasOffset = offsetXMm !== 0 || offsetYMm !== 0
+      // Offset Y (Settings) moves content down/up inside each label; the label itself never moves,
+      // so nothing gets pushed off the page. The barcode bars shrink to make room.
+      const thermalTopPadMm = Math.max(0.5, Math.min(8, 3.8 + offsetYMm))
 
       const html = `<!DOCTYPE html>
 <html>
@@ -261,10 +263,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
         break-after: page;
         page-break-after: always;
         overflow: hidden;
-        ${hasOffset ? `position: relative; left: ${offsetXMm}mm; top: ${offsetYMm}mm;` : ''}
+        ${offsetXMm !== 0 ? `position: relative; left: ${offsetXMm}mm;` : ''}
       }
       .label-row:last-child { break-after: auto; page-break-after: auto; }
-      .label-row .sticker { width: auto; min-width: 0; height: ${selectedPreset.heightMm}mm; overflow: hidden; }
+      .label-row .sticker { width: auto; min-width: 0; height: ${selectedPreset.heightMm}mm; overflow: hidden; padding-top: ${thermalTopPadMm}mm; }
       ` : ''}
       .sticker { 
         width: ${colWidthMm}mm; 

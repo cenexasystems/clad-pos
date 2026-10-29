@@ -428,7 +428,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     const priceFontSize = isSmall ? '8pt' : isLarge ? '12pt' : '9.5pt'
     const stickerPadding = isThermal
       // Roll printers can't print the outer ~1.3 mm of the roll, so keep content clear of the label edges
-      ? (isSmall ? '3.4mm 2mm 1mm' : '3.4mm 2.4mm 1mm')
+      ? (isSmall ? '3.8mm 2mm 0.6mm' : '3.8mm 2.4mm 0.6mm')
       : (isSmall ? '0.8mm 2mm' : '1.0mm 1.6mm')
 
     // Generate individual sticker cards HTML with pre-rendered SVGs
@@ -475,6 +475,9 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     const rowGapMm = Math.max(0, Number(settings.rowGapMm) || 0)
     const offsetXMm = Number(settings.offsetXMm) || 0
     const offsetYMm = Number(settings.offsetYMm) || 0
+    // Offset Y (Settings) moves content down/up inside each label; the label itself never moves,
+    // so nothing gets pushed off the page. The barcode bars shrink to make room.
+    const thermalTopPadMm = Math.max(0.5, Math.min(8, 3.8 + offsetYMm))
     const pageHeightMm = currentSizeConfig.heightMm + rowGapMm
 
     let bodyContent = ''
@@ -534,13 +537,14 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               break-after: page;
               page-break-after: always;
               overflow: hidden;
-              ${offsetXMm !== 0 || offsetYMm !== 0 ? `position: relative; left: ${offsetXMm}mm; top: ${offsetYMm}mm;` : ''}
+              ${offsetXMm !== 0 ? `position: relative; left: ${offsetXMm}mm;` : ''}
             }
             .label-row:last-child {
               break-after: auto;
               page-break-after: auto;
             }
             .label-row .label-sticker {
+              padding-top: ${thermalTopPadMm}mm;
               width: auto !important;
               max-width: none !important;
               min-width: 0;
