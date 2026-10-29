@@ -1,0 +1,247 @@
+diff --git a/src/components/barcode/BarcodePrintModal.tsx b/src/components/barcode/BarcodePrintModal.tsx
+index cd31c54..9a47313 100644
+--- a/src/components/barcode/BarcodePrintModal.tsx
++++ b/src/components/barcode/BarcodePrintModal.tsx
+@@ -26,6 +26,7 @@ export interface BarcodePrintModalProps {
+ }
+ 
+ type LabelSizePreset = {
++  id: string
+   name: string
+   widthMm: number
+   heightMm: number
+@@ -36,6 +37,7 @@ type LabelSizePreset = {
+ const getAvailablePresets = (): LabelSizePreset[] => {
+   const sizes = getAllLabelSizes()
+   return sizes.map((s) => ({
++    id: s.id,
+     name: `${s.name} (${s.widthMm}mm × ${s.heightMm}mm)`,
+     widthMm: s.widthMm,
+     heightMm: s.heightMm,
+@@ -56,7 +58,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
+ }) => {
+   const [presets, setPresets] = useState<LabelSizePreset[]>(getAvailablePresets)
+   const [quantity, setQuantity] = useState<string>(String(defaultQuantity || 1))
+-  const [selectedPreset, setSelectedPreset] = useState<LabelSizePreset>(() => presets[0] || { name: 'Thermal Standard', widthMm: 50, heightMm: 25, labelsPerRow: 1, horizontalGapMm: 0 })
++  const [selectedPreset, setSelectedPreset] = useState<LabelSizePreset>(() => {
++    const savedId = getStoredBarcodeSettings().selectedSizeId
++    return presets.find((x) => x.id === savedId) || presets[0] || { id: 'thermal_std', name: 'Thermal Standard', widthMm: 50, heightMm: 25, labelsPerRow: 1, horizontalGapMm: 0 }
++  })
+   const [copied, setCopied] = useState(false)
+   const [printerType, setPrinterType] = useState<'label' | 'regular'>(() => {
+     return getStoredBarcodeSettings().printerType || 'label'
+@@ -178,14 +183,28 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
+ 
+       const labelsPerRow = Math.max(1, selectedPreset.labelsPerRow || 1)
+       const gapMm = selectedPreset.horizontalGapMm || 0
++
++      // Roll calibration (per computer/printer)
++      const cal = getStoredBarcodeSettings()
++      const rowGapMm = Math.max(0, Number(cal.rowGapMm) || 0)
++      const offsetXMm = Number(cal.offsetXMm) || 0
++      const offsetYMm = Number(cal.offsetYMm) || 0
+       
+       // Calculate layout metrics
+       const marginMm = isThermal ? 0 : 8
+       const rowWidthMm = selectedPreset.widthMm * labelsPerRow + gapMm * (labelsPerRow - 1)
+       const colWidthMm = isThermal ? selectedPreset.widthMm : Math.floor(((210 - marginMm * 2) - gapMm * (labelsPerRow - 1)) / labelsPerRow)
+ 
++      const pageHeightMm = selectedPreset.heightMm + (isThermal ? rowGapMm : 0)
+       const allStickersHtml = Array.from({ length: validQuantity }, () => singleStickerHtml).join('')
+ 
++      // Thermal roll: EXACTLY one row of labels per page, so every row lands on one physical label row
++      let thermalRowsHtml = ''
++      for (let i = 0; i < validQuantity; i += labelsPerRow) {
++        const count = Math.min(labelsPerRow, validQuantity - i)
++        thermalRowsHtml += `<div class="page-wrapper"><div class="row">${singleStickerHtml.repeat(count)}</div></div>`
++      }
++
+       const html = `<!DOCTYPE html>
+ <html>
+   <head>
+@@ -193,7 +212,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
+     <style>
+       @page { 
+         ${isThermal 
+-          ? `margin: 0mm !important;` // Let printer driver dictate page size to prevent auto-rotation bugs
++          ? `size: ${rowWidthMm}mm ${pageHeightMm}mm; margin: 0mm !important;` // exactly one label row per page
+           : `size: A4 portrait; margin: ${marginMm}mm !important;`
+         }
+       }
+@@ -215,6 +234,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
+         row-gap: ${isThermal ? 0 : gapMm}mm; 
+         width: fit-content;
+       }
++      ${isThermal ? `
++      .page-wrapper { width: ${rowWidthMm}mm; height: ${pageHeightMm}mm; overflow: hidden; break-after: page; page-break-after: always; }
++      .page-wrapper:last-child { break-after: auto; page-break-after: auto; }
++      .row { display: flex; flex-direction: row; width: ${rowWidthMm}mm; height: ${selectedPreset.heightMm}mm; column-gap: ${gapMm}mm; transform: translate(${offsetXMm}mm, ${offsetYMm}mm); }
++      .row .sticker { flex: 0 0 ${selectedPreset.widthMm}mm; }
++      ` : ''}
+       .sticker { 
+         width: ${colWidthMm}mm; 
+         height: ${selectedPreset.heightMm}mm;
+@@ -245,7 +270,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
+     </style>
+   </head>
+   <body>
+-    <div class="grid">${allStickersHtml}</div>
++    ${isThermal ? thermalRowsHtml : `<div class="grid">${allStickersHtml}</div>`}
+   </body>
+ </html>`
+ 
+@@ -399,7 +424,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
+                   value={selectedPreset.name}
+                   onChange={(e) => {
+                     const preset = presets.find((p) => p.name === e.target.value)
+-                    if (preset) setSelectedPreset(preset)
++                    if (preset) {
++                      setSelectedPreset(preset)
++                      saveStoredBarcodeSettings({ ...getStoredBarcodeSettings(), selectedSizeId: preset.id })
++                    }
+                   }}
+                   className="w-full py-2.5 px-3 rounded-xl border-2 border-[#E8D399] bg-white font-bold text-xs sm:text-sm text-gray-900 outline-none focus:border-[#0A0A0A] shadow-sm cursor-pointer"
+                 >
+diff --git a/src/components/barcode/BarcodeSettingsDrawer.tsx b/src/components/barcode/BarcodeSettingsDrawer.tsx
+index 59695f1..d02d400 100644
+--- a/src/components/barcode/BarcodeSettingsDrawer.tsx
++++ b/src/components/barcode/BarcodeSettingsDrawer.tsx
+@@ -89,6 +89,16 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
+     onUpdateSettings(updated)
+   }
+ 
++  const handleCalibrationChange = (field: 'rowGapMm' | 'offsetXMm' | 'offsetYMm', value: string) => {
++    const num = parseFloat(value)
++    const updated: BarcodeSettings = {
++      ...settings,
++      [field]: Number.isFinite(num) ? (field === 'rowGapMm' ? Math.max(0, num) : num) : 0,
++    }
++    saveStoredBarcodeSettings(updated)
++    onUpdateSettings(updated)
++  }
++
+   const handleDeleteCustomSize = (sizeId: string) => {
+     deleteStoredCustomSize(sizeId)
+     if (settings.selectedSizeId === sizeId) {
+@@ -222,6 +232,38 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
+               </div>
+             </div>
+ 
++            {/* Roll printer alignment (fine-tune) */}
++            {settings.printerType === 'label' && (
++              <div>
++                <div className="flex items-center justify-between mb-2">
++                  <span className="text-xs font-black uppercase tracking-wider text-gray-800">
++                    Roll Alignment (Fine-tune)
++                  </span>
++                </div>
++                <div className="grid grid-cols-3 gap-2 bg-[#FBFAF6] p-3 rounded-xl border border-gray-200">
++                  {([
++                    ['rowGapMm', 'Row gap (mm)'],
++                    ['offsetXMm', 'Shift → (mm)'],
++                    ['offsetYMm', 'Shift ↓ (mm)'],
++                  ] as const).map(([field, label]) => (
++                    <label key={field} className="text-[10px] font-bold text-gray-600">
++                      {label}
++                      <input
++                        type="number"
++                        step="0.1"
++                        value={settings[field]}
++                        onChange={(e) => handleCalibrationChange(field, e.target.value)}
++                        className="mt-1 w-full h-9 px-2 rounded-lg border border-gray-300 bg-white text-xs font-bold text-gray-900 outline-none focus:border-[#0A0A0A]"
++                      />
++                    </label>
++                  ))}
++                </div>
++                <p className="mt-1.5 text-[10px] text-gray-400 font-medium leading-snug">
++                  Row gap = blank space between label rows on the roll (keep 0 if the printer driver feeds to the gap sensor). Use Shift to nudge content if it sits off-centre.
++                </p>
++              </div>
++            )}
++
+             {/* Section 3: Additional Fields */}
+             <div>
+               <div className="flex items-center justify-between mb-2">
+diff --git a/src/components/barcode/CreateBarcodeModal.tsx b/src/components/barcode/CreateBarcodeModal.tsx
+index b31693a..3feff74 100644
+--- a/src/components/barcode/CreateBarcodeModal.tsx
++++ b/src/components/barcode/CreateBarcodeModal.tsx
+@@ -463,6 +463,10 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
+     const labelsPerRow = Math.max(1, currentSizeConfig.labelsPerRow || 1)
+     const gapMm = currentSizeConfig.horizontalGapMm || 0
+     const rowWidthMm = currentSizeConfig.widthMm * labelsPerRow + gapMm * (labelsPerRow - 1)
++    const rowGapMm = Math.max(0, Number(settings.rowGapMm) || 0)
++    const offsetXMm = Number(settings.offsetXMm) || 0
++    const offsetYMm = Number(settings.offsetYMm) || 0
++    const pageHeightMm = currentSizeConfig.heightMm + rowGapMm
+ 
+     let bodyContent = ''
+     if (isThermal) {
+@@ -487,7 +491,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
+             @page {
+               ${
+                 isThermal
+-                  ? `size: ${rowWidthMm}mm ${currentSizeConfig.heightMm}mm !important; margin: 0mm !important; marks: none !important;`
++                  ? `size: ${rowWidthMm}mm ${pageHeightMm}mm !important; margin: 0mm !important; marks: none !important;`
+                   : `size: A4 portrait; margin: 0mm !important;`
+               }
+             }
+@@ -509,15 +513,20 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
+                 ? `
+             .page-wrapper {
+               width: ${rowWidthMm}mm !important;
+-              height: ${currentSizeConfig.heightMm}mm !important;
++              height: ${pageHeightMm}mm !important;
+               overflow: hidden !important;
+               page-break-after: always !important;
+               break-after: page !important;
+             }
++            .page-wrapper:last-child {
++              page-break-after: auto !important;
++              break-after: auto !important;
++            }
++            .row { transform: translate(${offsetXMm}mm, ${offsetYMm}mm); }
+             @media print {
+               .page-wrapper {
+                 width: ${rowWidthMm}mm !important;
+-                height: ${currentSizeConfig.heightMm}mm !important;
++                height: ${pageHeightMm}mm !important;
+               }
+             }`
+                 : ''
+diff --git a/src/lib/barcode.ts b/src/lib/barcode.ts
+index b64061a..1498086 100644
+--- a/src/lib/barcode.ts
++++ b/src/lib/barcode.ts
+@@ -24,7 +24,7 @@ export const DEFAULT_LABEL_SIZES: LabelSizeConfig[] = [
+   { id: '1_100x50', name: '100 × 50 mm (Large Carton / Box)', labelsPerRow: 1, widthMm: 100, heightMm: 50, horizontalGapMm: 0 },
+   { id: '4_35x22_2up', name: '35 × 22 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
+   { id: '4_50x25_2up', name: '50 × 25 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 50, heightMm: 25, horizontalGapMm: 2 },
+-    { id: '4_35x22_3up', name: '35 x 22 mm x 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
++    { id: '4_35x22_3up', name: '35 × 22 mm × 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
+   // A4 sheet presets — matches standard 4-column Avery/generic Indian label sheets
+   { id: 'a4_4up_48x25', name: 'A4 Sheet — 4 columns × 48 × 25 mm', labelsPerRow: 4, widthMm: 48, heightMm: 25, horizontalGapMm: 2 },
+   { id: 'a4_4up_48x30', name: 'A4 Sheet — 4 columns × 48 × 30 mm', labelsPerRow: 4, widthMm: 48, heightMm: 30, horizontalGapMm: 2 },
+@@ -39,6 +39,12 @@ export interface BarcodeSettings {
+   showCompanyName: boolean
+   showItemName: boolean
+   showDiscount: boolean
++  /** Roll printers: blank gap between two label rows on the roll (mm). 0 when the printer driver auto-feeds to the gap sensor. */
++  rowGapMm: number
++  /** Fine-tune: shift printed content right (+) / left (-) in mm */
++  offsetXMm: number
++  /** Fine-tune: shift printed content down (+) / up (-) in mm */
++  offsetYMm: number
+ }
+ 
+ export const DEFAULT_BARCODE_SETTINGS: BarcodeSettings = {
+@@ -48,6 +54,9 @@ export const DEFAULT_BARCODE_SETTINGS: BarcodeSettings = {
+   showCompanyName: true,
+   showItemName: true,
+   showDiscount: false,
++  rowGapMm: 0,
++  offsetXMm: 0,
++  offsetYMm: 0,
+ }
+ 
+ const SETTINGS_KEY = 'clad_barcode_settings'

@@ -89,6 +89,16 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
     onUpdateSettings(updated)
   }
 
+  const handleCalibrationChange = (field: 'rowGapMm' | 'offsetXMm' | 'offsetYMm', value: string) => {
+    const num = parseFloat(value)
+    const updated: BarcodeSettings = {
+      ...settings,
+      [field]: Number.isFinite(num) ? (field === 'rowGapMm' ? Math.max(0, num) : num) : 0,
+    }
+    saveStoredBarcodeSettings(updated)
+    onUpdateSettings(updated)
+  }
+
   const handleDeleteCustomSize = (sizeId: string) => {
     deleteStoredCustomSize(sizeId)
     if (settings.selectedSizeId === sizeId) {
@@ -221,6 +231,38 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Roll printer alignment (fine-tune) */}
+            {settings.printerType === 'label' && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-gray-800">
+                    Roll Alignment (Fine-tune)
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 bg-[#FBFAF6] p-3 rounded-xl border border-gray-200">
+                  {([
+                    ['rowGapMm', 'Row gap (mm)'],
+                    ['offsetXMm', 'Shift → (mm)'],
+                    ['offsetYMm', 'Shift ↓ (mm)'],
+                  ] as const).map(([field, label]) => (
+                    <label key={field} className="text-[10px] font-bold text-gray-600">
+                      {label}
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={settings[field]}
+                        onChange={(e) => handleCalibrationChange(field, e.target.value)}
+                        className="mt-1 w-full h-9 px-2 rounded-lg border border-gray-300 bg-white text-xs font-bold text-gray-900 outline-none focus:border-[#0A0A0A]"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-[10px] text-gray-400 font-medium leading-snug">
+                  Row gap = blank space between label rows on the roll (keep 0 if the printer driver feeds to the gap sensor). Use Shift to nudge content if it sits off-centre.
+                </p>
+              </div>
+            )}
 
             {/* Section 3: Additional Fields */}
             <div>

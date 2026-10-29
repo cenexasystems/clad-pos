@@ -463,6 +463,10 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     const labelsPerRow = Math.max(1, currentSizeConfig.labelsPerRow || 1)
     const gapMm = currentSizeConfig.horizontalGapMm || 0
     const rowWidthMm = currentSizeConfig.widthMm * labelsPerRow + gapMm * (labelsPerRow - 1)
+    const rowGapMm = Math.max(0, Number(settings.rowGapMm) || 0)
+    const offsetXMm = Number(settings.offsetXMm) || 0
+    const offsetYMm = Number(settings.offsetYMm) || 0
+    const pageHeightMm = currentSizeConfig.heightMm + rowGapMm
 
     let bodyContent = ''
     if (isThermal) {
@@ -487,7 +491,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
             @page {
               ${
                 isThermal
-                  ? `size: ${rowWidthMm}mm ${currentSizeConfig.heightMm}mm !important; margin: 0mm !important; marks: none !important;`
+                  ? `size: ${rowWidthMm}mm ${pageHeightMm}mm !important; margin: 0mm !important; marks: none !important;`
                   : `size: A4 portrait; margin: 0mm !important;`
               }
             }
@@ -509,15 +513,20 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
                 ? `
             .page-wrapper {
               width: ${rowWidthMm}mm !important;
-              height: ${currentSizeConfig.heightMm}mm !important;
+              height: ${pageHeightMm}mm !important;
               overflow: hidden !important;
               page-break-after: always !important;
               break-after: page !important;
             }
+            .page-wrapper:last-child {
+              page-break-after: auto !important;
+              break-after: auto !important;
+            }
+            .row { transform: translate(${offsetXMm}mm, ${offsetYMm}mm); }
             @media print {
               .page-wrapper {
                 width: ${rowWidthMm}mm !important;
-                height: ${currentSizeConfig.heightMm}mm !important;
+                height: ${pageHeightMm}mm !important;
               }
             }`
                 : ''

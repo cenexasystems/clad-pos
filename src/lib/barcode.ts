@@ -24,7 +24,7 @@ export const DEFAULT_LABEL_SIZES: LabelSizeConfig[] = [
   { id: '1_100x50', name: '100 × 50 mm (Large Carton / Box)', labelsPerRow: 1, widthMm: 100, heightMm: 50, horizontalGapMm: 0 },
   { id: '4_35x22_2up', name: '35 × 22 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
   { id: '4_50x25_2up', name: '50 × 25 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 50, heightMm: 25, horizontalGapMm: 2 },
-    { id: '4_35x22_3up', name: '35 x 22 mm x 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
+    { id: '4_35x22_3up', name: '35 × 22 mm × 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
   // A4 sheet presets — matches standard 4-column Avery/generic Indian label sheets
   { id: 'a4_4up_48x25', name: 'A4 Sheet — 4 columns × 48 × 25 mm', labelsPerRow: 4, widthMm: 48, heightMm: 25, horizontalGapMm: 2 },
   { id: 'a4_4up_48x30', name: 'A4 Sheet — 4 columns × 48 × 30 mm', labelsPerRow: 4, widthMm: 48, heightMm: 30, horizontalGapMm: 2 },
@@ -39,6 +39,12 @@ export interface BarcodeSettings {
   showCompanyName: boolean
   showItemName: boolean
   showDiscount: boolean
+  /** Roll printers: blank gap between two label rows on the roll (mm). 0 when the printer driver auto-feeds to the gap sensor. */
+  rowGapMm: number
+  /** Fine-tune: shift printed content right (+) / left (-) in mm */
+  offsetXMm: number
+  /** Fine-tune: shift printed content down (+) / up (-) in mm */
+  offsetYMm: number
 }
 
 export const DEFAULT_BARCODE_SETTINGS: BarcodeSettings = {
@@ -48,6 +54,9 @@ export const DEFAULT_BARCODE_SETTINGS: BarcodeSettings = {
   showCompanyName: true,
   showItemName: true,
   showDiscount: false,
+  rowGapMm: 0,
+  offsetXMm: 0,
+  offsetYMm: 0,
 }
 
 const SETTINGS_KEY = 'clad_barcode_settings'

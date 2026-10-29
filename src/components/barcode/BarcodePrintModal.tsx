@@ -26,6 +26,7 @@ export interface BarcodePrintModalProps {
 }
 
 type LabelSizePreset = {
+  id: string
   name: string
   widthMm: number
   heightMm: number
@@ -36,6 +37,7 @@ type LabelSizePreset = {
 const getAvailablePresets = (): LabelSizePreset[] => {
   const sizes = getAllLabelSizes()
   return sizes.map((s) => ({
+    id: s.id,
     name: `${s.name} (${s.widthMm}mm × ${s.heightMm}mm)`,
     widthMm: s.widthMm,
     heightMm: s.heightMm,
@@ -56,7 +58,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 }) => {
   const [presets, setPresets] = useState<LabelSizePreset[]>(getAvailablePresets)
   const [quantity, setQuantity] = useState<string>(String(defaultQuantity || 1))
-  const [selectedPreset, setSelectedPreset] = useState<LabelSizePreset>(() => presets[0] || { name: 'Thermal Standard', widthMm: 50, heightMm: 25, labelsPerRow: 1, horizontalGapMm: 0 })
+  const [selectedPreset, setSelectedPreset] = useState<LabelSizePreset>(() => {
+    const savedId = getStoredBarcodeSettings().selectedSizeId
+    return presets.find((x) => x.id === savedId) || presets[0] || { id: 'thermal_std', name: 'Thermal Standard', widthMm: 50, heightMm: 25, labelsPerRow: 1, horizontalGapMm: 0 }
+  })
   const [copied, setCopied] = useState(false)
   const [printerType, setPrinterType] = useState<'label' | 'regular'>(() => {
     return getStoredBarcodeSettings().printerType || 'label'
@@ -178,13 +183,27 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
 
       const labelsPerRow = Math.max(1, selectedPreset.labelsPerRow || 1)
       const gapMm = selectedPreset.horizontalGapMm || 0
+
+      // Roll calibration (per computer/printer)
+      const cal = getStoredBarcodeSettings()
+      const rowGapMm = Math.max(0, Number(cal.rowGapMm) || 0)
+      const offsetXMm = Number(cal.offsetXMm) || 0
+      const offsetYMm = Number(cal.offsetYMm) || 0
       
       // Calculate layout metrics
       const marginMm = isThermal ? 0 : 8
       const rowWidthMm = selectedPreset.widthMm * labelsPerRow + gapMm * (labelsPerRow - 1)
       const colWidthMm = isThermal ? selectedPreset.widthMm : Math.floor(((210 - marginMm * 2) - gapMm * (labelsPerRow - 1)) / labelsPerRow)
 
+      const pageHeightMm = selectedPreset.heightMm + (isThermal ? rowGapMm : 0)
       const allStickersHtml = Array.from({ length: validQuantity }, () => singleStickerHtml).join('')
+
+      // Thermal roll: EXACTLY one row of labels per page, so every row lands on one physical label row
+      let thermalRowsHtml = ''
+      for (let i = 0; i < validQuantity; i += labelsPerRow) {
+        const count = Math.min(labelsPerRow, validQuantity - i)
+        thermalRowsHtml += `<div class="page-wrapper"><div class="row">${singleStickerHtml.repeat(count)}</div></div>`
+      }
 
       const html = `<!DOCTYPE html>
 <html>
@@ -193,7 +212,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
     <style>
       @page { 
         ${isThermal 
-          ? `margin: 0mm !important;` // Let printer driver dictate page size to prevent auto-rotation bugs
+          ? `size: ${rowWidthMm}mm ${pageHeightMm}mm; margin: 0mm !important;` // exactly one label row per page
           : `size: A4 portrait; margin: ${marginMm}mm !important;`
         }
       }
@@ -215,6 +234,12 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
         row-gap: ${isThermal ? 0 : gapMm}mm; 
         width: fit-content;
       }
+      ${isThermal ? `
+      .page-wrapper { width: ${rowWidthMm}mm; height: ${pageHeightMm}mm; overflow: hidden; break-after: page; page-break-after: always; }
+      .page-wrapper:last-child { break-after: auto; page-break-after: auto; }
+      .row { display: flex; flex-direction: row; width: ${rowWidthMm}mm; height: ${selectedPreset.heightMm}mm; column-gap: ${gapMm}mm; transform: translate(${offsetXMm}mm, ${offsetYMm}mm); }
+      .row .sticker { flex: 0 0 ${selectedPreset.widthMm}mm; }
+      ` : ''}
       .sticker { 
         width: ${colWidthMm}mm; 
         height: ${selectedPreset.heightMm}mm;
@@ -245,7 +270,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
     </style>
   </head>
   <body>
-    <div class="grid">${allStickersHtml}</div>
+    ${isThermal ? thermalRowsHtml : `<div class="grid">${allStickersHtml}</div>`}
   </body>
 </html>`
 
@@ -399,7 +424,10 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                   value={selectedPreset.name}
                   onChange={(e) => {
                     const preset = presets.find((p) => p.name === e.target.value)
-                    if (preset) setSelectedPreset(preset)
+                    if (preset) {
+                      setSelectedPreset(preset)
+                      saveStoredBarcodeSettings({ ...getStoredBarcodeSettings(), selectedSizeId: preset.id })
+                    }
                   }}
                   className="w-full py-2.5 px-3 rounded-xl border-2 border-[#E8D399] bg-white font-bold text-xs sm:text-sm text-gray-900 outline-none focus:border-[#0A0A0A] shadow-sm cursor-pointer"
                 >
