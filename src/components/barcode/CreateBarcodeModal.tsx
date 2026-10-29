@@ -425,7 +425,10 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     const titleFontSize = isSmall ? '6pt' : isLarge ? '9pt' : '7.5pt'
     const tagFontSize = isSmall ? '5.5pt' : isLarge ? '8.5pt' : '7pt'
     const priceFontSize = isSmall ? '8pt' : isLarge ? '12pt' : '9.5pt'
-    const stickerPadding = isSmall ? '0.8mm 2mm' : '1.0mm 1.6mm'
+    const stickerPadding = isThermal
+      // Roll printers can't print the outer ~1.3 mm of the roll, so keep content clear of the label edges
+      ? (isSmall ? '2mm 2.8mm 0.6mm' : '2.2mm 2.8mm 0.8mm')
+      : (isSmall ? '0.8mm 2mm' : '1.0mm 1.6mm')
 
     // Generate individual sticker cards HTML with pre-rendered SVGs
     const allStickers: string[] = []
