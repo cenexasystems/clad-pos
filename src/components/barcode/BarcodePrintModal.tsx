@@ -324,7 +324,7 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
       .barcode-box svg.bc-bars { flex: 1 1 0; min-height: 0; height: auto; max-width: none; max-height: none; }
       .bc-text { font-size: 5.5pt; line-height: 1; letter-spacing: 0.2px; margin-top: 0.3mm; color: #000; font-weight: 700; flex-shrink: 0; }
       .footer { width: 100%; display: flex; justify-content: space-between; align-items: center;
-        gap: 1mm; border-top: 0.6pt solid #000; padding-top: 0.5mm; line-height: 1; flex-shrink: 0; font-size: ${tagFontSize}; }
+        gap: 1mm; border-top: 0.6pt solid #000; padding-top: 0.5mm; ${isThermal ? "padding-left: 1mm; padding-right: 1mm;" : ""} line-height: 1; flex-shrink: 0; font-size: ${tagFontSize}; }
       .product-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: ${tagFontSize}; }
       .price-group { display: flex; align-items: baseline; gap: 0.7mm; flex-shrink: 0; }
       .retail-tag { font-size: ${tagFontSize}; font-weight: 800; color: #000; }

@@ -19,13 +19,13 @@ const CAMERA_SCAN_HINTS = new Map<DecodeHintType, unknown>([
 // The library default waits 500 ms between frames, which made scanning feel stuck.
 const CAMERA_SCAN_OPTIONS = { delayBetweenScanAttempts: 80, delayBetweenScanSuccess: 150 }
 
-// Ask for an HD back-camera stream; the default is often 640x480, too blurry for small sticker labels.
+// Ask for a Full HD back-camera stream; the default is often 640x480, too blurry for the thin bars on 35 mm labels.
 const buildCameraConstraints = (deviceId: string): MediaStreamConstraints => ({
   audio: false,
   video: {
     ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } }),
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
   },
 })
 

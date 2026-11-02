@@ -13,6 +13,14 @@ export const normalizeBarcode = (code: string | null | undefined): string => {
   return clean
 }
 
+/**
+ * New item codes are 8 digits. Code 128 packs two digits into each symbol, so an
+ * 8-digit code prints at full quality (2 printer dots per module, ~25 mm wide) on a
+ * 35 mm roll label. Letter codes like CLAD1234567 are ~38 mm at that quality, so they
+ * had to be squeezed with uneven bar widths, which phone cameras can't read.
+ */
+export const generateItemCode = (): string => String(Math.floor(10000000 + Math.random() * 90000000))
+
 export interface LabelSizeConfig {
   id: string
   name: string
