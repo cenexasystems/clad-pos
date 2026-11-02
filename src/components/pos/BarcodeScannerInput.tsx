@@ -14,6 +14,7 @@ const CAMERA_SCAN_HINTS = new Map<DecodeHintType, unknown>([
     DecodeHintType.POSSIBLE_FORMATS,
     [BarcodeFormat.CODE_128, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E],
   ],
+  [DecodeHintType.TRY_HARDER, true],
 ])
 
 // The library default waits 500 ms between frames, which made scanning feel stuck.
