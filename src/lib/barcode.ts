@@ -2,19 +2,8 @@ import JsBarcode from 'jsbarcode'
 import { isSupabaseConfigured, supabase } from './supabase'
 
 export const normalizeBarcode = (code: string | null | undefined): string => {
-  if (code === null || code === undefined) return ''
-
-  const clean = String(code)
-    .trim()
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/[^A-Z0-9_-]/gi, '')
-    .toUpperCase()
-
-  return clean
+  return (code || '').trim().toUpperCase()
 }
-
-/** Keep newly generated item codes in the existing CLAD + 7 digit format. */
-export const generateItemCode = (): string => `CLAD${Math.floor(1000000 + Math.random() * 9000000)}`
 
 export interface LabelSizeConfig {
   id: string
@@ -98,7 +87,6 @@ export function getStoredBarcodeSettings(): BarcodeSettings {
   }
   return DEFAULT_BARCODE_SETTINGS
 }
-
 
 export function saveStoredBarcodeSettings(settings: BarcodeSettings): void {
   try {
@@ -281,8 +269,6 @@ export interface BarcodeRenderOptions {
   font?: string
   textMargin?: number
   margin?: number
-  marginLeft?: number
-  marginRight?: number
   /** Extra space under the human-readable text so it is not clipped */
   marginBottom?: number
   lineColor?: string
@@ -309,8 +295,6 @@ export function renderBarcodeSvg(
       font: options?.font ?? 'monospace',
       textMargin: options?.textMargin ?? 1,
       margin: options?.margin ?? 4,
-      ...(options?.marginLeft !== undefined ? { marginLeft: options.marginLeft } : {}),
-      ...(options?.marginRight !== undefined ? { marginRight: options.marginRight } : {}),
       ...(options?.marginBottom !== undefined ? { marginBottom: options.marginBottom } : {}),
       lineColor: options?.lineColor ?? '#000000',
       background: options?.background ?? '#ffffff',
@@ -353,9 +337,15 @@ const THERMAL_DOT_MAPS: number[][] = [
   [2, 4, 6, 8],
   [2, 4, 5, 7],
   [2, 3, 5, 7],
-  [2, 3, 4, 5],
-  [1, 2, 3, 4],
 ]
+
+/**
+ * Width the bars may use on a roll label. A CLAD + 7 digit code is 134 modules,
+ * which needs 268 dots (33.5 mm) at the ideal 2 dots per module. Leaving only
+ * 0.7 mm per side still keeps over 10 modules of quiet zone to the neighbouring
+ * label's bars, and avoids squeezing bars into the less accurate 5/7 dot widths.
+ */
+export const thermalBarcodeWidthMm = (labelWidthMm: number): number => labelWidthMm - 1.4
 
 /**
  * Barcode bars for roll (thermal) labels. Every bar and gap is drawn as a whole
@@ -386,40 +376,31 @@ export function generateThermalBarcodeSvg(value: string, availableWidthMm: numbe
     }
     const widthDots = (map: number[]) =>
       elements.reduce((sum, e) => sum + (map[e.modules - 1] ?? e.modules * map[0]), 0)
-    const availableDots = Math.floor(availableWidthMm / PRINTER_DOT_MM)
-    const map = THERMAL_DOT_MAPS.find((candidate) => {
-      const quietZoneDots = candidate[0] * 10
-      return widthDots(candidate) + quietZoneDots * 2 <= availableDots
-    })
-    if (!map) return ''
+    const maxDots = Math.floor(availableWidthMm / PRINTER_DOT_MM)
+    const map = THERMAL_DOT_MAPS.find((m) => widthDots(m) <= maxDots)
 
-    const quietZoneDots = map[0] * 10
     let rects = ''
-    let x = quietZoneDots
-    for (const e of elements) {
-      const width = map[e.modules - 1] ?? e.modules * map[0]
-      if (e.bar) rects += `<rect x="${x}" y="0" width="${width}" height="100"/>`
-      x += width
+    let totalDots: number
+    if (map) {
+      let x = 0
+      for (const e of elements) {
+        const w = map[e.modules - 1] ?? e.modules * map[0]
+        if (e.bar) rects += `<rect x="${x}" y="0" width="${w}" height="100"/>`
+        x += w
+      }
+      totalDots = x
+    } else {
+      // Too long to fit at 2 dots per module: scale evenly (best effort)
+      const scale = maxDots / modules
+      for (const b of bars) rects += `<rect x="${(b.x * scale).toFixed(3)}" y="0" width="${(b.w * scale).toFixed(3)}" height="100"/>`
+      totalDots = maxDots
     }
-    const totalDots = x + quietZoneDots
     const widthMm = (totalDots * PRINTER_DOT_MM).toFixed(3)
     return `<svg class="bc-bars" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalDots} 100" width="${widthMm}mm" style="width:${widthMm}mm" preserveAspectRatio="none" shape-rendering="crispEdges"><rect x="0" y="0" width="${totalDots}" height="100" fill="#fff"/><g fill="#000">${rects}</g></svg>`
   } catch (err) {
     console.error('[generateThermalBarcodeSvg] Failed to generate barcode SVG:', err)
     return ''
   }
-}
-export function getBarcodeModuleWidth(value: string, availableWidthMm: number, options?: BarcodeRenderOptions): number | null {
-  if (!value.trim() || !Number.isFinite(availableWidthMm) || availableWidthMm <= 0) return null
-
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-  renderBarcodeSvg(svg, value, { ...options, width: 1 })
-
-  const naturalWidth = Number.parseFloat(svg.getAttribute('width') || '')
-  if (!Number.isFinite(naturalWidth) || naturalWidth <= 0) return null
-
-  const moduleWidth = (availableWidthMm * 96 / 25.4) / naturalWidth
-  return moduleWidth >= 0.95 ? moduleWidth : null
 }
 
 /**
@@ -434,5 +415,5 @@ export function formatBarcodeDisplay(value?: string | null): string {
  * Validate barcode format (alphanumeric, 4 to 32 chars).
  */
 export function isValidBarcodeValue(value: string): boolean {
-  return /^[A-Z0-9_-]{4,32}$/i.test(String(value ?? '').trim())
+  return /^[A-Z0-9_-]{4,32}$/i.test(value.trim())
 }

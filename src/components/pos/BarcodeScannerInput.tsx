@@ -1,34 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Camera, X, AlertCircle, Sparkles, ScanLine, SwitchCamera } from 'lucide-react'
-import { BrowserMultiFormatReader, BarcodeFormat, type IScannerControls } from '@zxing/browser'
-import { DecodeHintType } from '@zxing/library'
+import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser'
 import { barcodeService } from '../../services/barcodeService'
 import { BRAND_EN } from '../../lib/brand'
 import { normalizeBarcode } from '../../lib/barcode'
-
-// Only decode what we print (CODE128 labels) plus retail EAN/UPC codes.
-// All of these carry a checksum. With every format enabled the camera was slow
-// and returned short "ghost" reads (e.g. "60892") from formats like Code 39 / ITF.
-const CAMERA_SCAN_HINTS = new Map<DecodeHintType, unknown>([
-  [
-    DecodeHintType.POSSIBLE_FORMATS,
-    [BarcodeFormat.CODE_128, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E],
-  ],
-  [DecodeHintType.TRY_HARDER, true],
-])
-
-// The library default waits 500 ms between frames, which made scanning feel stuck.
-const CAMERA_SCAN_OPTIONS = { delayBetweenScanAttempts: 80, delayBetweenScanSuccess: 150 }
-
-// Ask for a Full HD back-camera stream; the default is often 640x480, too blurry for the thin bars on 35 mm labels.
-const buildCameraConstraints = (deviceId: string): MediaStreamConstraints => ({
-  audio: false,
-  video: {
-    ...(deviceId ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'environment' } }),
-    width: { ideal: 1920 },
-    height: { ideal: 1080 },
-  },
-})
 
 export interface ScannedItemPayload {
   product_id: number
@@ -48,18 +23,11 @@ export interface ScannedItemPayload {
 export interface BarcodeScannerInputProps {
   onItemScanned: (item: ScannedItemPayload) => void
   disabled?: boolean
-  /**
-   * Listen for USB/Bluetooth scanner keystrokes. Turn this off when a page-level
-   * listener (useHardwareBarcodeScanner in Dashboard) already handles them,
-   * otherwise every scan is processed twice and the item gets +2 qty.
-   */
-  listenForHardwareScanner?: boolean
 }
 
 export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
   onItemScanned,
   disabled = false,
-  listenForHardwareScanner = true,
 }) => {
   const [manualCode, setManualCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -205,16 +173,8 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
     }
   }, [onItemScanned])
 
-  // Latest processBarcode, read by the camera loop so parent re-renders don't restart the camera
-  const processBarcodeRef = useRef(processBarcode)
-  useEffect(() => {
-    processBarcodeRef.current = processBarcode
-  }, [processBarcode])
-
   // Non-Blocking HID Keystroke Interceptor
   useEffect(() => {
-    if (!listenForHardwareScanner) return
-
     const handleKeyDown = (e: KeyboardEvent) => {
       const now = Date.now()
       const diff = now - bufferRef.current.lastTime
@@ -271,7 +231,7 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true)
     }
-  }, [processBarcode, listenForHardwareScanner])
+  }, [processBarcode])
 
   // Touch Device Detection Helper
   const isTouchDevice = () => {
@@ -296,38 +256,44 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
     if (!videoElement) return
 
     let isMounted = true
-    let lastRead = ''
-    const reader = new BrowserMultiFormatReader(CAMERA_SCAN_HINTS, CAMERA_SCAN_OPTIONS)
+    const reader = new BrowserMultiFormatReader()
     readerRef.current = reader
 
-    // Enumerate devices for the camera picker only. We no longer auto-select a device here:
-    // doing so changed selectedDeviceId and restarted the camera right after it opened.
+    // Enumerate devices in the background for camera picker without disrupting current stream
     BrowserMultiFormatReader.listVideoInputDevices()
       .then((devices) => {
-        if (isMounted) setVideoDevices(devices)
+        if (!isMounted) return
+        setVideoDevices(devices)
+        if (devices.length > 0 && !selectedDeviceId) {
+          const backCam = devices.find((d) =>
+            d.label.toLowerCase().includes('back') ||
+            d.label.toLowerCase().includes('rear') ||
+            d.label.toLowerCase().includes('environment')
+          )
+          // Store without immediately re-triggering if default stream is fine
+          if (backCam) {
+            setSelectedDeviceId(backCam.deviceId)
+          }
+        }
       })
       .catch((err) => {
         console.warn('Could not enumerate cameras:', err)
       })
 
-    const decodePromise = reader.decodeFromConstraints(
-      buildCameraConstraints(selectedDeviceId),
+    // Start decoding immediately using selected device or default environment camera
+    const decodePromise = reader.decodeFromVideoDevice(
+      selectedDeviceId || undefined,
       videoElement,
-      (result) => {
-        if (!isMounted || !result) return
-        const text = normalizeBarcode(result.getText())
-        if (!text) return
-
-        // Accept a code only after two matching reads in a row, so a single misread never reaches the cart
-        if (text !== lastRead) {
-          lastRead = text
-          return
+      (result, _err) => {
+        if (!isMounted) return
+        if (result) {
+          const text = result.getText()
+          if (text) {
+            stopCamera()
+            setIsCameraOpen(false)
+            void processBarcode(text)
+          }
         }
-
-        isMounted = false
-        stopCamera()
-        setIsCameraOpen(false)
-        void processBarcodeRef.current(text)
       }
     )
 
@@ -352,7 +318,7 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
       isMounted = false
       stopCamera()
     }
-  }, [isCameraOpen, selectedDeviceId, stopCamera])
+  }, [isCameraOpen, selectedDeviceId, processBarcode, stopCamera])
 
   // Listen for Escape key to close camera
   useEffect(() => {
@@ -468,7 +434,6 @@ export const BarcodeScannerInput: React.FC<BarcodeScannerInputProps> = ({
                     onChange={(e) => setSelectedDeviceId(e.target.value)}
                     className="w-full bg-[#1A1A1A] border border-gray-700 text-xs font-bold text-white rounded-lg px-2 py-1.5 outline-none focus:border-[#D4AF37]"
                   >
-                    <option value="">Back camera (auto)</option>
                     {videoDevices.map((d) => (
                       <option key={d.deviceId} value={d.deviceId}>
                         {d.label || `Camera ${d.deviceId.slice(0, 6)}`}

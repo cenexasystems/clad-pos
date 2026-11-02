@@ -42,8 +42,6 @@ export const BarcodeLabel: React.FC<BarcodeLabelProps> = ({
         fontSize: barcodeFontSize,
         font: 'Arial, sans-serif',
         margin: 0,
-        marginLeft: 10,
-        marginRight: 10,
         textMargin: 1.5,
         displayValue: true,
       })
@@ -67,13 +65,22 @@ export const BarcodeLabel: React.FC<BarcodeLabelProps> = ({
         fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
-      {/* Brand Header */}
+      {/* Brand & Product Header */}
       <div className="w-full flex flex-col items-center leading-none shrink-0">
         <div
           className="font-black tracking-wider text-[#0A0A0A] uppercase truncate max-w-full"
           style={{ fontSize: isSmall ? '7.5px' : isLarge ? '11px' : '9px' }}
         >
           {storeName}
+        </div>
+        <div
+          className="font-bold text-gray-900 truncate max-w-full leading-tight"
+          style={{
+            fontSize: isSmall ? '6.5px' : isLarge ? '9.5px' : '8px',
+            marginTop: '0.3mm',
+          }}
+        >
+          {fullTitle}
         </div>
       </div>
 
@@ -92,16 +99,15 @@ export const BarcodeLabel: React.FC<BarcodeLabelProps> = ({
           paddingTop: isSmall ? '0.4mm' : '0.6mm',
         }}
       >
-        <div className="min-w-0 flex-1 flex flex-col items-start text-left">
-          <span className="w-full truncate font-bold text-black" style={{ fontSize: isSmall ? '6px' : isLarge ? '8.5px' : '7.5px' }}>
-            {fullTitle}
+        {mrp && mrp > price ? (
+          <span className="text-gray-500 line-through" style={{ fontSize: isSmall ? '6px' : isLarge ? '8.5px' : '7.5px' }}>
+            MRP {formatCurrency(mrp)}
           </span>
-          {mrp && mrp > price && (
-            <span className="text-gray-600 line-through" style={{ fontSize: isSmall ? '5px' : '6px' }}>
-              MRP {formatCurrency(mrp)}
-            </span>
-          )}
-        </div>
+        ) : (
+          <span className="text-gray-600 font-bold" style={{ fontSize: isSmall ? '6px' : isLarge ? '8.5px' : '7px' }}>
+            CLAD RETAIL
+          </span>
+        )}
         <span
           className="font-black text-black"
           style={{ fontSize: isSmall ? '8.5px' : isLarge ? '12px' : '10px' }}

@@ -1239,8 +1239,7 @@ export default function Pos(props: PosProps = {}) {
 
               {/* Barcode Scanner Bar */}
               <div className="w-full">
-                {/* Inside Dashboard, its global scanner hook already handles hardware scans */}
-                <BarcodeScannerInput onItemScanned={handleScannedItem} listenForHardwareScanner={!embeddedMode} />
+                <BarcodeScannerInput onItemScanned={handleScannedItem} />
               </div>
 
               <div className="flex flex-wrap items-center gap-2 pt-1">

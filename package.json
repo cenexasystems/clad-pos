@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "test": "tsx tests/dateRange.test.ts && tsx tests/barcodeNormalization.test.ts",
+    "test": "tsx tests/dateRange.test.ts",
     "generate:icons": "node scripts/generate-app-icons.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -14,7 +14,6 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
     "@zxing/browser": "^0.2.1",
-    "@zxing/library": "^0.23.0",
     "autoprefixer": "^10.4.27",
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",

@@ -7,8 +7,6 @@ import {
   renderBarcodeSvg,
 } from '../../lib/barcode'
 import { lockScroll, unlockScroll } from '../../lib/scrollLock'
-import { BRAND_EN } from '../../lib/brand'
-import { StickerFooter } from './StickerFooter'
 
 interface BarcodeSheetPreviewModalProps {
   isOpen: boolean
@@ -16,9 +14,6 @@ interface BarcodeSheetPreviewModalProps {
   items: BarcodeQueueItem[]
   sizeConfig: LabelSizeConfig
   onPrint: () => void
-  showCompanyName?: boolean
-  showItemName?: boolean
-  showSalePrice?: boolean
 }
 
 export const BarcodeSheetPreviewModal: React.FC<BarcodeSheetPreviewModalProps> = ({
@@ -27,9 +22,6 @@ export const BarcodeSheetPreviewModal: React.FC<BarcodeSheetPreviewModalProps> =
   items,
   sizeConfig,
   onPrint,
-  showCompanyName = true,
-  showItemName = true,
-  showSalePrice = true,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -137,12 +129,12 @@ export const BarcodeSheetPreviewModal: React.FC<BarcodeSheetPreviewModalProps> =
                   }}
                 >
                   {/* Header */}
-                  {showCompanyName && (
+                  {label.header && (
                     <span
                       className="font-black uppercase tracking-wider text-gray-900 leading-none truncate max-w-[90%]"
                       style={{ fontSize: `${Math.max(7.5, Math.round(cardHeightPx * 0.09))}px` }}
                     >
-                      {label.header || BRAND_EN}
+                      {label.header}
                     </span>
                   )}
 
@@ -165,16 +157,39 @@ export const BarcodeSheetPreviewModal: React.FC<BarcodeSheetPreviewModalProps> =
                   {label.barcodeValue}
                 </span>
 
-                {/* Footer: same as the printed sticker */}
-                <StickerFooter
-                  name={
-                    showItemName
-                      ? `${label.productName}${label.variantName ? ` (${label.variantName})` : ''}`
-                      : label.line2
-                  }
-                  price={showSalePrice ? label.price : null}
-                  heightPx={cardHeightPx}
-                />
+                {/* Lines */}
+                {label.line1 && (
+                  <span
+                    className="font-bold text-gray-700 truncate max-w-full leading-tight"
+                    style={{ fontSize: `${Math.max(7, Math.round(cardHeightPx * 0.075))}px` }}
+                  >
+                    {label.line1}
+                  </span>
+                )}
+                {label.line2 && (
+                  <span
+                    className="font-semibold text-gray-600 truncate max-w-full leading-tight"
+                    style={{ fontSize: `${Math.max(6.5, Math.round(cardHeightPx * 0.07))}px` }}
+                  >
+                    {label.line2}
+                  </span>
+                )}
+                {label.line3 && (
+                  <span
+                    className="font-black text-[#0A0A0A] truncate max-w-full leading-none"
+                    style={{ fontSize: `${Math.max(8, Math.round(cardHeightPx * 0.095))}px` }}
+                  >
+                    {label.line3}
+                  </span>
+                )}
+                {label.line4 && (
+                  <span
+                    className="text-gray-500 truncate max-w-full leading-none"
+                    style={{ fontSize: `${Math.max(6, Math.round(cardHeightPx * 0.065))}px` }}
+                  >
+                    {label.line4}
+                  </span>
+                )}
               </div>
             </div>
           ))}
