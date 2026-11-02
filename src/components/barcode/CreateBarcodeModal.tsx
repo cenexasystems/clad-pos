@@ -56,6 +56,10 @@ export interface CreateBarcodeModalProps {
   onSuccess?: () => void
 }
 
+// Label text is typed by the user and written into the print iframe as HTML
+const escapeHtml = (value: string) =>
+  value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
 export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
   isOpen,
   onClose,
@@ -478,17 +482,22 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
         displayValue: true,
       })
       const thermalSvg = thermalBarcodes.get(item.barcodeValue) || ''
+      // Same lines, order and fallbacks as the Live Preview, so the printed label matches it
+      const priceLine = item.line3 || (settings.showDiscount ? 'Discount: 0%' : `Price: ₹${item.price}`)
+      const textLines = [
+        settings.showItemName ? `<div class="line name">${escapeHtml(item.line1 || fullTitle)}</div>` : '',
+        item.line2 ? `<div class="line sub">${escapeHtml(item.line2)}</div>` : '',
+        settings.showSalePrice ? `<div class="line price">${escapeHtml(priceLine)}</div>` : '',
+        item.line4 ? `<div class="line extra">${escapeHtml(item.line4)}</div>` : '',
+      ].join('')
       for (let i = 0; i < count; i++) {
         allStickers.push(`
           <div class="label-sticker">
-            ${settings.showCompanyName ? `<div class="header">${item.header || BRAND_EN}</div>` : ''}
+            ${settings.showCompanyName ? `<div class="header">${escapeHtml(item.header || BRAND_EN)}</div>` : ''}
             ${isThermal
               ? `<div class="barcode-box thermal">${thermalSvg}<div class="bc-text">${item.barcodeValue}</div></div>`
               : `<div class="barcode-box">${svgMarkup}</div>`}
-            <div class="footer">
-              <span class="product-name">${settings.showItemName ? fullTitle : item.line2 || ''}</span>
-              ${settings.showSalePrice ? `<span class="price">₹${item.price}</span>` : ''}
-            </div>
+            ${textLines ? `<div class="info">${textLines}</div>` : ''}
           </div>
         `)
       }
@@ -650,25 +659,23 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
             .barcode-box.thermal { flex-direction: column; justify-content: center; width: calc(100% + 1.2mm); margin-left: -0.6mm; margin-right: -0.6mm; }
             .barcode-box svg.bc-bars { flex: 1 1 0; min-height: 0; height: auto; max-width: none; max-height: none; }
             .bc-text { font-size: 5.5pt; line-height: 1; letter-spacing: 0.2px; margin-top: 0.3mm; color: #000; font-weight: 700; flex-shrink: 0; }
-            .footer {
+            .info {
               width: 100%;
               display: flex;
-              justify-content: space-between;
+              flex-direction: column;
               align-items: center;
-              gap: 1mm;
-              border-top: 0.6pt solid #000;
-              padding-top: 0.5mm;
-              line-height: 1;
+              gap: 0.2mm;
+              padding-top: 0.3mm;
+              line-height: 1.05;
               flex-shrink: 0;
-              font-size: ${tagFontSize};
             }
-            .product-name {
-              flex: 1;
-              min-width: 0;
+            .line {
+              max-width: 100%;
               overflow: hidden;
               text-overflow: ellipsis;
               white-space: nowrap;
-              text-align: left;
+              text-align: center;
+              color: #000;
               font-size: ${tagFontSize};
             }
             .tag {
@@ -681,7 +688,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               font-weight: 900;
               color: #000;
             }
-            .header *, .product-name, .bc-text, .footer *, .price, .mrp, .retail-tag { font-weight: 900 !important; -webkit-text-stroke: 0.25pt #000; color: #000 !important; }
+            .header *, .bc-text, .info .line { font-weight: 900 !important; -webkit-text-stroke: 0.25pt #000; color: #000 !important; }
           </style>
         </head>
         <body data-gramm="false">
