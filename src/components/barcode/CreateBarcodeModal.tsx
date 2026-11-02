@@ -33,6 +33,7 @@ import { fetchVariantsByProduct, type ProductVariant } from '../../services/vari
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 import { BarcodeSettingsDrawer } from './BarcodeSettingsDrawer'
 import { BarcodeSheetPreviewModal } from './BarcodeSheetPreviewModal'
+import { StickerFooter } from './StickerFooter'
 import { useProductStore } from '../../store/store'
 import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
@@ -1159,45 +1160,18 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
                             {itemCode || 'CLAD0000000'}
                           </span>
 
-                          {/* Product Title */}
-                          {settings.showItemName && (
-                            <span
-                              className="font-bold text-gray-800 truncate max-w-full leading-tight"
-                              style={{ fontSize: `${Math.max(7.5, Math.round(previewHeightPx * 0.075))}px` }}
-                            >
-                              {line1 || selectedProduct?.name || 'Item Name'}
-                            </span>
-                          )}
-
-                          {/* Variant / Category */}
-                          {line2 && (
-                            <span
-                              className="font-semibold text-gray-600 truncate max-w-full leading-tight"
-                              style={{ fontSize: `${Math.max(7, Math.round(previewHeightPx * 0.07))}px` }}
-                            >
-                              {line2}
-                            </span>
-                          )}
-
-                          {/* Price */}
-                          {settings.showSalePrice && (
-                            <span
-                              className="font-black text-black truncate max-w-full leading-none"
-                              style={{ fontSize: `${Math.max(8.5, Math.round(previewHeightPx * 0.095))}px` }}
-                            >
-                              {line3 || (settings.showDiscount ? 'Discount: 0%' : 'Price: ₹0')}
-                            </span>
-                          )}
-
-                          {/* Extra line */}
-                          {line4 && (
-                            <span
-                              className="text-gray-500 truncate max-w-full leading-none"
-                              style={{ fontSize: `${Math.max(6.5, Math.round(previewHeightPx * 0.065))}px` }}
-                            >
-                              {line4}
-                            </span>
-                          )}
+                          {/* Footer: same as the printed sticker (rule, name left, price right) */}
+                          <StickerFooter
+                            name={
+                              settings.showItemName
+                                ? (selectedProduct
+                                    ? `${selectedProduct.name}${selectedVariant ? ` (${selectedVariant.variantName})` : ''}`
+                                    : 'Item Name')
+                                : line2
+                            }
+                            price={settings.showSalePrice ? (selectedVariant?.price || selectedProduct?.price || 0) : null}
+                            heightPx={previewHeightPx}
+                          />
                         </div>
                       )
                     })()}
@@ -1469,6 +1443,9 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
           onClose={() => setShowSheetPreviewModal(false)}
           items={queue}
           sizeConfig={currentSizeConfig}
+          showCompanyName={settings.showCompanyName}
+          showItemName={settings.showItemName}
+          showSalePrice={settings.showSalePrice}
           onPrint={printQueueDirectly}
         />
       )}
