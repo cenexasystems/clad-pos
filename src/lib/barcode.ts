@@ -26,8 +26,9 @@ export const DEFAULT_LABEL_SIZES: LabelSizeConfig[] = [
   { id: '1_100x50', name: '100 × 50 mm (Large Carton / Box)', labelsPerRow: 1, widthMm: 100, heightMm: 50, horizontalGapMm: 0 },
   { id: '4_35x22_2up', name: '35 × 22 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 35, heightMm: 22, horizontalGapMm: 2 },
   { id: '4_50x25_2up', name: '50 × 25 mm × 2-Up (Roll, side-by-side)', labelsPerRow: 2, widthMm: 50, heightMm: 25, horizontalGapMm: 2 },
-  // 3-up roll ("Clad 3 up" stock): 110 mm roll = 1.3 mm liner + 35 + 1.2 gap + 35 + 1.2 gap + 35 + 1.3 mm liner
-  { id: '4_35x22_3up', name: '35 × 22 mm × 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 35, heightMm: 22, horizontalGapMm: 1.2, rollWidthMm: 110 },
+  // 3-up roll ("Clad 3 up" stock): 105 mm roll = 1 mm liner + 33 + 2 gap + 33 + 2 gap + 33 + 1 mm liner.
+  // Labels sit 35 mm apart on the roll; the printed pitch must match or the columns drift apart.
+  { id: '4_35x22_3up', name: '33 × 22 mm × 3-Up (Roll, side-by-side)', labelsPerRow: 3, widthMm: 33, heightMm: 22, horizontalGapMm: 2, rollWidthMm: 105 },
   // A4 sheet presets — matches standard 4-column Avery/generic Indian label sheets
   { id: 'a4_4up_48x25', name: 'A4 Sheet — 4 columns × 48 × 25 mm', labelsPerRow: 4, widthMm: 48, heightMm: 25, horizontalGapMm: 2 },
   { id: 'a4_4up_48x30', name: 'A4 Sheet — 4 columns × 48 × 30 mm', labelsPerRow: 4, widthMm: 48, heightMm: 30, horizontalGapMm: 2 },
@@ -69,6 +70,8 @@ const LEGACY_CUSTOM_SIZES_KEY = 'chaji_custom_label_sizes'
 
 // One-time switch of existing installs to the 3-up roll; after this, whatever is chosen in settings sticks.
 const DEFAULT_3UP_APPLIED_KEY = 'clad_barcode_default_3up_applied'
+// One-time reset of the manual X/Y offsets after the 3-up preset was corrected to the real roll geometry.
+const ROLL_GEOMETRY_FIXED_KEY = 'clad_barcode_roll_geometry_33x2_applied'
 
 export function getStoredBarcodeSettings(): BarcodeSettings {
   try {
@@ -79,6 +82,11 @@ export function getStoredBarcodeSettings(): BarcodeSettings {
         merged.selectedSizeId = DEFAULT_BARCODE_SETTINGS.selectedSizeId
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged))
         localStorage.setItem(DEFAULT_3UP_APPLIED_KEY, '1')
+      }
+      if (!localStorage.getItem(ROLL_GEOMETRY_FIXED_KEY)) {
+        merged.offsetXMm = 0
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged))
+        localStorage.setItem(ROLL_GEOMETRY_FIXED_KEY, '1')
       }
       return merged
     }
@@ -340,13 +348,12 @@ const THERMAL_DOT_MAPS: number[][] = [
 ]
 
 /**
- * Width the bars may use on a roll label. Roll printers place the print 1-3 mm off
- * the die-cut labels and the offset wanders from row to row, so bars that run close
- * to the label edge get cut off and stop scanning. Keeping about 2.2 mm clear on each
- * side tolerates +-3 mm of shift (checked with a Code 128 decoder on CLAD + 7 digit codes;
- * a 33.5 mm wide barcode only survived +-1 mm).
+ * Width the bars may use on a roll label. Roll printers place the print a little off
+ * the die-cut labels, so bars that run close to the label edge get cut off and stop
+ * scanning. Keeping 1.7 mm clear on each side tolerates about +-1.7 mm of shift while
+ * leaving room for every CLAD + 7 digit code (the widest needs 235 dots = 29.4 mm).
  */
-export const thermalBarcodeWidthMm = (labelWidthMm: number): number => labelWidthMm - 4.4
+export const thermalBarcodeWidthMm = (labelWidthMm: number): number => labelWidthMm - 3.4
 
 /**
  * Barcode bars for roll (thermal) labels. Every bar and gap is drawn as a whole
