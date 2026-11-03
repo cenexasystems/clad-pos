@@ -340,12 +340,13 @@ const THERMAL_DOT_MAPS: number[][] = [
 ]
 
 /**
- * Width the bars may use on a roll label. A CLAD + 7 digit code is 134 modules,
- * which needs 268 dots (33.5 mm) at the ideal 2 dots per module. Leaving only
- * 0.7 mm per side still keeps over 10 modules of quiet zone to the neighbouring
- * label's bars, and avoids squeezing bars into the less accurate 5/7 dot widths.
+ * Width the bars may use on a roll label. Roll printers place the print 1-3 mm off
+ * the die-cut labels and the offset wanders from row to row, so bars that run close
+ * to the label edge get cut off and stop scanning. Keeping about 2.2 mm clear on each
+ * side tolerates +-3 mm of shift (checked with a Code 128 decoder on CLAD + 7 digit codes;
+ * a 33.5 mm wide barcode only survived +-1 mm).
  */
-export const thermalBarcodeWidthMm = (labelWidthMm: number): number => labelWidthMm - 1.4
+export const thermalBarcodeWidthMm = (labelWidthMm: number): number => labelWidthMm - 4.4
 
 /**
  * Barcode bars for roll (thermal) labels. Every bar and gap is drawn as a whole
