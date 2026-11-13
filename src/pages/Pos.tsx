@@ -29,6 +29,12 @@ import {
 } from '../lib/retail'
 import { buildProfessionalWhatsAppMessage, buildAdvanceDepositWhatsAppMessage, publicInvoiceUrl } from '../lib/whatsappMessage'
 import { normalizePhone, toWhatsAppUrl, formatPhone } from '../lib/phone'
+import { lookupCustomerByPhone } from '../services/customerLookupService'
+import { useDebouncedValue } from '../lib/debounce'
+import {
+  ADVANCE_PAYMENT_METHODS, PAYMENT_MODES, SPLIT_PARTS, paymentDisplayLabel, paymentModeLabel, splitDifference,
+  type PaymentMode, type SplitAmounts,
+} from '../lib/paymentModes'
 import { forceUnlockScroll } from '../lib/scrollLock'
 import { useLangStore } from '../store/langStore'
 import { fetchVariantsByProduct, type ProductVariant } from '../services/variantService'
@@ -143,10 +149,15 @@ export default function Pos(props: PosProps = {}) {
   const [activeCategory, setActiveCategory] = useState('All')
   const [items, setItems] = useState<PosItem[]>([])
   const [customer, setCustomer] = useState({ name: '', phone: '', address: '' })
+  // Number whose saved details were filled in automatically (drives the "returning customer" hint)
+  const [autofilledPhone, setAutofilledPhone] = useState('')
+  const [debouncedPhone] = useDebouncedValue(customer.phone, 350)
+  const lastLookupRef = useRef('')
   const [remarks, setRemarks] = useState('')
   const [referenceNumber, setReferenceNumber] = useState('')
   const [billingDate, setBillingDate] = useState('') // '' = use current date/time
-  const [paymentType, setPaymentType] = useState<'cash' | 'qr' | 'card'>('cash')
+  const [paymentType, setPaymentType] = useState<PaymentMode>('cash')
+  const [splitInputs, setSplitInputs] = useState({ cash: '', card: '', qr: '' })
   const [saving, setSaving] = useState(false)
   const [shipping, setShipping] = useState<string>('0')
   const [couponInput, setCouponInput] = useState('')
@@ -637,9 +648,36 @@ export default function Pos(props: PosProps = {}) {
     handleClosePriceEdit()
   }
 
+  // Fill in name / address from the customer's earlier bills once a full mobile number is typed.
+  // Anything the cashier already typed is kept.
+  useEffect(() => {
+    const normalized = normalizePhone(debouncedPhone || '')
+    if (!normalized) {
+      lastLookupRef.current = ''
+      return
+    }
+    if (lastLookupRef.current === normalized) return
+    lastLookupRef.current = normalized
+    // A late answer is harmless: it only fills in while the typed number is still this one
+    void lookupCustomerByPhone(normalized).then(found => {
+      if (!found) return
+      setCustomer(prev => {
+        if (normalizePhone(prev.phone || '') !== normalized) return prev
+        return {
+          ...prev,
+          name: prev.name.trim() ? prev.name : found.name,
+          address: prev.address.trim() ? prev.address : found.address,
+        }
+      })
+      setDepositForm(prev => (prev.address.trim() || !found.address ? prev : { ...prev, address: found.address }))
+      setAutofilledPhone(normalized)
+    })
+  }, [debouncedPhone])
+
   const clearAll = () => {
     setItems([])
     setCustomer({ name: '', phone: '', address: '' })
+    setSplitInputs({ cash: '', card: '', qr: '' })
     setInvoice(null)
     setCashReceived('')
     setCouponInput('')
@@ -779,6 +817,10 @@ export default function Pos(props: PosProps = {}) {
     // Validate payment amount (only required for cash)
     if (paymentType === 'cash' && !cashReceived.trim()) { setError('Enter the amount received from customer'); return }
     if (paymentType === 'cash' && cashReceivedNum < total) { setError(`Insufficient payment. Customer still owes ${formatCurrency(total - cashReceivedNum)}`); return }
+    if (ordermode !== 'online' && paymentType === 'split' && Math.abs(splitDiff) > 0.004) {
+      setError(splitDiff > 0 ? `Split amounts are short by ${formatCurrency(splitDiff)}` : `Split amounts exceed the total by ${formatCurrency(-splitDiff)}`)
+      return
+    }
     // Validate online mode availability
     if (ordermode === 'online' && !isSupabaseConfigured) { setError('Cannot place online orders while offline'); return }
     setSaving(true); setError('')
@@ -818,7 +860,8 @@ export default function Pos(props: PosProps = {}) {
         couponPercentage: appliedCoupon?.percentage,
         totalGst,
         gstEnabled: billGstEnabled,
-        paymentMethod: paymentMode
+        paymentMethod: paymentMode,
+        splitDetails: paymentMode === 'split' ? { ...splitAmounts } : undefined,
       })
 
       // ── CRITICAL: immediately fix totals in DB, independent of PDF upload ──
@@ -860,15 +903,16 @@ export default function Pos(props: PosProps = {}) {
         customerName: customer.name.trim() || 'Walk-in Customer',
         phone: normalizedPhone,
         address: customer.address.trim() || 'POS Counter',
-        amountReceived: cashReceivedNum,
-        balanceReturned: balanceToReturn,
-        paymentMode: ordermode === 'online' ? 'Online' : paymentType === 'qr' ? 'QR' : paymentType === 'card' ? 'Card' : 'Cash',
+        amountReceived: paymentType === 'split' ? total : cashReceivedNum,
+        balanceReturned: paymentType === 'split' ? 0 : balanceToReturn,
+        paymentMode: ordermode === 'online' ? 'Online' : paymentDisplayLabel(paymentType, splitAmounts),
         paymentMethod: paymentMode,
       }
       setInvoice(createdInvoice)
       void persistInvoicePdf(createdInvoice)
       setItems([])
       setCustomer({ name: '', phone: '', address: '' })
+      setSplitInputs({ cash: '', card: '', qr: '' })
       void fetchProducts()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to generate bill')
@@ -879,6 +923,12 @@ export default function Pos(props: PosProps = {}) {
 
   const cashReceivedNum = Number(cashReceived) || 0
   const balanceToReturn = cashReceivedNum > 0 && cashReceivedNum >= total ? cashReceivedNum - total : 0
+  const splitAmounts: SplitAmounts = {
+    cash: Number(splitInputs.cash) || 0,
+    card: Number(splitInputs.card) || 0,
+    qr: Number(splitInputs.qr) || 0,
+  }
+  const splitDiff = splitDifference(splitAmounts, total)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isInsufficientPayment = cashReceived !== '' && cashReceivedNum > 0 && cashReceivedNum < total
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -1179,6 +1229,9 @@ export default function Pos(props: PosProps = {}) {
                   placeholder="Enter WhatsApp number"
                   className="w-full min-w-0 max-w-full box-border h-10 px-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal"
                 />
+                {autofilledPhone && normalizePhone(customer.phone || '') === autofilledPhone && (
+                  <p className="mt-1 text-[10px] font-bold text-emerald-700">Returning customer: details filled in from their last bill.</p>
+                )}
               </div>
               <div className="min-w-0">
                 <label className="block text-[11px] md:text-[10px] font-bold text-[#374151] mb-1">Remarks (Internal)</label>
@@ -1649,30 +1702,70 @@ export default function Pos(props: PosProps = {}) {
               {/* Payment Mode Selector */}
               <div>
                 <label className="block text-[10px] font-black text-[#374151] tracking-wider uppercase mb-1">Payment Mode</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(['cash', 'qr', 'card'] as const).map(mode => (
+                <div className="grid grid-cols-4 gap-1.5">
+                  {PAYMENT_MODES.map(mode => (
                     <button
-                      key={mode}
+                      key={mode.id}
                       type="button"
-                      onClick={() => setPaymentType(mode)}
+                      onClick={() => setPaymentType(mode.id)}
                       className={`py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border-2 transition-colors ${
-                        paymentType === mode
+                        paymentType === mode.id
                           ? 'bg-[#0A0A0A] text-[#D4AF37] border-[#0A0A0A]'
                           : 'bg-white text-[#374151] border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      {mode === 'qr' ? 'QR' : mode === 'card' ? 'Card' : 'Cash'}
+                      {mode.label}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Amount Received (shown for all payment modes) */}
-              {ordermode !== 'online' && (
+              {ordermode !== 'online' && paymentType === 'split' && (
+              <div className="border border-gray-200 rounded-xl p-2.5 bg-white space-y-2">
+                <label className="block text-[10px] font-black text-[#374151] tracking-wider uppercase">Split: amount in each mode (₹)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {SPLIT_PARTS.map(part => (
+                    <div key={part.id}>
+                      <span className="block text-[10px] font-bold text-[#6B7280] mb-0.5">{part.label}</span>
+                      <input
+                        type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
+                        min="0" step="0.01"
+                        value={splitInputs[part.id]}
+                        onChange={e => setSplitInputs({ ...splitInputs, [part.id]: e.target.value })}
+                        placeholder="0.00"
+                        className="w-full h-9 px-2 bg-[#FAFAFA] border border-gray-200 rounded-xl text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className={`flex justify-between items-center px-3 py-1.5 rounded-lg border text-[11px] font-black ${
+                  Math.abs(splitDiff) <= 0.004 ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'
+                }`}>
+                  <span>{Math.abs(splitDiff) <= 0.004 ? 'Matches the total' : splitDiff > 0 ? 'Still to collect' : 'Over the total by'}</span>
+                  <span>{Math.abs(splitDiff) <= 0.004 ? formatCurrency(total) : formatCurrency(Math.abs(splitDiff))}</span>
+                </div>
+                {total > 0 && Math.abs(splitDiff) > 0.004 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const others = splitAmounts.cash + splitAmounts.card
+                      const rest = Math.max(0, Math.round((total - others) * 100) / 100)
+                      setSplitInputs({ ...splitInputs, qr: rest ? String(rest) : '' })
+                    }}
+                    className="text-[10px] font-bold text-[#374151] underline cursor-pointer"
+                  >
+                    Put the rest in GPay
+                  </button>
+                )}
+              </div>
+              )}
+
+              {ordermode !== 'online' && paymentType !== 'split' && (
               <div>
                 <div className="border border-gray-200 rounded-xl p-2.5 bg-white">
                   <label className="block text-[10px] font-black text-[#374151] tracking-wider uppercase mb-0.5">
-                    {paymentType === 'qr' ? 'QR' : paymentType === 'card' ? 'Card' : 'Cash'} — Amount Received (₹)
+                    {paymentModeLabel(paymentType)} — Amount Received (₹)
                   </label>
                   <input
                     type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()}
@@ -1744,7 +1837,7 @@ export default function Pos(props: PosProps = {}) {
               <label className="block"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Deposit received *</span><input required autoFocus type="number" onWheel={(e) => (e.target as HTMLInputElement).blur()} min="0.01" max={Math.max(0, total - 0.01)} step="0.01" value={depositForm.amount} onChange={e => setDepositForm({...depositForm, amount:e.target.value})} className="w-full rounded-xl border px-3 py-2.5 text-sm font-bold outline-none focus:border-violet-600"/></label>
               <label className="block"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Remaining balance</span><div className="rounded-xl bg-red-50 px-3 py-2.5 text-sm font-black text-red-700">{formatCurrency(Math.max(0,total-Number(depositForm.amount||0)))}</div></label>
               <label className="block"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Expected delivery *</span><input required type="date" value={depositForm.expectedDeliveryDate} onChange={e => setDepositForm({...depositForm, expectedDeliveryDate:e.target.value})} className="w-full rounded-xl border px-3 py-2.5 text-sm font-bold outline-none focus:border-violet-600"/></label>
-              <label className="block"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Payment method *</span><select value={depositForm.paymentMethod} onChange={e => setDepositForm({...depositForm,paymentMethod:e.target.value as AdvancePaymentMethod})} className="w-full rounded-xl border px-3 py-2.5 text-sm font-bold outline-none focus:border-violet-600"><option value="cash">Cash</option><option value="upi">QR</option><option value="card">Card</option></select></label>
+              <label className="block"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Payment method *</span><select value={depositForm.paymentMethod} onChange={e => setDepositForm({...depositForm,paymentMethod:e.target.value as AdvancePaymentMethod})} className="w-full rounded-xl border px-3 py-2.5 text-sm font-bold outline-none focus:border-violet-600">{ADVANCE_PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></label>
               <label className="block sm:col-span-2"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Delivery address</span><textarea value={depositForm.address} onChange={e => setDepositForm({...depositForm,address:e.target.value})} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-violet-600" rows={2}/></label>
               <label className="block sm:col-span-2"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Reference Number</span><input value={depositForm.referenceNumber} onChange={e => setDepositForm({...depositForm,referenceNumber:e.target.value})} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-violet-600" placeholder="e.g. PO-001, booking ref (optional)"/></label>
               <label className="block sm:col-span-2"><span className="mb-1 block text-[10px] font-black uppercase tracking-wide text-[#6B7280]">Remarks</span><textarea value={depositForm.remarks} onChange={e => setDepositForm({...depositForm,remarks:e.target.value})} className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none focus:border-violet-600" rows={2}/></label>

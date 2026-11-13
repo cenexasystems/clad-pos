@@ -9,6 +9,7 @@ import { buildAdvanceDepositWhatsAppMessage, buildProfessionalWhatsAppMessage, p
 import { toWhatsAppUrl, formatPhone } from '../lib/phone'
 import { getDateRange, isInRange } from '../lib/dateRange'
 import { useDebouncedValue } from '../lib/debounce'
+import { ADVANCE_PAYMENT_METHODS, advanceMethodLabel } from '../lib/paymentModes'
 import { advanceReceiptPdf, downloadFile, printAdvanceReceipt } from '../lib/advanceReceipt'
 import { useAdminAuthStore, useProductStore } from '../store/store'
 import { lockScroll, unlockScroll } from '../lib/scrollLock'
@@ -487,7 +488,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
             <Field label="Total Order Amount *"><input required min="0.01" step="0.01" type="number" className={inputClass} value={form.totalAmount} onChange={e=>setForm({...form,totalAmount:e.target.value})}/></Field>
             <Field label="Deposit Amount Received *"><input required min="0" step="0.01" type="number" className={inputClass} value={form.depositAmount} onChange={e=>setForm({...form,depositAmount:e.target.value})}/></Field>
             <Field label="Remaining Balance (automatic)"><div className="rounded-xl bg-violet-50 px-4 py-3 font-black text-violet-800">{formatCurrency(Math.max(0, Number(form.totalAmount||0)-Number(form.depositAmount||0)))}</div></Field>
-            <Field label="Deposit Payment Method"><select className={inputClass} value={form.paymentMethod} onChange={e=>setForm({...form,paymentMethod:e.target.value as AdvancePaymentMethod})}><option value="cash">Cash</option><option value="upi">QR</option><option value="card">Card</option></select></Field>
+            <Field label="Deposit Payment Method"><select className={inputClass} value={form.paymentMethod} onChange={e=>setForm({...form,paymentMethod:e.target.value as AdvancePaymentMethod})}>{ADVANCE_PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}</select></Field>
             <Field label="Expected Delivery Date *"><input required type="date" className={inputClass} value={form.expectedDeliveryDate} onChange={e=>setForm({...form,expectedDeliveryDate:e.target.value})}/></Field>
             <Field label="Order Status"><select disabled className={inputClass} value="pending_deposit"><option value="pending_deposit">Pending Deposit</option></select></Field>
             <div className="md:col-span-2"><Field label="Reference Number"><input className={inputClass} value={form.reference_number} onChange={e=>setForm({...form,reference_number:e.target.value})} placeholder="e.g. PO-001, booking ref (optional)"/></Field></div>
@@ -569,9 +570,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
             </Field>
             <Field label="Payment Method">
               <select className={inputClass} value={paymentForm.method} onChange={e=>setPaymentForm({...paymentForm,method:e.target.value as AdvancePaymentMethod})}>
-                <option value="cash">Cash</option>
-                <option value="upi">QR</option>
-                <option value="card">Card</option>
+                {ADVANCE_PAYMENT_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
               </select>
             </Field>
             <Field label="Payment Notes">
@@ -691,7 +690,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
                 ) : (
                   payments.map((payment) => (
                     <div key={payment.id} className="flex justify-between items-center rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-sm">
-                      <span className="font-bold capitalize text-emerald-900">{payment.payment_type} — {payment.payment_method}</span>
+                      <span className="font-bold capitalize text-emerald-900">{payment.payment_type} — {advanceMethodLabel(payment.payment_method)}</span>
                       <span className="font-black text-emerald-800">{formatCurrency(Number(payment.amount))}</span>
                     </div>
                   ))

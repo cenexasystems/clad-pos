@@ -3,6 +3,7 @@ import { BRAND_ADDRESS, BRAND_EN, BRAND_PHONE_DISPLAY, BRAND_PRIMARY_PHONE_DISPL
 import { formatPhone } from './phone'
 import { LOGO_BASE64 } from './logoBase64'
 import { formatCurrency } from './retail'
+import { advanceMethodLabel } from './paymentModes'
 import type { AdvanceOrder } from '../services/advanceOrderService'
 
 const esc = (value: string) => value.replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char] || char))
@@ -59,7 +60,7 @@ export function printAdvanceReceipt(order: AdvanceOrder) {
     }
 
     const paymentLabel = order.final_payment_method
-      ? (order.final_payment_method === 'upi' ? 'UPI / QR' : order.final_payment_method.toUpperCase())
+      ? advanceMethodLabel(order.final_payment_method)
       : ''
     const depositPayment = (() => {
       return paymentLabel || 'Cash'

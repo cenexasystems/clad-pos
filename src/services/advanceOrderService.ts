@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from '../lib/supabase'
+import { advanceMethodLabel } from '../lib/paymentModes'
 
 export type AdvanceStatus = 'pending_deposit' | 'ready_for_delivery' | 'waiting_final_payment' | 'completed' | 'cancelled'
 export type AdvancePaymentMethod = 'cash' | 'upi' | 'card'
@@ -212,7 +213,7 @@ export async function createAdvanceOrder(input: {
     const currentTimeline = loadLocalTimeline()
     currentTimeline.push(
       { id: Date.now(), advance_order_id: orderId, event_type: 'created', label: 'Deposit Created', remarks: input.remarks, created_at: now.toISOString() },
-      { id: Date.now() + 1, advance_order_id: orderId, event_type: 'deposit_received', label: 'Deposit Received', remarks: `Received INR ${input.depositAmount} via ${input.paymentMethod.toLowerCase() === 'upi' ? 'QR' : input.paymentMethod.toUpperCase()}`, created_at: now.toISOString() }
+      { id: Date.now() + 1, advance_order_id: orderId, event_type: 'deposit_received', label: 'Deposit Received', remarks: `Received INR ${input.depositAmount} via ${advanceMethodLabel(input.paymentMethod)}`, created_at: now.toISOString() }
     )
     saveLocalTimeline(currentTimeline)
 

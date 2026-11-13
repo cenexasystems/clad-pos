@@ -50,3 +50,17 @@ export const uploadInvoicePdf = async (file: File, invoiceNo: string): Promise<s
 
   return data.publicUrl
 }
+
+/** Coupon picture for the WhatsApp message. Stored next to product images, in a coupons/ folder. */
+export const uploadCouponImage = async (file: File): Promise<string> => {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+  const safeName = sanitizeFileName(file.name.replace(/\.[^/.]+$/, ''))
+  const filePath = `coupons/${Date.now()}-${safeName}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from(PRODUCT_IMAGE_BUCKET)
+    .upload(filePath, file, { upsert: false, contentType: file.type || undefined })
+  if (uploadError) throw uploadError
+
+  return supabase.storage.from(PRODUCT_IMAGE_BUCKET).getPublicUrl(filePath).data.publicUrl
+}

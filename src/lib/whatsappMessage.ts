@@ -1,4 +1,5 @@
 import { formatInvoiceNo } from './retail'
+import { advanceMethodLabel } from './paymentModes'
 import { BRAND_EN, BRAND_INSTAGRAM, BRAND_INSTAGRAM_URL, BRAND_PRIMARY_PHONE_DISPLAY, BRAND_PRODUCTION_DOMAIN } from './brand'
 
 export type WhatsAppLineItem = {
@@ -101,7 +102,7 @@ We have successfully received your initial advance payment!
 📦 Deposit ID: #${input.depositId}
 👔 Product: ${input.productName}
 💵 Total Order Amount: ₹${input.totalAmount}
-💰 Advance Paid: ₹${input.depositAmount}${input.paymentMethod ? ` (${input.paymentMethod.toLowerCase() === 'upi' ? 'QR' : input.paymentMethod.toUpperCase()})` : ''}
+💰 Advance Paid: ₹${input.depositAmount}${input.paymentMethod ? ` (${advanceMethodLabel(input.paymentMethod)})` : ''}
 🔴 Balance to Pay on Delivery: ₹${input.remainingBalance}
 📅 Expected Delivery Date: ${deliveryDateFormatted}
 

@@ -4,7 +4,7 @@ import {
   Box, AlertCircle, ArrowUp, ArrowDown, Power, Download, TrendingUp, TrendingDown,
   Package, Search, RefreshCw, ShieldCheck, ShieldOff, Trophy,
   MessageCircle, ChevronDown, Eye, FileText, Printer, MoreVertical, X, Layers, Receipt,
-  SlidersHorizontal, Tag, Ticket, Percent, CheckCircle2, Info, Sparkles,
+  SlidersHorizontal, Tag, Ticket, Percent, CheckCircle2, Info, Sparkles, Gift, Image as ImageIcon,
 } from 'lucide-react'
 
 // Custom Malaysian Ringgit icon — replaces the generic dollar-sign icon
@@ -40,7 +40,10 @@ import { debounce } from '../lib/debounce'
 import { useAuthStore, useProductStore, useAdminAuthStore, type Product } from '../store/store'
 import { useAlarmStore } from '../store/alarmStore'
 import { alarmSound } from '../lib/alarmAudio'
-import { uploadProductImage } from '../lib/storage'
+import { uploadProductImage, uploadCouponImage } from '../lib/storage'
+import { SendCouponModal, SendCouponToEveryoneModal } from '../components/coupons/CouponSendModals'
+import { couponShareService } from '../services/couponShareService'
+import { EditOrderModal, type SavedOrderEdit } from '../components/orders/EditOrderModal'
 import { formatCurrency, normalizeOrderMode, normalizeUnitType, toNumber, type UnitType } from '../lib/retail'
 import { normalizeStructuredOrderItem, formatInvoiceNo } from '../lib/retail'
 import { Invoice } from '../components/Invoice'
@@ -59,6 +62,7 @@ import type { AdvanceOrder } from '../services/advanceOrderService'
 import { InventoryTable } from '../components/inventory/InventoryTable'
 import { CategoryManagerView } from '../components/inventory/CategoryManagerView'
 import { ExpensesView } from '../components/expenses/ExpensesView'
+import { BirthdayPanel } from '../components/birthdays/BirthdayPanel'
 import { expenseService, type ExpenseRecord } from '../services/expenseService'
 import { useNavigationStore } from '../store/navigationStore'
 import { useHardwareBarcodeScanner } from '../hooks/useHardwareBarcodeScanner'
@@ -93,8 +97,9 @@ type DashboardCoupon = {
   usage_limit: number | null
   usage_count: number
   min_order_value: number
+  image_url?: string | null
 }
-type TabKey = 'overview' | 'whatsapp' | 'pos_analytics' | 'billing' | 'advance_orders' | 'inventory' | 'expenses' | 'products' | 'categories' | 'coupons' | 'users' | 'history'
+type TabKey = 'overview' | 'whatsapp' | 'pos_analytics' | 'billing' | 'advance_orders' | 'inventory' | 'expenses' | 'products' | 'categories' | 'coupons' | 'birthdays' | 'users' | 'history'
 type PosAnalyticsTab = 'revenue' | 'today' | 'products' | 'categories' | 'coupons'
 type ProfileUser = { id: string; email: string; name: string; mobile: string; role: string; created_at: string }
 
@@ -243,6 +248,11 @@ export default function Dashboard() {
   const [couponSaveError, setCouponSaveError] = useState('')
   const [couponSaveSuccess, setCouponSaveSuccess] = useState('')
   const [editingCouponId, setEditingCouponId] = useState<number | null>(null)
+  const [couponImageUrl, setCouponImageUrl] = useState('')
+  const [couponImageBusy, setCouponImageBusy] = useState(false)
+  const [sendCouponTarget, setSendCouponTarget] = useState<DashboardCoupon | null>(null)
+  const [bulkCouponTarget, setBulkCouponTarget] = useState<DashboardCoupon | null>(null)
+  const [couponSendCounts, setCouponSendCounts] = useState<Record<number, number>>({})
 
   // Variant management state
   const { getVariants, refetchVariants } = useVariantStore()
@@ -254,6 +264,7 @@ export default function Dashboard() {
   const [analyticsTab, setAnalyticsTab] = useState('revenue')
 
   const [invoicePreviewOrder, setInvoicePreviewOrder] = useState<DashboardOrder | null>(null)
+  const [editingOrder, setEditingOrder] = useState<DashboardOrder | null>(null)
 
   // WA detail expansion
   const [waExpandedId, setWaExpandedId] = useState<string | null>(null)
@@ -896,7 +907,7 @@ export default function Dashboard() {
           .order('created_at', { ascending: false })
           .limit(1000),
         supabase.from('coupons')
-          .select('id, code, percentage, is_active, expiry_date, usage_limit, usage_count, min_order_value')
+          .select('*')
           .order('created_at', { ascending: false }),
         expenseService.getExpenses(),
       ])
@@ -957,9 +968,10 @@ export default function Dashboard() {
     if (!isSupabaseConfigured) return
     const { data } = await supabase
       .from('coupons')
-      .select('id, code, percentage, is_active, expiry_date, usage_limit, usage_count, min_order_value')
+      .select('*')
       .order('created_at', { ascending: false })
     setCoupons((data || []) as DashboardCoupon[])
+    void couponShareService.listSendCounts().then(setCouponSendCounts)
   }, [])
 
   const toggleUserRole = async (u: ProfileUser) => {
@@ -1031,6 +1043,45 @@ export default function Dashboard() {
     return { items, subtotal, message, fileName: `Invoice-${order.invoice_no || order.id}.pdf` }
   }
 
+
+  // Lines to edit: the bill's saved items, or the order_items rows for older bills
+  const getEditableItems = (order: DashboardOrder): Record<string, unknown>[] => {
+    const saved = parseOrderItems(order.items)
+    if (saved.length) return saved
+    return orderItems
+      .filter(item => item.order_id === order.id)
+      .map(item => ({
+        name: item.product_name,
+        quantity: item.quantity,
+        base_price: item.quantity > 0 ? item.line_total / item.quantity : item.line_total,
+        line_total: item.line_total,
+        is_manual: Boolean(item.is_manual),
+        category: item.category,
+      }))
+  }
+
+  const applyOrderEdit = (orderId: string, edit: SavedOrderEdit) => {
+    const patch = (o: DashboardOrder): DashboardOrder => o.id !== orderId ? o : {
+      ...o,
+      customer_name: edit.customer_name,
+      phone: edit.phone,
+      address: edit.address,
+      items: edit.items,
+      total: edit.total,
+      delivery_charge: edit.delivery_charge,
+      manual_discount_amount: edit.manual_discount_amount,
+      payment_mode: edit.payment_mode,
+      remarks: edit.remarks || undefined,
+      reference_number: edit.reference_number || undefined,
+      invoice_pdf_url: '', // the saved PDF shows the old bill; PDFs are rebuilt from the edited data
+    }
+    setOrders(prev => prev.map(patch))
+    setSearchResults(prev => prev.map(patch))
+    setEditingOrder(null)
+    // best effort: forget the old PDF link (ignored if the column doesn't exist)
+    void supabase.from('orders').update({ invoice_pdf_url: null }).eq('id', orderId)
+    void loadData()
+  }
 
   const handlePrintReceipt = (order: DashboardOrder) => {
     const preview = getOrderWhatsAppPreview(order)
@@ -1133,6 +1184,8 @@ export default function Dashboard() {
       expiry_date: couponForm.expiry_date || null,
       usage_limit: couponForm.usage_limit ? toNumber(couponForm.usage_limit, 0) : null,
       min_order_value: toNumber(couponForm.min_order_value, 0),
+      // only touch image_url when there is one (or we are clearing one), so saving still works before the migration is run
+      ...(couponImageUrl || coupons.find(c => c.id === editingCouponId)?.image_url ? { image_url: couponImageUrl || null } : {}),
     }
     let error: unknown = null
     if (editingCouponId !== null) {
@@ -1153,6 +1206,7 @@ export default function Dashboard() {
       }
     } else {
       setCouponForm({ code: '', percentage: 10, expiry_date: '', usage_limit: '', min_order_value: '' })
+      setCouponImageUrl('')
       setEditingCouponId(null)
       setCouponSaveSuccess(editingCouponId !== null ? 'Coupon updated!' : 'Coupon created!')
       await loadCoupons()
@@ -1168,15 +1222,28 @@ export default function Dashboard() {
       usage_limit: coupon.usage_limit !== null ? String(coupon.usage_limit) : '',
       min_order_value: coupon.min_order_value ? String(coupon.min_order_value) : '',
     })
+    setCouponImageUrl(coupon.image_url || '')
     setCouponSaveError('')
     setCouponSaveSuccess('')
   }
 
   const cancelEditCoupon = () => {
     setEditingCouponId(null)
+    setCouponImageUrl('')
     setCouponForm({ code: '', percentage: 10, expiry_date: '', usage_limit: '', min_order_value: '' })
     setCouponSaveError('')
     setCouponSaveSuccess('')
+  }
+
+  const handleCouponImage = async (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setCouponSaveError('Choose an image file (JPG, PNG or WebP).'); return }
+    if (file.size > 5 * 1024 * 1024) { setCouponSaveError('The image is over 5 MB. Choose a smaller one.'); return }
+    setCouponImageBusy(true)
+    setCouponSaveError('')
+    try { setCouponImageUrl(await uploadCouponImage(file)) }
+    catch (err) { setCouponSaveError(toErr(err, 'Could not upload the image.')) }
+    finally { setCouponImageBusy(false) }
   }
 
   const deleteCoupon = async (coupon: DashboardCoupon) => {
@@ -1719,6 +1786,7 @@ export default function Dashboard() {
         { id: 'expenses',       icon: <Receipt size={18} />,      label: 'Expenses' },
         { id: 'history',        icon: <List size={18} />,         label: 'Order History' },
         { id: 'pos_analytics',  icon: <BarChart2 size={18} />,    label: 'Analytics Dashboard' },
+        { id: 'birthdays',      icon: <Gift size={18} />,         label: 'Birthdays' },
         { id: 'coupons',        icon: <Box size={18} />,          label: 'Coupons' },
       ]
 
@@ -2559,6 +2627,14 @@ export default function Dashboard() {
                       icon: <LayoutDashboard size={16} />,
                       color: 'text-red-500',
                       bg: 'bg-red-50',
+                    },
+                    {
+                      label: 'Online Revenue',
+                      helper: 'Online POS sales',
+                      value: formatCurrency(analytics.onlinePosRevenue),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-blue-500',
+                      bg: 'bg-blue-50',
                     },
                     {
                       label: 'Total Online Bills',
@@ -3550,6 +3626,11 @@ export default function Dashboard() {
                           </span>
                         )}
                         {role === 'admin' && (
+                          <button onClick={() => setEditingOrder(o)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-[#E5E7EB]/60 text-[#374151] transition-colors hover:bg-gray-50" title={l('Edit bill', 'பில்லைத் திருத்து')}>
+                            <Edit2 size={14} className="mx-auto" />
+                          </button>
+                        )}
+                        {role === 'admin' && (
                           <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-[#E5E7EB]/60 text-[#D4AF37] transition-colors hover:bg-[#D4AF37]/5" title="Delete Order">
                             <Trash2 size={14} className="mx-auto" />
                           </button>
@@ -3606,6 +3687,11 @@ export default function Dashboard() {
                                 <span className={`inline-flex items-center justify-center rounded-lg border px-2 py-0.5 text-[10px] font-black uppercase ${normalizeStatus(o.status) === 'completed' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-amber-200 bg-amber-50 text-amber-700'}`}>
                                   {normalizeStatus(o.status) === 'completed' ? l('Completed', 'முடிந்தது') : l('Pending', 'நிலுவை')}
                                 </span>
+                              )}
+                              {role === 'admin' && (
+                                <button onClick={() => setEditingOrder(o)} className="rounded-lg p-1 text-[#374151] transition-colors hover:bg-gray-100" title="Edit bill">
+                                  <Edit2 size={13} />
+                                </button>
                               )}
                               {role === 'admin' && (
                                 <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="rounded-lg p-1 text-[#D4AF37] transition-colors hover:bg-[#D4AF37]/5" title="Delete Order">
@@ -4371,6 +4457,24 @@ export default function Dashboard() {
                   </div>
                 </div>
 
+                <div className="space-y-1.5 mt-4">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-700">
+                    Coupon image <span className="font-medium normal-case tracking-normal text-gray-500">(optional, sent with the WhatsApp message)</span>
+                  </label>
+                  {couponImageUrl ? (
+                    <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-[#FAFAFA] p-2.5">
+                      <img src={couponImageUrl} alt="Coupon" className="h-16 w-24 rounded-lg object-cover border border-gray-200 bg-white" />
+                      <button type="button" onClick={() => setCouponImageUrl('')} className="ml-auto rounded-lg border border-gray-300 px-3 py-1.5 text-[11px] font-bold text-gray-700 hover:bg-gray-100 cursor-pointer">Remove</button>
+                    </div>
+                  ) : (
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-[#FAFAFA] px-3.5 py-3 text-xs font-bold text-gray-700 hover:border-[#D4AF37] hover:bg-[#FBFAF6]">
+                      <ImageIcon size={15} className="text-[#B48811]" />
+                      {couponImageBusy ? 'Uploading…' : 'Upload coupon image'}
+                      <input type="file" accept="image/*" className="hidden" disabled={couponImageBusy} onChange={e => { void handleCouponImage(e.target.files?.[0]); e.target.value = '' }} />
+                    </label>
+                  )}
+                </div>
+
                 <div className="pt-2">
                   <button
                     type="submit"
@@ -4414,6 +4518,7 @@ export default function Dashboard() {
                       >
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                           <div className="min-w-0 space-y-1.5">
+                            {coupon.image_url && <img src={coupon.image_url} alt="" className="h-14 w-24 rounded-lg object-cover border border-gray-200" />}
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="truncate text-[16px] font-mono font-black uppercase tracking-wider text-[#0A0A0A]">{coupon.code}</p>
                               <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider border ${
@@ -4443,10 +4548,27 @@ export default function Dashboard() {
                             <p className="text-[11px] font-medium text-[#6B7280]">
                               Used {coupon.usage_count}{coupon.usage_limit ? `/${coupon.usage_limit}` : ''} times
                               {coupon.expiry_date ? ` • expires ${new Date(coupon.expiry_date).toLocaleDateString('en-IN')}` : ' • no expiry'}
+                              {` • sent to ${couponSendCounts[coupon.id] || 0}`}
                             </p>
                           </div>
 
-                          <div className="flex shrink-0 items-center gap-2">
+                          <div className="flex shrink-0 flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setBulkCouponTarget(coupon)}
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+                              title="Send this coupon to your customers on WhatsApp"
+                            >
+                              <MessageCircle size={13} /> Everyone
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSendCouponTarget(coupon)}
+                              className="inline-flex items-center gap-1.5 rounded-lg bg-[#25D366] px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-white hover:brightness-95 cursor-pointer"
+                              title="Send this coupon to one customer on WhatsApp"
+                            >
+                              <MessageCircle size={13} /> Send
+                            </button>
                             <button
                               onClick={() => void toggleCoupon(coupon)}
                               className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
@@ -4487,7 +4609,35 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-        )}        {tab === 'users' && (
+        )}
+        {editingOrder && (
+          <EditOrderModal
+            order={{
+              id: editingOrder.id,
+              invoice_no: editingOrder.invoice_no,
+              customer_name: editingOrder.customer_name,
+              phone: editingOrder.phone,
+              address: editingOrder.address,
+              items: getEditableItems(editingOrder),
+              discount_amount: editingOrder.discount_amount,
+              manual_discount_amount: editingOrder.manual_discount_amount,
+              delivery_charge: editingOrder.delivery_charge,
+              total_gst: editingOrder.total_gst,
+              payment_mode: editingOrder.payment_mode,
+              remarks: editingOrder.remarks,
+              reference_number: editingOrder.reference_number,
+            }}
+            onClose={() => setEditingOrder(null)}
+            onSaved={edit => applyOrderEdit(editingOrder.id, edit)}
+          />
+        )}
+        {sendCouponTarget && (
+          <SendCouponModal coupon={sendCouponTarget} onClose={() => setSendCouponTarget(null)} onSent={() => void couponShareService.listSendCounts().then(setCouponSendCounts)} />
+        )}
+        {bulkCouponTarget && (
+          <SendCouponToEveryoneModal coupon={bulkCouponTarget} onClose={() => setBulkCouponTarget(null)} onSent={() => void couponShareService.listSendCounts().then(setCouponSendCounts)} />
+        )}
+        {tab === 'users' && (
           <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-[20px] font-black text-[#111111]">{l('User Management', 'பயனர் மேலாண்மை')}</h2>
@@ -4592,6 +4742,11 @@ export default function Dashboard() {
         {/* ── EXPENSES TAB ── */}
         {tab === 'expenses' && (
           <ExpensesView />
+        )}
+
+        {/* ── BIRTHDAYS TAB ── */}
+        {tab === 'birthdays' && role !== 'staff' && (
+          <BirthdayPanel />
         )}
         </div>
         {/* Footer */}
