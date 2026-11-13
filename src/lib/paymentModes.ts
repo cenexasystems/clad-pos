@@ -52,3 +52,13 @@ export const advanceMethodLabel = (method?: string | null): string => {
   const key = (method || '').toLowerCase()
   return ADVANCE_PAYMENT_METHODS.find((m) => m.value === key)?.label ?? (method || '').toUpperCase()
 }
+
+/** Which analytics box a stored payment mode belongs to. Online / request orders and unknown values are 'other'. */
+export const paymentBucket = (raw?: string | null): 'cash' | 'card' | 'qr' | 'split' | 'other' => {
+  const v = (raw || '').toLowerCase()
+  if (v.includes('split')) return 'split'
+  if (v === 'qr' || v.includes('gpay') || v.includes('upi')) return 'qr'
+  if (v.includes('card')) return 'card'
+  if (v.includes('cash')) return 'cash'
+  return 'other'
+}

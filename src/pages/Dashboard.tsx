@@ -4,7 +4,7 @@ import {
   Box, AlertCircle, ArrowUp, ArrowDown, Power, Download, TrendingUp, TrendingDown,
   Package, Search, RefreshCw, ShieldCheck, ShieldOff, Trophy,
   MessageCircle, ChevronDown, Eye, FileText, Printer, MoreVertical, X, Layers, Receipt,
-  SlidersHorizontal, Tag, Ticket, Percent, CheckCircle2, Info, Sparkles, Gift, Image as ImageIcon,
+  SlidersHorizontal, Tag, Ticket, Percent, CheckCircle2, Info, Sparkles, Gift, Image as ImageIcon, RotateCcw,
 } from 'lucide-react'
 
 // Custom Malaysian Ringgit icon — replaces the generic dollar-sign icon
@@ -44,6 +44,13 @@ import { uploadProductImage, uploadCouponImage } from '../lib/storage'
 import { SendCouponModal, SendCouponToEveryoneModal } from '../components/coupons/CouponSendModals'
 import { couponShareService } from '../services/couponShareService'
 import { EditOrderModal, type SavedOrderEdit } from '../components/orders/EditOrderModal'
+import { ReturnOrderModal } from '../components/orders/ReturnOrderModal'
+import { ReturnInvoice } from '../components/orders/ReturnInvoice'
+import { returnService } from '../services/returnService'
+import type { OrderReturn } from '../lib/returns'
+import { returnInvoicePdfFile } from '../lib/returnInvoicePdf'
+import { computeCollections } from '../lib/collections'
+import { verifyAdminPassword } from '../lib/adminConfirm'
 import { formatCurrency, normalizeOrderMode, normalizeUnitType, toNumber, type UnitType } from '../lib/retail'
 import { normalizeStructuredOrderItem, formatInvoiceNo } from '../lib/retail'
 import { Invoice } from '../components/Invoice'
@@ -86,6 +93,7 @@ type DashboardOrder = {
   created_at: string; total: number; status: string; order_mode: string; order_type: string; user_id: string | null; items: unknown
   coupon_code: string; discount_amount: number; manual_discount_amount: number; delivery_charge: number
   total_gst: number; payment_mode: string; payment_method?: string; invoice_pdf_url: string; remarks?: string; reference_number?: string
+  split_details?: Record<string, unknown>
 }
 type DashboardOrderItem = { order_id: string; product_name: string; category?: string; quantity: number; line_total: number; is_manual?: boolean | null }
 type DashboardCoupon = {
@@ -114,6 +122,8 @@ const parseOrderItems = (items: unknown): Record<string, unknown>[] => {
   if (typeof items === 'string') { try { const p = JSON.parse(items); return Array.isArray(p) ? p : [] } catch { return [] } }
   return []
 }
+
+const plural = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`
 
 // When o.total is 0 (legacy orders saved with bug), compute it from the items JSON
 const getOrderTotal = (order: { total: unknown; items: unknown; shipping?: unknown; delivery_charge?: unknown; total_gst?: unknown; discount_amount?: unknown; manual_discount_amount?: unknown }): number => {
@@ -194,6 +204,7 @@ export default function Dashboard() {
   const location = useLocation()
   const navigate = useNavigate()
   const role = useAdminAuthStore(state => state.role)
+  const adminId = useAdminAuthStore(state => state.adminId)
   const [tab, setTab] = useState<TabKey>(() => {
     const params = new URLSearchParams(location.search)
     const tabParam = params.get('tab') as TabKey | null
@@ -265,6 +276,27 @@ export default function Dashboard() {
 
   const [invoicePreviewOrder, setInvoicePreviewOrder] = useState<DashboardOrder | null>(null)
   const [editingOrder, setEditingOrder] = useState<DashboardOrder | null>(null)
+  const [returningOrder, setReturningOrder] = useState<DashboardOrder | null>(null)
+  const [orderReturns, setOrderReturns] = useState<OrderReturn[]>([])
+  const [invoiceView, setInvoiceView] = useState('original') // 'original' or a return id
+  const [deductRefunds, setDeductRefundsState] = useState<boolean>(() => {
+    try { return localStorage.getItem('clad_deduct_refunds') !== '0' } catch { return true }
+  })
+  const setDeductRefunds = (value: boolean) => {
+    setDeductRefundsState(value)
+    try { localStorage.setItem('clad_deduct_refunds', value ? '1' : '0') } catch { /* storage unavailable: the choice just won't be remembered */ }
+  }
+  const returnsByOrder = useMemo(() => {
+    const map: Record<string, OrderReturn[]> = {}
+    for (const ret of orderReturns) (map[ret.order_id] ||= []).push(ret)
+    for (const list of Object.values(map)) list.sort((a, b) => a.created_at.localeCompare(b.created_at))
+    return map
+  }, [orderReturns])
+  useEffect(() => {
+    let live = true
+    void returnService.list().then(list => { if (live) setOrderReturns(list) })
+    return () => { live = false }
+  }, [])
 
   // WA detail expansion
   const [waExpandedId, setWaExpandedId] = useState<string | null>(null)
@@ -397,6 +429,7 @@ export default function Dashboard() {
     invoice_pdf_url: String(row.invoice_pdf_url || ''),
     remarks: row.remarks ? String(row.remarks) : undefined,
     reference_number: row.reference_number ? String(row.reference_number) : undefined,
+    split_details: row.split_details && typeof row.split_details === 'object' ? row.split_details as Record<string, unknown> : undefined,
   })
 
   const handleAdvanceOrderCompleted = useCallback((advance: AdvanceOrder) => {
@@ -491,7 +524,17 @@ export default function Dashboard() {
       datedExpenses = datedExpenses.filter(e => isInRange(e.expense_date, analyticsDateRange))
     }
     const totalExpenses = datedExpenses.reduce((s, e) => s + (Number(e.amount) || 0), 0)
-    const netProfit = completedRevenue - totalExpenses
+
+    // Refunds (by the day the refund was given) and money collected per payment mode, net of refunds
+    const r2 = (x: number) => Math.round((x + Number.EPSILON) * 100) / 100
+    const returnsInRange = orderReturns.filter(r => !analyticsDateRange || isInRange(r.created_at, analyticsDateRange))
+    const refundedAmount = r2(returnsInRange.reduce((s, r) => s + r.refund_total, 0))
+    const refundedBills = new Set(returnsInRange.map(r => r.order_id)).size
+    const collections = computeCollections(
+      billableCompleted.map(o => ({ total: getOrderTotal(o), payment_mode: o.payment_mode, split_details: o.split_details })),
+      returnsInRange,
+    )
+    const netProfit = completedRevenue - totalExpenses - (deductRefunds ? refundedAmount : 0)
     const isProfitable = netProfit >= 0
 
     const toLocalDateKey = (value: string | Date) => {
@@ -819,8 +862,11 @@ export default function Dashboard() {
       totalExpenses,
       netProfit,
       isProfitable,
+      refundedAmount,
+      refundedBills,
+      collections,
     }
-  }, [orders, orderItems, products, coupons, expenses, analyticsDateRange])
+  }, [orders, orderItems, products, coupons, expenses, analyticsDateRange, orderReturns, deductRefunds])
 
   // History Date Range for Order Management
   const historyDateRange = useMemo(() => {
@@ -903,7 +949,7 @@ export default function Dashboard() {
       const [cRes, oRes, couponRes, expList] = await Promise.all([
         supabase.from('categories').select('id, name_en, name_ta, is_active, sort_order').order('sort_order'),
         supabase.from('orders')
-          .select('id, invoice_no, customer_name, phone, address, created_at, total, status, order_mode, order_type, user_id, items, coupon_code, discount_amount, manual_discount_amount, delivery_charge, total_gst, gst_amount, payment_mode, payment_method, remarks, reference_number')
+          .select('id, invoice_no, customer_name, phone, address, created_at, total, status, order_mode, order_type, user_id, items, coupon_code, discount_amount, manual_discount_amount, delivery_charge, total_gst, gst_amount, payment_mode, payment_method, remarks, reference_number, split_details')
           .order('created_at', { ascending: false })
           .limit(1000),
         supabase.from('coupons')
@@ -1083,6 +1129,34 @@ export default function Dashboard() {
     void loadData()
   }
 
+  // Editing a bill needs the admin: the admin goes straight in, staff are asked for the admin password
+  const requestEditOrder = (order: DashboardOrder) => {
+    if (role !== 'admin') {
+      const pwd = window.prompt(`Enter the admin password to edit bill ${order.invoice_no}:`)
+      if (pwd === null) return
+      if (!verifyAdminPassword(pwd)) { alert('Incorrect admin password. Edit cancelled.'); return }
+    }
+    setEditingOrder(order)
+  }
+
+  const openReturnInvoices = (order: DashboardOrder, returnId?: string) => {
+    const list = returnsByOrder[order.id] || []
+    setInvoiceView(returnId || list[0]?.id || 'original')
+    setInvoicePreviewOrder(order)
+  }
+
+  const openReturnPdf = (ret: OrderReturn, mode: 'download' | 'print') => {
+    const file = returnInvoicePdfFile(ret)
+    const url = URL.createObjectURL(file)
+    if (mode === 'download') {
+      const link = document.createElement('a'); link.href = url; link.download = file.name; link.click()
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+      return
+    }
+    const opened = window.open(url, '_blank', 'noopener,noreferrer')
+    opened?.addEventListener('load', () => opened.print())
+  }
+
   const handlePrintReceipt = (order: DashboardOrder) => {
     const preview = getOrderWhatsAppPreview(order)
     if (!preview) { alert('This order has no invoice details available.'); return }
@@ -1119,6 +1193,7 @@ export default function Dashboard() {
 
   const openOrderInvoice = async (order: DashboardOrder, mode: 'view' | 'download' | 'print') => {
     if (mode === 'view') {
+      setInvoiceView('original')
       setInvoicePreviewOrder(order)
       return
     }
@@ -1348,7 +1423,7 @@ export default function Dashboard() {
       const hasQuery = Boolean(qText || invInput || phoneInput || custInput)
 
       let q = supabase.from('orders')
-        .select('id, invoice_no, customer_name, phone, address, created_at, total, status, order_mode, order_type, items, coupon_code, discount_amount, manual_discount_amount, delivery_charge, total_gst, gst_amount, payment_mode, payment_method, remarks, reference_number')
+        .select('id, invoice_no, customer_name, phone, address, created_at, total, status, order_mode, order_type, items, coupon_code, discount_amount, manual_discount_amount, delivery_charge, total_gst, gst_amount, payment_mode, payment_method, remarks, reference_number, split_details')
         .neq('order_type', 'online_request')
         .order('created_at', { ascending: false })
         .limit(hasQuery ? 1000 : 500)
@@ -2576,6 +2651,11 @@ export default function Dashboard() {
             {/* Revenue sub-tab */}
             {posAnalyticsTab === 'revenue' && (
               <div className="space-y-6">
+                <label className="flex w-fit max-w-full cursor-pointer items-center gap-2.5 rounded-xl border border-[#E8D399] bg-[#FBFAF6] px-4 py-2.5 text-xs font-bold text-[#0A0A0A]">
+                  <input type="checkbox" checked={deductRefunds} onChange={e => setDeductRefunds(e.target.checked)} />
+                  Reduce refunds from Net Profit
+                  <span className="font-medium text-gray-500">({deductRefunds ? 'on' : 'off'})</span>
+                </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                   {[
                     {
@@ -2588,7 +2668,7 @@ export default function Dashboard() {
                     },
                     {
                       label: analytics.isProfitable ? 'Net Profit' : 'Net Loss',
-                      helper: `Revenue (${formatCurrency(analytics.totalCompletedRevenue)}) − Expenses (${formatCurrency(analytics.totalExpenses)})`,
+                      helper: `Revenue (${formatCurrency(analytics.totalCompletedRevenue)}) − Expenses (${formatCurrency(analytics.totalExpenses)})${deductRefunds ? ` − Refunds (${formatCurrency(analytics.refundedAmount)})` : ''}`,
                       value: formatCurrency(Math.abs(analytics.netProfit)),
                       icon: analytics.isProfitable ? <TrendingUp size={16} /> : <TrendingDown size={16} />,
                       color: analytics.isProfitable ? 'text-emerald-600' : 'text-rose-600',
@@ -2643,6 +2723,62 @@ export default function Dashboard() {
                       icon: <Box size={16} />,
                       color: 'text-blue-500',
                       bg: 'bg-blue-50',
+                    },
+                    {
+                      label: 'Refunded Amount',
+                      helper: `Paid back to customers${deductRefunds ? ' · reduced from net profit' : ' · not reduced from net profit'}`,
+                      value: formatCurrency(analytics.refundedAmount),
+                      icon: <RotateCcw size={16} />,
+                      color: 'text-rose-500',
+                      bg: 'bg-rose-50',
+                    },
+                    {
+                      label: 'Refunded Bills',
+                      helper: 'Bills with a return in this period',
+                      value: String(analytics.refundedBills),
+                      icon: <RotateCcw size={16} />,
+                      color: 'text-rose-500',
+                      bg: 'bg-rose-50',
+                    },
+                    {
+                      label: 'Cash Collected',
+                      helper: `Sales ${formatCurrency(analytics.collections.cash.sales)} − refunds ${formatCurrency(analytics.collections.cash.refunds)} · ${plural(analytics.collections.cash.bills, 'bill')}`,
+                      value: formatCurrency(analytics.collections.cash.sales - analytics.collections.cash.refunds),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-emerald-500',
+                      bg: 'bg-emerald-50',
+                    },
+                    {
+                      label: 'Card Collected',
+                      helper: `Sales ${formatCurrency(analytics.collections.card.sales)} − refunds ${formatCurrency(analytics.collections.card.refunds)} · ${plural(analytics.collections.card.bills, 'bill')}`,
+                      value: formatCurrency(analytics.collections.card.sales - analytics.collections.card.refunds),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-indigo-500',
+                      bg: 'bg-indigo-50',
+                    },
+                    {
+                      label: 'GPay Collected',
+                      helper: `Sales ${formatCurrency(analytics.collections.qr.sales)} − refunds ${formatCurrency(analytics.collections.qr.refunds)} · ${plural(analytics.collections.qr.bills, 'bill')}`,
+                      value: formatCurrency(analytics.collections.qr.sales - analytics.collections.qr.refunds),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-cyan-500',
+                      bg: 'bg-cyan-50',
+                    },
+                    {
+                      label: 'Split Bills',
+                      helper: `${plural(analytics.collections.split.bills, 'bill')} paid across cash, card and GPay`,
+                      value: formatCurrency(analytics.collections.split.sales),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-purple-500',
+                      bg: 'bg-purple-50',
+                    },
+                    {
+                      label: 'Online / Other Payments',
+                      helper: `${plural(analytics.collections.other.bills, 'bill')} (online or unrecorded mode)`,
+                      value: formatCurrency(analytics.collections.other.sales),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-gray-500',
+                      bg: 'bg-gray-100',
                     },
                     {
                       label: 'Total Items Sold',
@@ -3625,11 +3761,17 @@ export default function Dashboard() {
                             {normalizeStatus(o.status) === 'completed' ? l('Completed', 'முடிந்தது') : l('Pending', 'நிலுவை')}
                           </span>
                         )}
-                        {role === 'admin' && (
-                          <button onClick={() => setEditingOrder(o)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-[#E5E7EB]/60 text-[#374151] transition-colors hover:bg-gray-50" title={l('Edit bill', 'பில்லைத் திருத்து')}>
-                            <Edit2 size={14} className="mx-auto" />
+                        <button onClick={() => setReturningOrder(o)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-rose-200 text-rose-600 transition-colors hover:bg-rose-50" title="Return / refund">
+                          <RotateCcw size={14} className="mx-auto" />
+                        </button>
+                        {(returnsByOrder[o.id]?.length || 0) > 0 && (
+                          <button onClick={() => openReturnInvoices(o)} className="h-10 sm:h-11 shrink-0 rounded-xl border border-rose-200 bg-rose-50 px-2.5 text-[10px] font-black text-rose-700" title="View the return invoices">
+                            Returns ({returnsByOrder[o.id].length})
                           </button>
                         )}
+                        <button onClick={() => requestEditOrder(o)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-[#E5E7EB]/60 text-[#374151] transition-colors hover:bg-gray-50" title={l('Edit bill', 'பில்லைத் திருத்து')}>
+                          <Edit2 size={14} className="mx-auto" />
+                        </button>
                         {role === 'admin' && (
                           <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-[#E5E7EB]/60 text-[#D4AF37] transition-colors hover:bg-[#D4AF37]/5" title="Delete Order">
                             <Trash2 size={14} className="mx-auto" />
@@ -3688,11 +3830,17 @@ export default function Dashboard() {
                                   {normalizeStatus(o.status) === 'completed' ? l('Completed', 'முடிந்தது') : l('Pending', 'நிலுவை')}
                                 </span>
                               )}
-                              {role === 'admin' && (
-                                <button onClick={() => setEditingOrder(o)} className="rounded-lg p-1 text-[#374151] transition-colors hover:bg-gray-100" title="Edit bill">
-                                  <Edit2 size={13} />
+                              <button onClick={() => setReturningOrder(o)} className="rounded-lg p-1 text-rose-600 transition-colors hover:bg-rose-50" title="Return / refund">
+                                <RotateCcw size={13} />
+                              </button>
+                              {(returnsByOrder[o.id]?.length || 0) > 0 && (
+                                <button onClick={() => openReturnInvoices(o)} className="rounded-lg border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[10px] font-black text-rose-700" title="View the return invoices">
+                                  R{returnsByOrder[o.id].length}
                                 </button>
                               )}
+                              <button onClick={() => requestEditOrder(o)} className="rounded-lg p-1 text-[#374151] transition-colors hover:bg-gray-100" title="Edit bill">
+                                <Edit2 size={13} />
+                              </button>
                               {role === 'admin' && (
                                 <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="rounded-lg p-1 text-[#D4AF37] transition-colors hover:bg-[#D4AF37]/5" title="Delete Order">
                                   <Trash2 size={13} />
@@ -4610,8 +4758,35 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+        {returningOrder && (
+          <ReturnOrderModal
+            order={{
+              id: returningOrder.id,
+              invoice_no: returningOrder.invoice_no,
+              customer_name: returningOrder.customer_name,
+              items: getEditableItems(returningOrder),
+              discount_amount: returningOrder.discount_amount,
+              manual_discount_amount: returningOrder.manual_discount_amount,
+              total_gst: returningOrder.total_gst,
+              delivery_charge: returningOrder.delivery_charge,
+            }}
+            previousReturns={returnsByOrder[returningOrder.id] || []}
+            role={role}
+            adminName={adminId || 'Admin'}
+            onClose={() => setReturningOrder(null)}
+            onCreated={ret => {
+              setOrderReturns(prev => [ret, ...prev])
+              const order = returningOrder
+              setReturningOrder(null)
+              setInvoiceView(ret.id)
+              setInvoicePreviewOrder(order)
+              void loadData()
+            }}
+          />
+        )}
         {editingOrder && (
           <EditOrderModal
+            itemsLocked={(returnsByOrder[editingOrder.id] || []).length > 0}
             order={{
               id: editingOrder.id,
               invoice_no: editingOrder.invoice_no,
@@ -4759,6 +4934,8 @@ export default function Dashboard() {
       {invoicePreviewOrder && (() => {
         const preview = getOrderWhatsAppPreview(invoicePreviewOrder)
         if (!preview) return null
+        const previewReturns = returnsByOrder[invoicePreviewOrder.id] || []
+        const activeReturn = previewReturns.find(r => r.id === invoiceView) || null
 
         return (
           <div
@@ -4773,20 +4950,20 @@ export default function Dashboard() {
             <div className="flex max-h-[95vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-[#F9FAFB] shadow-2xl print:max-h-none print:shadow-none print:rounded-none print:bg-white print:w-full print:max-w-full print:overflow-visible">
               <div className="flex shrink-0 items-center justify-between border-b border-[#E5E7EB]/60 bg-white px-4 py-3 sm:px-6 print:hidden">
                 <div>
-                  <h2 className="text-base font-black text-[#111111]">Invoice Preview</h2>
-                  <p className="text-xs font-semibold text-[#6B7280]">{formatInvoiceNo(invoicePreviewOrder.invoice_no || invoicePreviewOrder.id)}</p>
+                  <h2 className="text-base font-black text-[#111111]">{activeReturn ? 'Return Invoice' : 'Invoice Preview'}</h2>
+                  <p className="text-xs font-semibold text-[#6B7280]">{activeReturn ? `${activeReturn.return_no} · bill ${formatInvoiceNo(invoicePreviewOrder.invoice_no || invoicePreviewOrder.id)}` : formatInvoiceNo(invoicePreviewOrder.invoice_no || invoicePreviewOrder.id)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => handlePrintReceipt(invoicePreviewOrder)}
+                    onClick={() => activeReturn ? openReturnPdf(activeReturn, 'print') : handlePrintReceipt(invoicePreviewOrder)}
                     className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl border border-[#E5E7EB]/70 px-3 text-xs font-black text-[#111111] hover:bg-[#F9FAFB]"
                   >
                     <Printer size={15} /> Print
                   </button>
                   <button
                     type="button"
-                    onClick={() => void openOrderInvoice(invoicePreviewOrder, 'download')}
+                    onClick={() => activeReturn ? openReturnPdf(activeReturn, 'download') : void openOrderInvoice(invoicePreviewOrder, 'download')}
                     className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-[#0A0A0A] px-3 text-xs font-black text-white hover:bg-[#D4AF37]"
                   >
                     <Download size={15} /> Download
@@ -4801,8 +4978,23 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+              {previewReturns.length > 0 && (
+                <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#E5E7EB]/60 bg-white px-4 py-2 sm:px-6 print:hidden">
+                  <button type="button" onClick={() => setInvoiceView('original')}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-black cursor-pointer ${!activeReturn ? 'bg-[#0A0A0A] text-[#D4AF37]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    Original bill
+                  </button>
+                  {previewReturns.map(r => (
+                    <button key={r.id} type="button" onClick={() => setInvoiceView(r.id)}
+                      className={`rounded-lg px-3 py-1.5 text-xs font-black cursor-pointer ${activeReturn?.id === r.id ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'}`}>
+                      {r.return_no} · −{formatCurrency(r.refund_total)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="overflow-y-auto p-2 sm:p-5 print:p-0 print:overflow-visible print:max-h-none">
                 <div className="mx-auto max-w-3xl overflow-hidden rounded-xl bg-white shadow-sm print:shadow-none print:rounded-none print:max-w-full print:m-0 print:p-0 print:overflow-visible">
+                  {activeReturn ? <ReturnInvoice ret={activeReturn} /> : (
                   <Invoice
                     invoiceNo={formatInvoiceNo(invoicePreviewOrder.invoice_no || invoicePreviewOrder.id)}
                     date={invoicePreviewOrder.created_at}
@@ -4820,6 +5012,7 @@ export default function Dashboard() {
                     total={invoicePreviewOrder.total}
                     status={invoicePreviewOrder.status}
                   />
+                  )}
                 </div>
               </div>
             </div>

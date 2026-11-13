@@ -60,9 +60,11 @@ const toProductId = (v: unknown): string | null => {
 
 export const EditOrderModal: React.FC<{
   order: EditableOrder
+  /** a bill with returns keeps its products: only customer, charges and payment can change */
+  itemsLocked?: boolean
   onClose: () => void
   onSaved: (edit: SavedOrderEdit) => void
-}> = ({ order, onClose, onSaved }) => {
+}> = ({ order, itemsLocked = false, onClose, onSaved }) => {
   const { products, fetchProducts } = useProductStore()
   const { variantsMap, fetchVariants } = useVariantStore()
 
@@ -242,6 +244,7 @@ export const EditOrderModal: React.FC<{
           {/* Items */}
           <div>
             <span className={labelCls}>Products on this bill</span>
+            {itemsLocked && <p className="mb-1.5 text-[11px] font-bold text-amber-700">This bill has returns, so its products and prices are locked.</p>}
             <div className="rounded-xl border border-gray-200 overflow-hidden">
               <div className="hidden sm:grid grid-cols-[1fr_84px_104px_92px_36px] gap-2 px-3 py-2 bg-gray-50 text-[10px] font-black uppercase tracking-wider text-gray-500">
                 <span>Item</span><span>Qty</span><span>Price (₹)</span><span className="text-right">Total</span><span />
@@ -250,24 +253,24 @@ export const EditOrderModal: React.FC<{
                 <div key={r.key} className="grid grid-cols-2 sm:grid-cols-[1fr_84px_104px_92px_36px] gap-2 items-center px-3 py-2.5 border-t border-gray-100">
                   <div className="col-span-2 sm:col-span-1 min-w-0">
                     {r.is_manual ? (
-                      <input className={`${fieldCls} h-9`} value={r.name} onChange={(e) => updateRow(r.key, { name: e.target.value })} />
+                      <input className={`${fieldCls} h-9`} disabled={itemsLocked} value={r.name} onChange={(e) => updateRow(r.key, { name: e.target.value })} />
                     ) : (
                       <p className="text-xs font-bold text-[#0A0A0A] truncate" title={r.name}>{r.name}</p>
                     )}
                     {r.is_manual && <span className="text-[10px] font-bold text-gray-500">Manual item (no stock)</span>}
                   </div>
                   <input
-                    type="number" min="1" step="1" className={`${fieldCls} h-9`} value={r.quantity}
+                    type="number" min="1" step="1" disabled={itemsLocked} className={`${fieldCls} h-9`} value={r.quantity}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => updateRow(r.key, { quantity: Math.max(0, Math.round(Number(e.target.value) || 0)) })}
                   />
                   <input
-                    type="number" min="0" step="0.01" className={`${fieldCls} h-9`} value={r.base_price}
+                    type="number" min="0" step="0.01" disabled={itemsLocked} className={`${fieldCls} h-9`} value={r.base_price}
                     onWheel={(e) => (e.target as HTMLInputElement).blur()}
                     onChange={(e) => updateRow(r.key, { base_price: Math.max(0, Number(e.target.value) || 0) })}
                   />
                   <span className="text-xs font-black text-right text-[#0A0A0A]">{formatCurrency(r.line_total)}</span>
-                  <button type="button" onClick={() => setRows((cur) => cur.filter((x) => x.key !== r.key))} aria-label="Remove item" className="w-9 h-9 rounded-lg border border-rose-100 text-rose-500 hover:bg-rose-50 flex items-center justify-center cursor-pointer justify-self-end">
+                  <button type="button" disabled={itemsLocked} onClick={() => setRows((cur) => cur.filter((x) => x.key !== r.key))} aria-label="Remove item" className="w-9 h-9 rounded-lg border border-rose-100 text-rose-500 hover:bg-rose-50 flex items-center justify-center cursor-pointer justify-self-end">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -276,6 +279,7 @@ export const EditOrderModal: React.FC<{
             </div>
 
             {/* Add a catalogue product */}
+            {!itemsLocked && (<>
             <div className="mt-3 relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input className={`${fieldCls} pl-9`} value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Add a product: search name or barcode" />
@@ -298,6 +302,7 @@ export const EditOrderModal: React.FC<{
               <input type="number" min="0" className={`${fieldCls} h-9`} value={manual.price} onChange={(e) => setManual({ ...manual, price: e.target.value })} placeholder="Price" />
               <button type="button" onClick={addManual} className="h-9 px-3 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold inline-flex items-center gap-1 cursor-pointer"><Plus size={13} /> Add</button>
             </div>
+            </>)}
           </div>
 
           {/* Charges */}

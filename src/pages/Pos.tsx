@@ -30,6 +30,8 @@ import {
 import { buildProfessionalWhatsAppMessage, buildAdvanceDepositWhatsAppMessage, publicInvoiceUrl } from '../lib/whatsappMessage'
 import { normalizePhone, toWhatsAppUrl, formatPhone } from '../lib/phone'
 import { lookupCustomerByPhone } from '../services/customerLookupService'
+import { birthdayService } from '../services/birthdayService'
+import { MONTH_NAMES, daysInMonth } from '../lib/birthdays'
 import { useDebouncedValue } from '../lib/debounce'
 import {
   ADVANCE_PAYMENT_METHODS, PAYMENT_MODES, SPLIT_PARTS, paymentDisplayLabel, paymentModeLabel, splitDifference,
@@ -151,6 +153,8 @@ export default function Pos(props: PosProps = {}) {
   const [customer, setCustomer] = useState({ name: '', phone: '', address: '' })
   // Number whose saved details were filled in automatically (drives the "returning customer" hint)
   const [autofilledPhone, setAutofilledPhone] = useState('')
+  // Optional birthday of the customer: saved with the bill so the Birthdays tab can send them an offer
+  const [birthday, setBirthday] = useState({ day: '', month: '' })
   const [debouncedPhone] = useDebouncedValue(customer.phone, 350)
   const lastLookupRef = useRef('')
   const [remarks, setRemarks] = useState('')
@@ -670,6 +674,10 @@ export default function Pos(props: PosProps = {}) {
         }
       })
       setDepositForm(prev => (prev.address.trim() || !found.address ? prev : { ...prev, address: found.address }))
+      if (found.birthday) {
+        const known = found.birthday
+        setBirthday(prev => (prev.day || prev.month ? prev : { day: String(known.day), month: String(known.month) }))
+      }
       setAutofilledPhone(normalized)
     })
   }, [debouncedPhone])
@@ -678,6 +686,7 @@ export default function Pos(props: PosProps = {}) {
     setItems([])
     setCustomer({ name: '', phone: '', address: '' })
     setSplitInputs({ cash: '', card: '', qr: '' })
+    setBirthday({ day: '', month: '' })
     setInvoice(null)
     setCashReceived('')
     setCouponInput('')
@@ -908,11 +917,18 @@ export default function Pos(props: PosProps = {}) {
         paymentMode: ordermode === 'online' ? 'Online' : paymentDisplayLabel(paymentType, splitAmounts),
         paymentMethod: paymentMode,
       }
+      // remember the birthday for the Birthdays tab (does nothing if it was left blank)
+      if (birthday.day && birthday.month && customer.name.trim()) {
+        void birthdayService.saveCustomer({
+          name: customer.name, phone: normalizedPhone, birth_day: Number(birthday.day), birth_month: Number(birthday.month), birth_year: null,
+        })
+      }
       setInvoice(createdInvoice)
       void persistInvoicePdf(createdInvoice)
       setItems([])
       setCustomer({ name: '', phone: '', address: '' })
       setSplitInputs({ cash: '', card: '', qr: '' })
+      setBirthday({ day: '', month: '' })
       void fetchProducts()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to generate bill')
@@ -1232,6 +1248,27 @@ export default function Pos(props: PosProps = {}) {
                 {autofilledPhone && normalizePhone(customer.phone || '') === autofilledPhone && (
                   <p className="mt-1 text-[10px] font-bold text-emerald-700">Returning customer: details filled in from their last bill.</p>
                 )}
+              </div>
+              <div className="min-w-0">
+                <label className="block text-[11px] md:text-[10px] font-bold text-[#374151] mb-1">Birthday (optional)</label>
+                <div className="grid grid-cols-[1fr_1.6fr] gap-2">
+                  <select
+                    value={birthday.day}
+                    onChange={e => setBirthday({ ...birthday, day: e.target.value })}
+                    className="w-full min-w-0 h-10 px-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs font-semibold text-[#111111]"
+                  >
+                    <option value="">Day</option>
+                    {Array.from({ length: birthday.month ? daysInMonth(Number(birthday.month)) : 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                  <select
+                    value={birthday.month}
+                    onChange={e => setBirthday({ day: birthday.day && Number(birthday.day) > daysInMonth(Number(e.target.value)) ? '' : birthday.day, month: e.target.value })}
+                    className="w-full min-w-0 h-10 px-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs font-semibold text-[#111111]"
+                  >
+                    <option value="">Month</option>
+                    {MONTH_NAMES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="min-w-0">
                 <label className="block text-[11px] md:text-[10px] font-bold text-[#374151] mb-1">Remarks (Internal)</label>

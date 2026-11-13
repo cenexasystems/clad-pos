@@ -4,6 +4,8 @@ import { normalizePhone } from '../lib/phone'
 export interface KnownCustomer {
   name: string
   address: string
+  /** birthday saved for this number, if any */
+  birthday?: { day: number; month: number }
 }
 
 const PLACEHOLDER_NAMES = /^(walk-in customer|customer)$/i
@@ -23,14 +25,14 @@ export async function lookupCustomerByPhone(rawPhone: string): Promise<KnownCust
   const pattern = `%${phone.slice(2).split('').join('%')}%`
 
   try {
-    const [orders, birthday] = await Promise.all([
+    const [orders, birthdayResult] = await Promise.all([
       supabase
         .from('orders')
         .select('customer_name, phone, address, created_at')
         .ilike('phone', pattern)
         .order('created_at', { ascending: false })
         .limit(25),
-      supabase.from('customer_birthdays').select('name').eq('phone', phone).maybeSingle(),
+      supabase.from('customer_birthdays').select('name, birth_day, birth_month').eq('phone', phone).maybeSingle(),
     ])
 
     let name = ''
@@ -44,9 +46,13 @@ export async function lookupCustomerByPhone(rawPhone: string): Promise<KnownCust
       if (name && address) break
     }
     // birthday table may not exist yet (migration not run): ignore its error and use the bill data
-    if (!name && birthday.data?.name) name = String(birthday.data.name).trim()
+    const birthdayRow = birthdayResult.data as { name?: string; birth_day?: number; birth_month?: number } | null
+    if (!name && birthdayRow?.name) name = String(birthdayRow.name).trim()
 
-    return name || address ? { name, address } : null
+    const day = Number(birthdayRow?.birth_day)
+    const month = Number(birthdayRow?.birth_month)
+    const birthday = day >= 1 && month >= 1 ? { day, month } : undefined
+    return name || address || birthday ? { name, address, ...(birthday ? { birthday } : {}) } : null
   } catch {
     return null
   }
