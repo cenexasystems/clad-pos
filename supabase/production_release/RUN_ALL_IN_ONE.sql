@@ -1,15 +1,15 @@
 -- ====================================================================
--- CLAD POS: everything added after migration 0027, in one file.
--- Run this ONCE in the production Supabase SQL editor (Dashboard > SQL Editor > New query).
+-- CLAD POS: everything added after migration 0027, in ONE file.
+-- Run this ONCE in the MAIN (production) Supabase: Dashboard > SQL Editor > New query > paste > Run.
 -- Every part is safe to run twice. Production already has migrations 0001-0027.
 --
 --   0028  Birthdays tab: customer birthdays, offers, message template
 --   0029  Coupons on WhatsApp: coupon image + send log
---   0030  Edit bills in Order History (fixes stock for quantity changes)
---   0031  product-images storage bucket (product pictures + coupon images)
+--   0030  Edit bills in Order History (stock stays correct)
+--   0031  product-images storage bucket (product + coupon pictures)
 --   0032  Blank remarks / reference number no longer break a sale
---   0033  Returns & refunds: return invoices, refund rules, optional restock
---   0034  Settings page: shop profile, theme colour, changeable admin / staff passwords
+--   0033  Returns and refunds, return invoices
+--   0034  Settings page: shop profile, theme colour, passwords
 -- ====================================================================
 
 -- >>>>>>>>>> 20261111_0028_customer_birthdays.sql <<<<<<<<<<
