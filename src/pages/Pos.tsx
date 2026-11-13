@@ -1291,7 +1291,7 @@ export default function Pos(props: PosProps = {}) {
                   className="w-full min-w-0 max-w-full box-border h-10 px-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal"
                 />
               </div>
-              <div className="min-w-0 md:col-span-2">
+              <div className="min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <label className="block text-[11px] md:text-[10px] font-bold text-[#374151]">Billing Date (Optional)</label>
                   {billingDate && (

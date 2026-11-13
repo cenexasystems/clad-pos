@@ -4658,15 +4658,18 @@ export default function Dashboard() {
                     return (
                       <div
                         key={coupon.id}
-                        className={`rounded-xl border p-4 shadow-xs transition-all ${
+                        className={`rounded-xl border p-3 sm:p-3.5 shadow-xs transition-all ${
                           isEditing
                             ? 'border-[#D4AF37] bg-[#FBFAF6] ring-2 ring-[#D4AF37]/30'
                             : 'border-gray-200 bg-white hover:border-[#D4AF37]/60 hover:shadow-md'
                         }`}
                       >
-                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="min-w-0 space-y-1.5">
-                            {coupon.image_url && <img src={coupon.image_url} alt="" className="h-14 w-24 rounded-lg object-cover border border-gray-200" />}
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex min-w-0 items-center gap-3">
+                            {coupon.image_url && (
+                              <img src={coupon.image_url} alt="Coupon" className="h-14 w-20 shrink-0 rounded-lg border border-gray-200 bg-white object-contain p-0.5" />
+                            )}
+                          <div className="min-w-0 space-y-1">
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="truncate text-[16px] font-mono font-black uppercase tracking-wider text-[#0A0A0A]">{coupon.code}</p>
                               <span className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider border ${
@@ -4698,6 +4701,7 @@ export default function Dashboard() {
                               {coupon.expiry_date ? ` • expires ${new Date(coupon.expiry_date).toLocaleDateString('en-IN')}` : ' • no expiry'}
                               {` • sent to ${couponSendCounts[coupon.id] || 0}`}
                             </p>
+                          </div>
                           </div>
 
                           <div className="flex shrink-0 flex-wrap items-center gap-2">
