@@ -425,3 +425,51 @@ export function formatBarcodeDisplay(value?: string | null): string {
 export function isValidBarcodeValue(value: string): boolean {
   return /^[A-Z0-9_-]{4,32}$/i.test(value.trim())
 }
+
+/**
+ * Prints a calibration row for the roll: every label gets a frame at its exact size, mm ticks
+ * along the top and left edges and a centre cross. Uses the same page geometry and Shift
+ * settings as real labels, so whichever frame edge is clipped (or sits off the sticker) tells
+ * you how many mm to change Shift / Row gap. Read the first tick you can see on each side.
+ */
+export function printAlignmentTest(size: LabelSizeConfig, settings: BarcodeSettings): void {
+  const perRow = Math.max(1, size.labelsPerRow || 1)
+  const gap = size.horizontalGapMm || 0
+  const rowW = size.widthMm * perRow + gap * (perRow - 1)
+  const pageW = Math.max(rowW, size.rollWidthMm || 0)
+  const side = (pageW - rowW) / 2
+  const pageH = size.heightMm + Math.max(0, Number(settings.rowGapMm) || 0)
+  const dx = Number(settings.offsetXMm) || 0
+  const ticks = (len: number, horizontal: boolean) =>
+    Array.from({ length: Math.floor(len) + 1 }, (_, i) => {
+      const major = i % 5 === 0
+      const l = major ? 2.2 : 1.2
+      return horizontal
+        ? `<i style="left:${i}mm;top:0;width:0.15mm;height:${l}mm"></i>${major && i ? `<b style="left:${i - 0.6}mm;top:2.4mm">${i}</b>` : ''}`
+        : `<i style="top:${i}mm;left:0;height:0.15mm;width:${l}mm"></i>${major && i ? `<b style="top:${i - 1}mm;left:2.4mm">${i}</b>` : ''}`
+    }).join('')
+  const label = `<div class="l" style="width:${size.widthMm}mm;height:${size.heightMm}mm">
+    ${ticks(size.widthMm, true)}${ticks(size.heightMm, false)}
+    <u style="left:${size.widthMm / 2}mm"></u><s style="top:${size.heightMm / 2}mm"></s>
+    <span>L1</span></div>`
+  const html = `<!DOCTYPE html><html><head><title>Alignment test</title><style>
+    @page { size: ${pageW}mm ${pageH}mm; margin: 0 }
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{width:${pageW}mm;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;font-family:Arial,sans-serif}
+    .row{width:${pageW}mm;height:${pageH}mm;padding:0 ${side}mm;display:flex;column-gap:${gap}mm;position:relative;left:${dx}mm;overflow:hidden}
+    .l{position:relative;border:0.3mm solid #000;flex:0 0 auto}
+    i{position:absolute;background:#000} b{position:absolute;font-size:4pt;font-weight:700}
+    u{position:absolute;top:0;bottom:0;width:0.1mm;background:#000} s{position:absolute;left:0;right:0;height:0.1mm;background:#000}
+    span{position:absolute;right:1mm;bottom:0.5mm;font-size:5pt;font-weight:900}
+  </style></head><body><div class="row">${label.repeat(perRow)}</div></body></html>`
+  const iframe = document.createElement('iframe')
+  iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;'
+  document.body.appendChild(iframe)
+  const doc = iframe.contentWindow?.document
+  if (!doc || !iframe.contentWindow) { iframe.remove(); return }
+  doc.open(); doc.write(html); doc.close()
+  const win = iframe.contentWindow
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    try { win.focus(); win.print() } finally { setTimeout(() => iframe.remove(), 2500) }
+  }))
+}

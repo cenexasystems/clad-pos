@@ -13,6 +13,8 @@ import {
   saveStoredBarcodeSettings,
   subscribeCustomSizes,
   fetchRemoteCustomSizes,
+  printAlignmentTest,
+  type LabelSizeConfig,
 } from '../../lib/barcode'
 import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
@@ -90,6 +92,25 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
     const match = presets.find((x) => x.id === savedId)
     if (match) setSelectedPreset(match)
   }, [isOpen, presets])
+
+  const [cal, setCal] = useState(() => {
+    const c = getStoredBarcodeSettings()
+    return { rowGapMm: c.rowGapMm, offsetXMm: c.offsetXMm, offsetYMm: c.offsetYMm }
+  })
+  const handleCalChange = (field: 'rowGapMm' | 'offsetXMm' | 'offsetYMm', value: string) => {
+    const num = parseFloat(value)
+    const v = Number.isFinite(num) ? (field === 'rowGapMm' ? Math.max(0, num) : num) : 0
+    setCal((prev) => ({ ...prev, [field]: v }))
+    saveStoredBarcodeSettings({ ...getStoredBarcodeSettings(), [field]: v })
+  }
+  const handleAlignmentTest = () => {
+    const size: LabelSizeConfig = {
+      id: 'current', name: selectedPreset.name, labelsPerRow: selectedPreset.labelsPerRow || 1,
+      widthMm: selectedPreset.widthMm, heightMm: selectedPreset.heightMm,
+      horizontalGapMm: selectedPreset.horizontalGapMm || 0, rollWidthMm: selectedPreset.rollWidthMm,
+    }
+    printAlignmentTest(size, { ...getStoredBarcodeSettings(), ...cal })
+  }
 
   const handlePrinterTypeChange = (type: 'label' | 'regular') => {
     setPrinterType(type)
@@ -471,6 +492,40 @@ export const BarcodePrintModal: React.FC<BarcodePrintModalProps> = ({
                 </p>
               </div>
             </div>
+
+            {/* Roll alignment (applies to the next print) */}
+            {printerType === 'label' && (
+              <div className="pt-3 border-t border-[#E8D399]/50">
+                <label className="block text-[11px] font-black uppercase tracking-wider text-gray-800 mb-2">
+                  Roll alignment (mm)
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    ['offsetXMm', 'Shift → (right +)'],
+                    ['offsetYMm', 'Shift ↓ (down +)'],
+                    ['rowGapMm', 'Row gap'],
+                  ] as const).map(([field, label]) => (
+                    <label key={field} className="text-[10px] font-bold text-gray-600">
+                      {label}
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={cal[field]}
+                        onChange={(e) => handleCalChange(field, e.target.value)}
+                        className="mt-1 w-full h-9 px-2 rounded-lg border border-gray-300 bg-white text-xs font-bold text-gray-900 outline-none focus:border-[#0A0A0A]"
+                      />
+                    </label>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleAlignmentTest}
+                  className="mt-2 w-full h-9 rounded-lg border-2 border-dashed border-gray-400 text-[11px] font-black uppercase tracking-wide text-gray-700 hover:border-[#0A0A0A] cursor-pointer"
+                >
+                  Print alignment test (frame + mm ruler)
+                </button>
+              </div>
+            )}
 
             {/* Row 2: Quantity Stepper & Quick Pills */}
             <div className="pt-3 border-t border-[#E8D399]/50">

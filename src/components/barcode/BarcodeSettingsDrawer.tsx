@@ -10,6 +10,8 @@ import {
   deleteStoredCustomSize,
   subscribeCustomSizes,
   saveStoredBarcodeSettings,
+  printAlignmentTest,
+  getAllLabelSizes,
 } from '../../lib/barcode'
 import { CreateCustomSizeModal } from './CreateCustomSizeModal'
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
@@ -258,6 +260,16 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
                     </label>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const size = getAllLabelSizes().find((x) => x.id === settings.selectedSizeId) || DEFAULT_LABEL_SIZES[0]
+                    printAlignmentTest(size, settings)
+                  }}
+                  className="mt-2 w-full h-9 rounded-lg border-2 border-dashed border-gray-400 text-[11px] font-black uppercase tracking-wide text-gray-700 hover:border-[#0A0A0A] cursor-pointer"
+                >
+                  Print alignment test (frame + mm ruler)
+                </button>
                 <p className="mt-1.5 text-[10px] text-gray-400 font-medium leading-snug">
                   Row gap = blank space between label rows on the roll (keep 0 if the printer driver feeds to the gap sensor). Use Shift to nudge content if it sits off-centre.
                 </p>
