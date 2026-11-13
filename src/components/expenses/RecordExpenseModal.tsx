@@ -129,14 +129,14 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
       style={overlayStyle}
     >
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92dvh] border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+      <div className="relative z-10 bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92dvh] border border-accent-light shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-[#FBFAF6]">
+        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-accent-soft">
           <div className="flex items-center gap-2">
             {expenseToEdit ? (
-              <Edit2 size={17} className="text-[#D4AF37]" />
+              <Edit2 size={17} className="text-accent" />
             ) : (
-              <Tag size={17} className="text-[#D4AF37]" />
+              <Tag size={17} className="text-accent" />
             )}
             <h3 className="text-sm font-bold text-[#0A0A0A]">
               {expenseToEdit ? 'Edit Expense Record' : 'Record Expense'}
@@ -236,7 +236,7 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
 
           {/* Sticky Modal Actions */}
           <div
-            className="shrink-0 sticky bottom-0 z-20 px-5 py-3.5 bg-[#FBFAF6] border-t border-gray-100 flex items-center gap-3"
+            className="shrink-0 sticky bottom-0 z-20 px-5 py-3.5 bg-accent-soft border-t border-gray-100 flex items-center gap-3"
             style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
           >
             <button
@@ -249,7 +249,7 @@ export const RecordExpenseModal: React.FC<RecordExpenseModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="flex-[1.5] h-11 sm:h-10 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-bold hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 min-h-[48px] sm:min-h-0"
+              className="flex-[1.5] h-11 sm:h-10 rounded-xl bg-[#0A0A0A] border border-accent text-accent text-xs font-bold hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 min-h-[48px] sm:min-h-0"
             >
               {loading
                 ? expenseToEdit

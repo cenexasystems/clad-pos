@@ -151,7 +151,7 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
                   Select any 1 option
                 </span>
               </div>
-              <div className="space-y-2 bg-[#FBFAF6] p-3 rounded-xl border border-gray-200">
+              <div className="space-y-2 bg-accent-soft p-3 rounded-xl border border-gray-200">
                 <label className="flex items-center gap-2.5 text-xs font-bold text-gray-700 cursor-pointer">
                   <input
                     type="radio"
@@ -185,7 +185,7 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
                   Select any 1 option
                 </span>
               </div>
-              <div className="space-y-1.5 bg-[#FBFAF6] p-3 rounded-xl border border-gray-200">
+              <div className="space-y-1.5 bg-accent-soft p-3 rounded-xl border border-gray-200">
                 {allSizes.map((size) => (
                   <div
                     key={size.id}
@@ -203,7 +203,7 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
                     </label>
                     {size.isCustom && (
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <span className="text-[9px] font-black uppercase tracking-wider bg-[#0A0A0A] text-[#D4AF37] px-1.5 py-0.5 rounded">
+                        <span className="text-[9px] font-black uppercase tracking-wider bg-[#0A0A0A] text-accent px-1.5 py-0.5 rounded">
                           Custom
                         </span>
                         <button
@@ -242,7 +242,7 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
                     Roll Alignment (Fine-tune)
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 bg-[#FBFAF6] p-3 rounded-xl border border-gray-200">
+                <div className="grid grid-cols-3 gap-2 bg-accent-soft p-3 rounded-xl border border-gray-200">
                   {([
                     ['rowGapMm', 'Row gap (mm)'],
                     ['offsetXMm', 'Shift → (mm)'],
@@ -283,7 +283,7 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
                   Additional Fields
                 </span>
               </div>
-              <div className="space-y-2.5 bg-[#FBFAF6] p-3 rounded-xl border border-gray-200">
+              <div className="space-y-2.5 bg-accent-soft p-3 rounded-xl border border-gray-200">
                 <label className="flex items-center gap-2.5 text-xs font-bold text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -332,7 +332,7 @@ export const BarcodeSettingsDrawer: React.FC<BarcodeSettingsDrawerProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-3 sm:py-2.5 rounded-xl bg-[#0A0A0A] text-[#D4AF37] border border-[#D4AF37] font-black text-xs uppercase tracking-wider hover:bg-[#1A1A1A] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md min-h-[48px] sm:min-h-0"
+              className="w-full py-3 sm:py-2.5 rounded-xl bg-[#0A0A0A] text-accent border border-accent font-black text-xs uppercase tracking-wider hover:bg-[#1A1A1A] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md min-h-[48px] sm:min-h-0"
             >
               <Check size={14} /> Done
             </button>

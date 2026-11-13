@@ -92,18 +92,18 @@ export const StockHistoryDrawer: React.FC<StockHistoryDrawerProps> = ({
   return createPortal(
     <div className="fixed inset-0 top-0 left-0 right-0 bottom-0 w-screen h-screen h-[100dvh] z-[9999] overflow-hidden bg-black/60 backdrop-blur-xs flex justify-end animate-in fade-in duration-150">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white w-full max-w-md h-screen h-[100dvh] shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 border-l border-[#E8D399]">
+      <div className="relative z-10 bg-white w-full max-w-md h-screen h-[100dvh] shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 border-l border-accent-light">
         {/* Header */}
-        <div className="bg-[#0A0A0A] p-5 border-b border-[#D4AF37]/30 flex items-center justify-between text-white shrink-0">
+        <div className="bg-[#0A0A0A] p-5 border-b border-accent/30 flex items-center justify-between text-white shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#1A1A1A] border border-[#D4AF37] flex items-center justify-center text-[#D4AF37] shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[#1A1A1A] border border-accent flex items-center justify-center text-accent shrink-0">
               <History size={18} />
             </div>
             <div>
               <h2 className="text-base font-black tracking-wide text-white">
                 Stock Audit Ledger
               </h2>
-              <p className="text-xs text-[#D4AF37] font-semibold">
+              <p className="text-xs text-accent font-semibold">
                 {BRAND_EN} Immutable History
               </p>
             </div>
@@ -117,8 +117,8 @@ export const StockHistoryDrawer: React.FC<StockHistoryDrawerProps> = ({
         </div>
 
         {/* Item Summary Bar */}
-        <div className="bg-[#FBFAF6] border-b border-[#E8D399] p-4">
-          <div className="text-[10px] font-black uppercase tracking-wider text-[#B48811]">
+        <div className="bg-accent-soft border-b border-accent-light p-4">
+          <div className="text-[10px] font-black uppercase tracking-wider text-accent-dark">
             Target SKU
           </div>
           <div className="text-sm font-black text-black">{item.name}</div>
@@ -162,7 +162,7 @@ export const StockHistoryDrawer: React.FC<StockHistoryDrawerProps> = ({
               return (
                 <div
                   key={m.id}
-                  className="bg-[#FBFAF6] border border-gray-200 hover:border-[#E8D399] rounded-2xl p-3.5 space-y-2 transition-all shadow-xs"
+                  className="bg-accent-soft border border-gray-200 hover:border-accent-light rounded-2xl p-3.5 space-y-2 transition-all shadow-xs"
                 >
                   <div className="flex items-center justify-between">
                     <span

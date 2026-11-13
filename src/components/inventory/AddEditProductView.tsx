@@ -657,13 +657,13 @@ export const AddEditProductView: React.FC<{
   return (
     <div className="flex flex-col gap-3">
       {/* Mobile Switch: Product List vs Add/Edit Form */}
-      <div className="lg:hidden flex items-center p-1 bg-white border border-[#E8D399] rounded-2xl shadow-xs shrink-0">
+      <div className="lg:hidden flex items-center p-1 bg-white border border-accent-light rounded-2xl shadow-xs shrink-0">
         <button
           type="button"
           onClick={() => setMobileView('list')}
           className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             mobileView === 'list'
-              ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
+              ? 'bg-[#0A0A0A] text-accent shadow-sm'
               : 'text-gray-600 hover:text-black'
           }`}
         >
@@ -679,7 +679,7 @@ export const AddEditProductView: React.FC<{
           }}
           className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
             mobileView === 'form'
-              ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-sm'
+              ? 'bg-[#0A0A0A] text-accent shadow-sm'
               : 'text-gray-600 hover:text-black'
           }`}
         >
@@ -694,7 +694,7 @@ export const AddEditProductView: React.FC<{
         }`}>
           <div className="p-3.5 border-b border-gray-200 bg-[#FAFAFA] shrink-0">
             <h4 className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-              <Package size={14} className="text-[#D4AF37]" />
+              <Package size={14} className="text-accent" />
               Product Catalog ({activeProducts.length})
             </h4>
             <p className="text-[10px] text-gray-500 font-medium mt-0.5">
@@ -702,7 +702,7 @@ export const AddEditProductView: React.FC<{
             </p>
           </div>
 
-          <div className="p-3 border-b border-gray-100 bg-[#FBFAF6] shrink-0">
+          <div className="p-3 border-b border-gray-100 bg-accent-soft shrink-0">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
@@ -729,8 +729,8 @@ export const AddEditProductView: React.FC<{
                     onClick={() => void startEditProduct(p)}
                     className={`group p-3 sm:p-3.5 cursor-pointer flex items-center justify-between gap-2.5 transition-all ${
                       isSelected
-                        ? 'bg-[#FFF9E6] border-l-4 border-[#D4AF37] ring-1 ring-[#D4AF37]/40 shadow-xs'
-                        : 'hover:bg-[#FBFAF6] border-l-4 border-transparent hover:border-l-gray-300'
+                        ? 'bg-[#FFF9E6] border-l-4 border-accent ring-1 ring-accent/40 shadow-xs'
+                        : 'hover:bg-accent-soft border-l-4 border-transparent hover:border-l-gray-300'
                     }`}
                   >
                     <div className="flex-1 min-w-0 pr-1">
@@ -739,7 +739,7 @@ export const AddEditProductView: React.FC<{
                           {p.name}
                         </span>
                         {isSelected && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#0A0A0A] text-[#D4AF37] shrink-0">
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-[#0A0A0A] text-accent shrink-0">
                             Editing
                           </span>
                         )}
@@ -766,13 +766,13 @@ export const AddEditProductView: React.FC<{
                           }}
                           className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                             isSelected
-                              ? 'bg-[#0A0A0A] text-[#D4AF37] border-[#D4AF37] shadow-xs'
-                              : 'border-gray-200 bg-white text-gray-600 hover:bg-[#0A0A0A] hover:text-[#D4AF37] hover:border-black'
+                              ? 'bg-[#0A0A0A] text-accent border-accent shadow-xs'
+                              : 'border-gray-200 bg-white text-gray-600 hover:bg-[#0A0A0A] hover:text-accent hover:border-black'
                           }`}
                           title={`Edit "${p.name}"`}
                           aria-label={`Edit ${p.name}`}
                         >
-                          <Edit2 size={13} className={isSelected ? 'text-[#D4AF37]' : ''} />
+                          <Edit2 size={13} className={isSelected ? 'text-accent' : ''} />
                         </button>
 
                         <button
@@ -796,7 +796,7 @@ export const AddEditProductView: React.FC<{
         </div>
 
         {/* RIGHT COLUMN: Product Authoring Form Workspace */}
-        <div className={`flex-1 flex-col bg-[#FBFAF6] border border-gray-200 rounded-2xl shadow-sm overflow-hidden h-full min-h-0 ${
+        <div className={`flex-1 flex-col bg-accent-soft border border-gray-200 rounded-2xl shadow-sm overflow-hidden h-full min-h-0 ${
           mobileView === 'form' ? 'flex' : 'hidden lg:flex'
         }`}>
           {/* Pinned Form Header */}
@@ -812,7 +812,7 @@ export const AddEditProductView: React.FC<{
               </button>
               <div className="min-w-0">
                 <h3 className="text-sm font-bold text-black flex items-center gap-2 truncate">
-                  <Package size={16} className="text-[#D4AF37] shrink-0" />
+                  <Package size={16} className="text-accent shrink-0" />
                   <span className="truncate">{selectedProductId ? 'Edit Product & Stock Details' : 'Add New Product to Catalog'}</span>
                 </h3>
                 <p className="text-[11px] text-gray-500 font-semibold truncate hidden sm:block">
@@ -1021,7 +1021,7 @@ export const AddEditProductView: React.FC<{
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-xs font-black text-black flex items-center gap-1.5">
-                    <Tag size={14} className="text-[#D4AF37]" /> Multi-Variant Product (Sizes, Colors, SKUs)
+                    <Tag size={14} className="text-accent" /> Multi-Variant Product (Sizes, Colors, SKUs)
                   </span>
                   <p className="text-[11px] text-gray-500 font-medium">
                     Enable if this product comes in multiple sizes (e.g. S, M, L, XL) or colors
@@ -1043,7 +1043,7 @@ export const AddEditProductView: React.FC<{
               {hasVariants && (
                 <div className="space-y-4 pt-3 border-t border-gray-100">
                   {/* Standardized Partitioned Size Selector & Custom Variant Bar */}
-                  <div className="bg-[#FBFAF6] border border-[#E8D399] rounded-xl p-3 space-y-3">
+                  <div className="bg-accent-soft border border-accent-light rounded-xl p-3 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-1 p-0.5 bg-white border border-gray-200 rounded-lg">
                         <button
@@ -1051,7 +1051,7 @@ export const AddEditProductView: React.FC<{
                           onClick={() => setSizePartition('alpha')}
                           className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                             sizePartition === 'alpha'
-                              ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-xs'
+                              ? 'bg-[#0A0A0A] text-accent shadow-xs'
                               : 'text-gray-600 hover:text-black'
                           }`}
                         >
@@ -1062,7 +1062,7 @@ export const AddEditProductView: React.FC<{
                           onClick={() => setSizePartition('numeric')}
                           className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                             sizePartition === 'numeric'
-                              ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-xs'
+                              ? 'bg-[#0A0A0A] text-accent shadow-xs'
                               : 'text-gray-600 hover:text-black'
                           }`}
                         >
@@ -1073,7 +1073,7 @@ export const AddEditProductView: React.FC<{
                           onClick={() => setSizePartition('custom')}
                           className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
                             sizePartition === 'custom'
-                              ? 'bg-[#0A0A0A] text-[#D4AF37] shadow-xs'
+                              ? 'bg-[#0A0A0A] text-accent shadow-xs'
                               : 'text-gray-600 hover:text-black'
                           }`}
                         >
@@ -1084,7 +1084,7 @@ export const AddEditProductView: React.FC<{
                       <button
                         type="button"
                         onClick={() => handleAddFullPack(sizePartition)}
-                        className="px-2.5 py-1 rounded-lg bg-white border border-[#D4AF37] text-[#0A0A0A] text-[11px] font-bold hover:bg-[#FFF9E6] transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-white border border-accent text-[#0A0A0A] text-[11px] font-bold hover:bg-[#FFF9E6] transition-colors cursor-pointer"
                       >
                         + Add Full Size Set ({sizePartition === 'alpha' ? 'S to 2XL' : sizePartition === 'numeric' ? '28 to 38' : 'Standard Specials'})
                       </button>
@@ -1113,7 +1113,7 @@ export const AddEditProductView: React.FC<{
                             className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
                               isSelected
                                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300 opacity-60 cursor-default'
-                                : 'bg-white text-gray-800 border-gray-300 hover:border-[#D4AF37] hover:bg-[#FFF9E6] cursor-pointer'
+                                : 'bg-white text-gray-800 border-gray-300 hover:border-accent hover:bg-[#FFF9E6] cursor-pointer'
                             }`}
                           >
                             {isSelected ? `✓ ${sz}` : `+ ${sz}`}
@@ -1123,7 +1123,7 @@ export const AddEditProductView: React.FC<{
                     </div>
 
                     {/* Flexible Custom Variant Input Bar */}
-                    <div className="pt-2 border-t border-[#E8D399]/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div className="pt-2 border-t border-accent-light/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <div className="flex-1 relative">
                         <input
                           type="text"
@@ -1143,7 +1143,7 @@ export const AddEditProductView: React.FC<{
                         type="button"
                         onClick={() => handleAddCustomNamedVariant(customVariantInput)}
                         disabled={!customVariantInput.trim()}
-                        className="h-8 px-3.5 rounded-lg bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold hover:bg-[#1A1A1A] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-1.5 shrink-0"
+                        className="h-8 px-3.5 rounded-lg bg-[#0A0A0A] text-accent text-xs font-bold hover:bg-[#1A1A1A] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center justify-center gap-1.5 shrink-0"
                       >
                         <Plus size={13} /> Add Custom
                       </button>
@@ -1176,7 +1176,7 @@ export const AddEditProductView: React.FC<{
                     <button
                       type="button"
                       onClick={handleAddVariantRow}
-                      className="px-3 py-1 rounded-lg bg-[#0A0A0A] text-[#D4AF37] text-xs font-black flex items-center gap-1 hover:bg-[#1A1A1A] cursor-pointer"
+                      className="px-3 py-1 rounded-lg bg-[#0A0A0A] text-accent text-xs font-black flex items-center gap-1 hover:bg-[#1A1A1A] cursor-pointer"
                     >
                       <Plus size={12} /> Add Blank Variant Row
                     </button>
@@ -1195,7 +1195,7 @@ export const AddEditProductView: React.FC<{
                     {variantRows.map((v) => (
                       <div
                         key={v.id}
-                        className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-[#FBFAF6] border border-gray-200 items-center"
+                        className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 p-3 rounded-xl bg-accent-soft border border-gray-200 items-center"
                       >
                         <div className="sm:col-span-3">
                           <label className="block text-[10px] font-bold text-gray-600 mb-0.5">
@@ -1301,11 +1301,11 @@ export const AddEditProductView: React.FC<{
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              className="px-5 py-2 sm:px-6 sm:py-2.5 rounded-xl bg-[#0A0A0A] border border-accent text-accent text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               {loading ? (
                 <>
-                  <span className="w-3.5 h-3.5 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin inline-block" />
+                  <span className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin inline-block" />
                   Saving Product...
                 </>
               ) : (

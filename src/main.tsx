@@ -4,6 +4,9 @@ import './index.css'
 import App from './App.tsx'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { installScrollLockSafetyReset } from './lib/scrollLock'
+import { initShopSettings } from './store/shopSettings'
+
+initShopSettings()
 
 // Global deployment chunk recovery & benign error suppression
 if (typeof window !== 'undefined') {

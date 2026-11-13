@@ -314,7 +314,7 @@ export default function DigitalInvoice() {
   if (loading) {
     return (
       <div className="min-h-[100dvh] bg-[#f9faf6] flex flex-col items-center justify-center p-4">
-        <span className="w-10 h-10 border-4 border-[#E8D399] border-t-[#0A0A0A] rounded-full animate-spin mb-4" />
+        <span className="w-10 h-10 border-4 border-accent-light border-t-[#0A0A0A] rounded-full animate-spin mb-4" />
         <p className="text-xs uppercase font-semibold tracking-wider text-gray-500">Loading invoice...</p>
       </div>
     )
@@ -324,7 +324,7 @@ export default function DigitalInvoice() {
     const currentId = getEffectiveIdentifier()
     return (
       <div className="min-h-[100dvh] bg-[#f9faf6] flex flex-col items-center justify-center p-4 sm:p-6 text-center">
-        <div className="w-full max-w-md bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-[#E8D399]/40">
+        <div className="w-full max-w-md bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-accent-light/40">
           <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 font-bold text-xl">
             #
           </div>
@@ -339,11 +339,11 @@ export default function DigitalInvoice() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="e.g. 69 or INV00000069"
-              className="flex-1 px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+              className="flex-1 px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
             />
             <button
               type="submit"
-              className="px-4 py-2.5 bg-[#0A0A0A] text-[#D4AF37] rounded-xl font-bold text-sm hover:bg-[#1A1A1A] transition flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2.5 bg-[#0A0A0A] text-accent rounded-xl font-bold text-sm hover:bg-[#1A1A1A] transition flex items-center gap-1.5 cursor-pointer"
             >
               <Search size={15} /> Find
             </button>
@@ -358,7 +358,7 @@ export default function DigitalInvoice() {
             </button>
             <button
               onClick={handleBack}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#0A0A0A] border border-[#E8D399] hover:bg-amber-50 rounded-lg transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#0A0A0A] border border-accent-light hover:bg-amber-50 rounded-lg transition cursor-pointer"
             >
               <ArrowLeft size={13} /> Back
             </button>
@@ -494,17 +494,17 @@ export default function DigitalInvoice() {
   return (
     <div className="min-h-[100dvh] overflow-y-auto bg-[#f9faf6] font-sans pb-12 print:bg-white print:pb-0 print:h-auto print:min-h-0 print:overflow-visible print:m-0 print:p-0">
       {/* Top action bar */}
-      <div className="bg-[#f9faf6]/95 backdrop-blur-md p-4 sticky top-0 z-50 print:hidden flex items-center justify-between max-w-4xl mx-auto pt-[calc(env(safe-area-inset-top)+0.75rem)] border-b border-[#E8D399]/30">
+      <div className="bg-[#f9faf6]/95 backdrop-blur-md p-4 sticky top-0 z-50 print:hidden flex items-center justify-between max-w-4xl mx-auto pt-[calc(env(safe-area-inset-top)+0.75rem)] border-b border-accent-light/30">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 text-[#0A0A0A] hover:text-[#D4AF37] font-semibold text-sm transition-colors bg-white border border-[#E8D399] px-4 py-2 rounded-full shadow-sm cursor-pointer min-h-[44px]"
+          className="flex items-center gap-2 text-[#0A0A0A] hover:text-accent font-semibold text-sm transition-colors bg-white border border-accent-light px-4 py-2 rounded-full shadow-sm cursor-pointer min-h-[44px]"
         >
           <ArrowLeft size={16} /> Back
         </button>
         <div className="flex items-center gap-2">
           <button
             onClick={downloadPdf}
-            className="flex items-center gap-2 bg-[#0A0A0A] text-[#D4AF37] border border-[#D4AF37] px-4 sm:px-5 py-2 rounded-full font-bold text-xs sm:text-sm shadow-md hover:bg-[#1A1A1A] transition-colors cursor-pointer min-h-[44px]"
+            className="flex items-center gap-2 bg-[#0A0A0A] text-accent border border-accent px-4 sm:px-5 py-2 rounded-full font-bold text-xs sm:text-sm shadow-md hover:bg-[#1A1A1A] transition-colors cursor-pointer min-h-[44px]"
           >
             <Printer size={15} /> PDF Invoice
           </button>

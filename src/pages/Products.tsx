@@ -279,7 +279,7 @@ export default function Products() {
                </div>
                <h3 className="text-xl font-black mb-2 text-[#111111]">{t('products.none')}</h3>
                <p className="text-[#374151] max-w-xs mx-auto mb-6 text-sm">No products found matching your filters.</p>
-               <button onClick={clear} className="text-sm font-black text-[#D4AF37] hover:underline">Clear all filters</button>
+               <button onClick={clear} className="text-sm font-black text-accent hover:underline">Clear all filters</button>
             </div>
           ) : (
             <motion.div layout className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4 items-stretch">

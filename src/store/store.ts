@@ -16,6 +16,7 @@ import {
 
 import { useAlarmStore } from './alarmStore'
 import { alarmSound } from '../lib/alarmAudio'
+import { verifyPortalPassword } from '../lib/credentials'
 
 export type { ProductVariant }
 
@@ -594,9 +595,8 @@ export const useAdminAuthStore = create<AdminAuthState>()(
 
         // 1. Check Admin Credentials (support VITE_ADMIN_ID or VITE_PORTAL_ID fallback)
         const adminId = String(import.meta.env.VITE_ADMIN_ID || import.meta.env.VITE_PORTAL_ID || 'admin').trim()
-        const adminPass = String(import.meta.env.VITE_ADMIN_PASSWORD || import.meta.env.VITE_PORTAL_PASSWORD || 'admin123').trim()
 
-        if (trimmedId === adminId && trimmedPass === adminPass) {
+        if (trimmedId === adminId && await verifyPortalPassword('admin', trimmedPass)) {
           useAlarmStore.getState().resetSilencedState()
           set({ isLoggedIn: true, role: 'admin', adminId: trimmedId })
           return 'admin'
@@ -604,9 +604,8 @@ export const useAdminAuthStore = create<AdminAuthState>()(
 
         // 2. Check Staff Credentials
         const staffId = String(import.meta.env.VITE_STAFF_ID || 'staff').trim()
-        const staffPass = String(import.meta.env.VITE_STAFF_PASSWORD || 'staff123').trim()
 
-        if (trimmedId === staffId && trimmedPass === staffPass) {
+        if (trimmedId === staffId && await verifyPortalPassword('staff', trimmedPass)) {
           useAlarmStore.getState().resetSilencedState()
           set({ isLoggedIn: true, role: 'staff', adminId: trimmedId })
           return 'staff'

@@ -231,7 +231,7 @@ export default function ProductDetailModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.99, y: 18 }}
             transition={{ type: 'spring', stiffness: 130, damping: 20, mass: 0.9 }}
-            className="relative flex h-full max-h-[100dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] bg-[#fbfaf6] shadow-[0_-10px_42px_rgba(22,35,20,0.16)] sm:max-h-[min(94dvh,900px)] sm:rounded-[32px]"
+            className="relative flex h-full max-h-[100dvh] w-full max-w-xl flex-col overflow-hidden rounded-t-[28px] bg-accent-soft shadow-[0_-10px_42px_rgba(22,35,20,0.16)] sm:max-h-[min(94dvh,900px)] sm:rounded-[32px]"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="flex shrink-0 justify-center pt-2.5">
@@ -263,7 +263,7 @@ export default function ProductDetailModal({
                       onError={onImgError}
                       className="h-full w-full object-contain"
                     />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#fbfaf6] to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-accent-soft to-transparent" />
                   </div>
                 </div>
               </section>
@@ -600,7 +600,7 @@ export default function ProductDetailModal({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.99, y: 18 }}
             transition={{ type: 'spring', stiffness: 130, damping: 20, mass: 0.9 }}
-            className="relative flex h-[min(92dvh,920px)] w-full max-w-[1180px] overflow-hidden rounded-[34px] bg-[#fbfaf6] shadow-[0_26px_80px_rgba(22,35,20,0.22)]"
+            className="relative flex h-[min(92dvh,920px)] w-full max-w-[1180px] overflow-hidden rounded-[34px] bg-accent-soft shadow-[0_26px_80px_rgba(22,35,20,0.22)]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -643,7 +643,7 @@ export default function ProductDetailModal({
 
               </div>
 
-              <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-[#fbfaf6] px-5 pb-[7.75rem] pt-5 lg:px-6 lg:pb-[7.5rem] lg:pt-6 xl:px-8">
+              <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-accent-soft px-5 pb-[7.75rem] pt-5 lg:px-6 lg:pb-[7.5rem] lg:pt-6 xl:px-8">
                 <section>
                   <p className="text-[10px] font-black uppercase tracking-[0.22em] text-[#7daa8f]">{t('cat.' + product.category)}</p>
                   <h2 className="mt-1 text-[2rem] leading-[1.02] font-black text-[#2c392a] sm:text-[2.5rem]">{product.name}</h2>
@@ -725,7 +725,7 @@ export default function ProductDetailModal({
                                     className={[
                                       'rounded-full border px-4 py-2 text-[12px] font-black transition-all whitespace-nowrap',
                                       isSel ? 'border-[#111111] bg-[#111111] text-white'
-                                            : 'border-[#ead7b7]/80 bg-[#f7f4ed] text-[#111111] hover:border-[#D4AF37]',
+                                            : 'border-[#ead7b7]/80 bg-[#f7f4ed] text-[#111111] hover:border-accent',
                                     ].join(' ')}
                                   >
                                     {g}
@@ -757,7 +757,7 @@ export default function ProductDetailModal({
                                           ? 'border-[#111111] bg-[#111111] text-white'
                                           : oos
                                           ? 'cursor-not-allowed opacity-40 border-gray-200 text-[#999]'
-                                          : 'border-[#ead7b7]/80 bg-[#f7f4ed] text-[#111111] hover:border-[#D4AF37]',
+                                          : 'border-[#ead7b7]/80 bg-[#f7f4ed] text-[#111111] hover:border-accent',
                                       ].join(' ')}
                                     >
                                       {v.variantName}

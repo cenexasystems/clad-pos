@@ -7,6 +7,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // The theme colour chosen in Settings > Appearance. Values come from CSS variables, so
+        // opacity variants such as bg-accent/30 keep working.
+        accent: {
+          DEFAULT: 'rgb(var(--accent-rgb) / <alpha-value>)',
+          dark:    'rgb(var(--accent-dark-rgb) / <alpha-value>)',
+          light:   'rgb(var(--accent-light-rgb) / <alpha-value>)',
+          soft:    'rgb(var(--accent-soft-rgb) / <alpha-value>)',
+          hover:   'rgb(var(--accent-hover-rgb) / <alpha-value>)',
+        },
         bgMain:    '#FBFAF6', // Warm luxury linen surface
         cardBg:    '#FFFFFF',
         brand: {

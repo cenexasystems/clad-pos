@@ -124,12 +124,12 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden border border-[#E8D399] animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden border border-accent-light animate-in fade-in zoom-in-95 duration-200">
 
-        <div className="flex items-center justify-between p-6 border-b border-[#D4AF37]/30 bg-[#0A0A0A] text-white">
+        <div className="flex items-center justify-between p-6 border-b border-accent/30 bg-[#0A0A0A] text-white">
           <div>
             <h2 className="text-lg font-black text-white">Add Product to {BRAND_EN}</h2>
-            <p className="text-xs text-[#D4AF37] font-semibold">Instantly available in Catalog &amp; Billing</p>
+            <p className="text-xs text-accent font-semibold">Instantly available in Catalog &amp; Billing</p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white transition-colors cursor-pointer">
             <X size={18} />
@@ -145,7 +145,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
               type="text"
               value={formData.name}
               onChange={e => setFormData({...formData, name: e.target.value})}
-              className="w-full h-10 px-3.5 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
+              className="w-full h-10 px-3.5 bg-accent-soft border border-accent-light rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
               placeholder="e.g. Men Slim Fit Cotton Shirt"
               required
             />
@@ -159,7 +159,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                   <select
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="flex-1 w-full h-10 px-3 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-semibold appearance-none text-black cursor-pointer"
+                    className="flex-1 w-full h-10 px-3 bg-accent-soft border border-accent-light rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-semibold appearance-none text-black cursor-pointer"
                   >
                     <option value="">Select Category</option>
                     {existingCategories.map(cat => (
@@ -169,7 +169,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                   <button
                     type="button"
                     onClick={() => { setCategoryMode('new'); setFormData(f => ({...f, category: ''})) }}
-                    className="h-10 px-3 text-xs font-black text-[#0A0A0A] bg-[#FBFAF6] border border-[#E8D399] rounded-xl hover:bg-amber-100 transition-colors shrink-0 cursor-pointer"
+                    className="h-10 px-3 text-xs font-black text-[#0A0A0A] bg-accent-soft border border-accent-light rounded-xl hover:bg-amber-100 transition-colors shrink-0 cursor-pointer"
                     title="Add new category"
                   >+</button>
                 </div>
@@ -179,13 +179,13 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                     type="text"
                     value={formData.category}
                     onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="flex-1 w-full h-10 px-3 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
+                    className="flex-1 w-full h-10 px-3 bg-accent-soft border border-accent-light rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
                     placeholder="Type Category"
                   />
                   <button
                     type="button"
                     onClick={() => { setCategoryMode('select'); setFormData(f => ({...f, category: ''})) }}
-                    className="h-10 px-3 text-xs font-black text-gray-700 bg-[#FBFAF6] border border-[#E8D399] rounded-xl hover:bg-gray-200 transition-colors shrink-0 cursor-pointer"
+                    className="h-10 px-3 text-xs font-black text-gray-700 bg-accent-soft border border-accent-light rounded-xl hover:bg-gray-200 transition-colors shrink-0 cursor-pointer"
                     title="Pick from existing"
                   >↩</button>
                 </div>
@@ -198,7 +198,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                 step="0.01"
                 value={formData.price}
                 onChange={e => setFormData({...formData, price: e.target.value})}
-                className="w-full h-10 px-3.5 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-right text-black placeholder:text-gray-400 placeholder:font-normal"
+                className="w-full h-10 px-3.5 bg-accent-soft border border-accent-light rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-right text-black placeholder:text-gray-400 placeholder:font-normal"
                 placeholder="0.00"
                 required
               />
@@ -228,21 +228,21 @@ export default function AddProductModal({ isOpen, onClose, onSuccess }: AddProdu
                 min="1"
                 value={formData.lowStockAlert}
                 onChange={e => setFormData({...formData, lowStockAlert: e.target.value})}
-                className="w-full h-10 px-3.5 bg-[#FBFAF6] border border-[#E8D399] rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
+                className="w-full h-10 px-3.5 bg-accent-soft border border-accent-light rounded-xl focus:outline-none focus:border-[#0A0A0A] focus:bg-white text-xs sm:text-[13px] font-semibold text-black placeholder:text-gray-400 placeholder:font-normal"
                 placeholder="5"
               />
             </div>
           </div>
 
-          <div className="bg-[#FBFAF6] border border-[#E8D399] p-3 rounded-xl text-[11px] text-gray-600 flex items-start gap-2">
-            <Sparkles size={14} className="text-[#B48811] shrink-0 mt-0.5" />
+          <div className="bg-accent-soft border border-accent-light p-3 rounded-xl text-[11px] text-gray-600 flex items-start gap-2">
+            <Sparkles size={14} className="text-accent-dark shrink-0 mt-0.5" />
             <span>Product will be immediately ready in POS search and catalog. Barcode generation is optional.</span>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full py-3.5 bg-[#0A0A0A] border border-[#D4AF37] hover:bg-[#1A1A1A] text-[#D4AF37] rounded-xl text-xs font-black tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer"
+            className="mt-2 w-full py-3.5 bg-[#0A0A0A] border border-accent hover:bg-[#1A1A1A] text-accent rounded-xl text-xs font-black tracking-wider transition-all disabled:opacity-50 shadow-md cursor-pointer"
           >
             {loading ? 'Creating...' : 'Save Product'}
           </button>

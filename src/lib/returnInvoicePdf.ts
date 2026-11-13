@@ -1,5 +1,5 @@
 import { jsPDF } from 'jspdf'
-import { BRAND_ADDRESS, BRAND_EN, BRAND_PHONE_DISPLAY } from './brand'
+import { BRAND_ADDRESS, BRAND_EN, BRAND_PHONE_DISPLAY, BRAND_ACCENT, BRAND_ACCENT_SOFT } from './brand'
 import { formatCurrency, formatInvoiceNo } from './retail'
 import { formatPhone } from './phone'
 import { LOGO_BASE64 } from './logoBase64'
@@ -18,7 +18,7 @@ export function createReturnInvoicePdf(ret: OrderReturn): Blob {
   const right = 194
   const ink = '#18202a'
   const muted = '#68717c'
-  const gold = '#D4AF37'
+  const gold = BRAND_ACCENT
   const red = '#B91C1C'
   let y = 16
 
@@ -53,7 +53,7 @@ export function createReturnInvoicePdf(ret: OrderReturn): Blob {
   doc.text(`Original bill: #${formatInvoiceNo(ret.invoice_no)}`, right, y + 7, { align: 'right' })
   y += 28
 
-  doc.setFillColor('#FBFAF6')
+  doc.setFillColor(BRAND_ACCENT_SOFT)
   doc.roundedRect(left, y, right - left, 20, 2, 2, 'F')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7)

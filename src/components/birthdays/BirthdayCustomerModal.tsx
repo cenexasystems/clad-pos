@@ -59,10 +59,10 @@ export const BirthdayCustomerModal: React.FC<Props> = ({ onClose, onSaved, custo
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92dvh] border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col">
-        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-[#FBFAF6]">
+      <div className="relative z-10 bg-white rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[92dvh] border border-accent-light shadow-2xl overflow-hidden flex flex-col">
+        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 flex items-center justify-between bg-accent-soft">
           <div className="flex items-center gap-2">
-            <Cake size={17} className="text-[#D4AF37]" />
+            <Cake size={17} className="text-accent" />
             <h3 className="text-sm font-bold text-[#0A0A0A]">{isEdit ? 'Edit Customer' : 'Add Customer'}</h3>
           </div>
           <button
@@ -132,7 +132,7 @@ export const BirthdayCustomerModal: React.FC<Props> = ({ onClose, onSaved, custo
           <button
             type="submit"
             disabled={saving}
-            className="w-full h-11 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold tracking-wide disabled:opacity-60 cursor-pointer"
+            className="w-full h-11 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold tracking-wide disabled:opacity-60 cursor-pointer"
           >
             {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Customer'}
           </button>

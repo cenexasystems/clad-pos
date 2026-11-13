@@ -64,8 +64,8 @@ export const ReturnOrderModal: React.FC<{
   const nothingLeft = lines.every((l) => l.available <= 0)
   const isAdmin = role === 'admin'
 
-  const unlockAdmin = () => {
-    if (!verifyAdminPassword(adminPassword)) return setError('Admin password is not correct.')
+  const unlockAdmin = async () => {
+    if (!(await verifyAdminPassword(adminPassword))) return setError('Admin password is not correct.')
     setError('')
     setAdminUnlocked(true)
     setRestock(Object.fromEntries(lines.map((l) => [l.line_index, !l.is_manual])))
@@ -98,10 +98,10 @@ export const ReturnOrderModal: React.FC<{
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-2 sm:p-4">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-3xl max-h-[94dvh] bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-[#E8D399]">
-        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 bg-[#FBFAF6] flex items-center justify-between gap-3">
+      <div className="relative z-10 w-full max-w-3xl max-h-[94dvh] bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-accent-light">
+        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 bg-accent-soft flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <RotateCcw size={16} className="text-[#D4AF37] shrink-0" />
+            <RotateCcw size={16} className="text-accent shrink-0" />
             <h3 className="text-sm font-bold text-[#0A0A0A] truncate">Return / refund · bill {formatInvoiceNo(order.invoice_no)}</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer">
@@ -178,7 +178,7 @@ export const ReturnOrderModal: React.FC<{
             <div className="grid grid-cols-4 gap-1.5">
               {PAYMENT_MODES.map((m) => (
                 <button key={m.id} type="button" onClick={() => setMethod(m.id)}
-                  className={`py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border-2 cursor-pointer transition-colors ${method === m.id ? 'bg-[#0A0A0A] text-[#D4AF37] border-[#0A0A0A]' : 'bg-white text-[#374151] border-gray-200 hover:border-gray-300'}`}>
+                  className={`py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border-2 cursor-pointer transition-colors ${method === m.id ? 'bg-[#0A0A0A] text-accent border-[#0A0A0A]' : 'bg-white text-[#374151] border-gray-200 hover:border-gray-300'}`}>
                   {m.label}
                 </button>
               ))}
@@ -205,9 +205,9 @@ export const ReturnOrderModal: React.FC<{
           </div>
 
           {/* Admin confirmation */}
-          <div className="rounded-xl border border-[#E8D399] bg-[#FBFAF6] p-3.5">
+          <div className="rounded-xl border border-accent-light bg-accent-soft p-3.5">
             <div className="flex items-center gap-2 mb-2">
-              <ShieldCheck size={15} className="text-[#B48811]" />
+              <ShieldCheck size={15} className="text-accent-dark" />
               <span className="text-xs font-black text-[#0A0A0A]">Admin confirmation</span>
             </div>
             {isAdmin ? (
@@ -224,8 +224,8 @@ export const ReturnOrderModal: React.FC<{
                     <p className="text-[11px] font-semibold text-gray-600 mb-1.5">A refund must be approved by the admin. Ask the admin to enter their password; the admin also decides whether the items go back into stock.</p>
                     <div className="flex gap-2">
                       <input type="password" className={fieldCls} value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') unlockAdmin() }} placeholder="Admin password" autoComplete="off" />
-                      <button type="button" onClick={unlockAdmin} className="h-10 shrink-0 px-4 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold cursor-pointer">Verify</button>
+                        onKeyDown={(e) => { if (e.key === 'Enter') void unlockAdmin() }} placeholder="Admin password" autoComplete="off" />
+                      <button type="button" onClick={() => void unlockAdmin()} className="h-10 shrink-0 px-4 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold cursor-pointer">Verify</button>
                     </div>
                   </>
                 )}
@@ -237,7 +237,7 @@ export const ReturnOrderModal: React.FC<{
         <div className="shrink-0 px-5 py-3.5 border-t border-gray-100 bg-white flex items-center justify-end gap-2.5">
           <button type="button" onClick={onClose} className="h-10 px-5 rounded-xl border border-gray-300 text-xs font-bold text-gray-800 hover:bg-gray-50 cursor-pointer">Cancel</button>
           <button type="button" disabled={saving || nothingLeft || refund.lines.length === 0} onClick={() => void submit()}
-            className="h-10 px-6 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold tracking-wide disabled:opacity-50 cursor-pointer">
+            className="h-10 px-6 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold tracking-wide disabled:opacity-50 cursor-pointer">
             {saving ? 'Processing…' : `Confirm refund ${formatCurrency(refund.refund_total)}`}
           </button>
         </div>

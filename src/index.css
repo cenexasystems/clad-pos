@@ -6,11 +6,17 @@
   :root {
     --brand-black: #0A0A0A;
     --brand-black-surface: #141414;
-    --brand-gold: #D4AF37;
+    /* Theme colour (Settings > Appearance). space-separated RGB so Tailwind can add opacity. */
+    --accent-rgb: 212 175 55;
+    --accent-dark-rgb: 180 136 17;
+    --accent-light-rgb: 232 211 153;
+    --accent-soft-rgb: 251 250 246;
+    --accent-hover-rgb: 184 149 40;
+    --brand-gold: rgb(var(--accent-rgb));
     --brand-gold-hover: #C5A059;
     --brand-gold-light: #FBF6E9;
-    --brand-gold-border: #E8D399;
-    --brand-surface: #FBFAF6;
+    --brand-gold-border: rgb(var(--accent-light-rgb));
+    --brand-surface: rgb(var(--accent-soft-rgb));
     --brand-text-dark: #111111;
     --brand-text-muted: #6B7280;
   }
@@ -75,7 +81,7 @@
     padding: 0;
     height: auto;
     min-height: 100%;
-    background-color: #FBFAF6;
+    background-color: rgb(var(--accent-soft-rgb));
     background-image:
       radial-gradient(circle at top left, rgba(212, 175, 55, 0.06), transparent 34%),
       radial-gradient(circle at top right, rgba(10, 10, 10, 0.04), transparent 28%);
@@ -223,8 +229,8 @@
     position: sticky;
     bottom: 0;
     z-index: 20;
-    background-color: #FBFAF6;
-    border-top: 1px solid #E8D399;
+    background-color: rgb(var(--accent-soft-rgb));
+    border-top: 1px solid rgb(var(--accent-light-rgb));
     padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
   }
 }
@@ -239,11 +245,11 @@
   }
 
   .surface-panel {
-    @apply rounded-2xl border border-[#E8D399]/40 bg-white shadow-soft;
+    @apply rounded-2xl border border-accent-light/40 bg-white shadow-soft;
   }
 
   .surface-panel-compact {
-    @apply rounded-xl border border-[#E8D399]/40 bg-white shadow-soft;
+    @apply rounded-xl border border-accent-light/40 bg-white shadow-soft;
   }
 
   .mobile-chip {
@@ -251,23 +257,23 @@
   }
 
   .mobile-cta-bar {
-    @apply border-t border-[#E8D399]/50 bg-white/95 backdrop-blur pb-[calc(env(safe-area-inset-bottom)+0.75rem)];
+    @apply border-t border-accent-light/50 bg-white/95 backdrop-blur pb-[calc(env(safe-area-inset-bottom)+0.75rem)];
   }
 
   .mobile-section-title {
-    @apply text-[11px] font-black uppercase tracking-[0.24em] text-[#B48811];
+    @apply text-[11px] font-black uppercase tracking-[0.24em] text-accent-dark;
   }
 
   .mobile-page-shell {
-    @apply bg-[#FBFAF6] min-h-screen;
+    @apply bg-accent-soft min-h-screen;
   }
 
   .btn-primary {
-    @apply px-6 py-3 rounded-xl bg-[#0A0A0A] text-[#D4AF37] border border-[#D4AF37] font-bold hover:bg-[#1A1A1A] transition-all;
+    @apply px-6 py-3 rounded-xl bg-[#0A0A0A] text-accent border border-accent font-bold hover:bg-[#1A1A1A] transition-all;
   }
 
   .btn-secondary {
-    @apply px-6 py-3 rounded-xl border border-[#E8D399] bg-white text-[#111111] font-bold hover:bg-gray-50 transition-colors;
+    @apply px-6 py-3 rounded-xl border border-accent-light bg-white text-[#111111] font-bold hover:bg-gray-50 transition-colors;
   }
 
   .btn-small {
@@ -285,7 +291,7 @@
     -webkit-backdrop-filter: blur(16px);
   }
 
-  .bg-bgMain { background-color: #FBFAF6 !important; }
+  .bg-bgMain { background-color: rgb(var(--accent-soft-rgb)) !important; }
   .bg-cardBg  { background-color: #FFFFFF !important; }
 
   /* Invoice & Billing Table Mobile Column Protection */
@@ -340,7 +346,7 @@
   overflow-x: hidden;
   background:
     radial-gradient(circle at top left, rgba(212, 175, 55, 0.05), transparent 30%),
-    #FBFAF6;
+    rgb(var(--accent-soft-rgb));
 }
 
 /* ── PRINT STYLES — Single-page A4 / Letter invoice ─────────────────────────── */

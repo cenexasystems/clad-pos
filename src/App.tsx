@@ -7,6 +7,7 @@ import { clearLocalOrders } from './lib/ordersFallback'
 import { isSupabaseConfigured, supabase } from './lib/supabase'
 import { LowStockAlarmModal } from './components/dashboard/LowStockAlarmModal'
 import { useLowStockMonitor } from './hooks/useLowStockMonitor'
+import { useShopSettingsStore } from './store/shopSettings'
 
 function lazyWithRetry<T extends React.ComponentType<any>>(
   factory: () => Promise<{ default: T }>
@@ -44,7 +45,7 @@ const AdminLogin = lazyWithRetry(() => import('./pages/AdminLogin'))
 function LoadingSpinner() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bgMain">
-      <span className="h-10 w-10 animate-spin rounded-full border-4 border-[#E5E7EB] border-t-[#D4AF37]" />
+      <span className="h-10 w-10 animate-spin rounded-full border-4 border-[#E5E7EB] border-t-accent" />
     </div>
   )
 }
@@ -88,6 +89,8 @@ function PosGuard({ children }: { children: React.ReactNode }) {
 }
 
 function AppShell() {
+  // re-render the whole app when the shop settings (name, contacts, colour) change
+  const settingsVersion = useShopSettingsStore((state) => state.version)
   const initialize = useAuthStore((state) => state.initialize)
   const fetchProducts = useProductStore((state) => state.fetchProducts)
   const fetchVariants = useVariantStore((state) => state.fetchVariants)
@@ -96,9 +99,10 @@ function AppShell() {
   const hasStaffOrAdminAccess = Boolean(isLoggedIn && (role === 'admin' || role === 'staff'))
   useLowStockMonitor(hasStaffOrAdminAccess, role)
 
+  // also runs again when the shop name is changed in Settings
   useEffect(() => {
     document.title = BRAND_EN
-  }, [])
+  }, [settingsVersion])
 
   useEffect(() => {
     if (!isSupabaseConfigured) {

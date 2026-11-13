@@ -1,5 +1,3 @@
-// Admin sign-off for sensitive actions (refunds). Uses the same admin password as the admin login.
-const adminPassword = (): string =>
-  String(import.meta.env.VITE_ADMIN_PASSWORD || import.meta.env.VITE_PORTAL_PASSWORD || 'admin123').trim()
-
-export const verifyAdminPassword = (input: string): boolean => input.trim() !== '' && input.trim() === adminPassword()
+// Admin sign-off for sensitive actions (refunds, editing a bill as staff, deleting a bill as staff).
+// Checks the current admin password, including one changed in Settings.
+export { verifyAdminPassword } from './credentials'

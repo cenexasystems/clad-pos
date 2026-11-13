@@ -468,7 +468,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
         className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
         style={overlayStyle}
       >
-        <form onSubmit={create} className="max-h-[92dvh] w-full max-w-4xl overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
+        <form onSubmit={create} className="max-h-[92dvh] w-full max-w-4xl overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-accent-light">
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h3 className="text-xl font-black text-[#0A0A0A]">Create Advance Order</h3>
@@ -508,7 +508,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
         className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
         style={overlayStyle}
       >
-        <form onSubmit={receivePayment} className="w-full max-w-md max-h-[92dvh] overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-[#E8D399]">
+        <form onSubmit={receivePayment} className="w-full max-w-md max-h-[92dvh] overflow-hidden overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-accent-light">
           <div className="mb-5 flex items-start justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-wider text-emerald-600 font-mono">{paymentOrder.deposit_id}</p>
@@ -592,16 +592,16 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
         <div className="absolute inset-0" onClick={() => setSelected(null)} />
 
         {/* Drawer Panel covering full view height */}
-        <div className="relative z-10 w-full max-w-xl bg-white shadow-2xl flex flex-col border-l border-[#E8D399] animate-in slide-in-from-right duration-200" style={{ height: vvh ? `${vvh}px` : '100dvh' }}>
+        <div className="relative z-10 w-full max-w-xl bg-white shadow-2xl flex flex-col border-l border-accent-light animate-in slide-in-from-right duration-200" style={{ height: vvh ? `${vvh}px` : '100dvh' }}>
           {/* Sticky Drawer Header */}
           <div className="shrink-0 px-6 py-4 border-b border-gray-200 bg-[#0A0A0A] text-white flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#1A1A1A] border border-[#D4AF37] flex items-center justify-center text-[#D4AF37] shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-[#1A1A1A] border border-accent flex items-center justify-center text-accent shrink-0">
                 <FileText size={18} />
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-black text-[#D4AF37] tracking-wider font-mono">{selected.deposit_id}</span>
+                  <span className="text-xs font-black text-accent tracking-wider font-mono">{selected.deposit_id}</span>
                   <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${STATUS_STYLES[selected.status]}`}>
                     {STATUS_LABELS[selected.status]}
                   </span>
@@ -718,7 +718,7 @@ export default function AdvanceOrders({ onOrderCompleted, onOrderDeleted }: Adva
 
           {/* Sticky Drawer Footer */}
           <div
-            className="shrink-0 px-6 py-4 border-t border-gray-200 bg-[#FBFAF6] flex items-center justify-between gap-3 sticky bottom-0 z-20"
+            className="shrink-0 px-6 py-4 border-t border-gray-200 bg-accent-soft flex items-center justify-between gap-3 sticky bottom-0 z-20"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
           >
             <div className="flex gap-2">

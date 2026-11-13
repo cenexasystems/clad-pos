@@ -10,6 +10,7 @@ export type DashboardTab =
   | 'pos_analytics'
   | 'coupons'
   | 'birthdays'
+  | 'settings'
   | 'whatsapp'
   | 'products'
   | 'categories'

@@ -123,8 +123,8 @@ export default function ProductDetails() {
     return related.slice(0, 10)
   }, [allProducts, product])
 
-  if (loading) return <div className="min-h-screen bg-[#fbfaf6] p-10 text-center font-bold text-[#2c392a]">Loading...</div>
-  if (error || !product) return <div className="min-h-screen bg-[#fbfaf6] p-10 text-center font-bold text-red-500">{error || 'Product not found'}</div>
+  if (loading) return <div className="min-h-screen bg-accent-soft p-10 text-center font-bold text-[#2c392a]">Loading...</div>
+  if (error || !product) return <div className="min-h-screen bg-accent-soft p-10 text-center font-bold text-red-500">{error || 'Product not found'}</div>
 
   const favorite = isFav(product.id)
   const handleAdd = () => {
@@ -166,8 +166,8 @@ export default function ProductDetails() {
   const heroImage = getProductImage(product.name, product.category, product.imageUrl, 'detail')
 
   return (
-    <div className="min-h-screen bg-[#fbfaf6] pb-[calc(7.75rem+env(safe-area-inset-bottom))]">
-      <div className="lg:hidden sticky top-0 z-30 border-b border-white/60 bg-[#fbfaf6]/92 px-4 pb-3 backdrop-blur sm:px-6 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+    <div className="min-h-screen bg-accent-soft pb-[calc(7.75rem+env(safe-area-inset-bottom))]">
+      <div className="lg:hidden sticky top-0 z-30 border-b border-white/60 bg-accent-soft/92 px-4 pb-3 backdrop-blur sm:px-6 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
           <Link
             to="/products"

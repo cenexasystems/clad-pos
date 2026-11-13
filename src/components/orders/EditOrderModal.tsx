@@ -215,10 +215,10 @@ export const EditOrderModal: React.FC<{
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-2 sm:p-4">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-3xl max-h-[94dvh] bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-[#E8D399]">
-        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 bg-[#FBFAF6] flex items-center justify-between gap-3">
+      <div className="relative z-10 w-full max-w-3xl max-h-[94dvh] bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-accent-light">
+        <div className="shrink-0 px-5 py-3.5 border-b border-gray-100 bg-accent-soft flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
-            <Pencil size={16} className="text-[#D4AF37] shrink-0" />
+            <Pencil size={16} className="text-accent shrink-0" />
             <h3 className="text-sm font-bold text-[#0A0A0A] truncate">Edit bill {order.invoice_no}</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer">
@@ -286,7 +286,7 @@ export const EditOrderModal: React.FC<{
               {results.length > 0 && (
                 <div className="absolute z-20 left-0 right-0 mt-1 rounded-xl border border-gray-200 bg-white shadow-lg max-h-56 overflow-y-auto">
                   {results.map((res) => (
-                    <button key={res.id} type="button" onClick={res.add} className="w-full text-left px-3 py-2 border-t border-gray-100 first:border-t-0 hover:bg-[#FBFAF6] flex items-center justify-between gap-3 cursor-pointer">
+                    <button key={res.id} type="button" onClick={res.add} className="w-full text-left px-3 py-2 border-t border-gray-100 first:border-t-0 hover:bg-accent-soft flex items-center justify-between gap-3 cursor-pointer">
                       <span className="text-xs font-bold text-[#0A0A0A] truncate">{res.label}</span>
                       <span className="text-[11px] font-semibold text-gray-500 shrink-0">{formatCurrency(res.price)} · stock {res.stock}</span>
                     </button>
@@ -300,7 +300,7 @@ export const EditOrderModal: React.FC<{
               <input className={`${fieldCls} h-9`} value={manual.name} onChange={(e) => setManual({ ...manual, name: e.target.value })} placeholder="Manual item name" />
               <input type="number" min="1" className={`${fieldCls} h-9`} value={manual.qty} onChange={(e) => setManual({ ...manual, qty: e.target.value })} placeholder="Qty" />
               <input type="number" min="0" className={`${fieldCls} h-9`} value={manual.price} onChange={(e) => setManual({ ...manual, price: e.target.value })} placeholder="Price" />
-              <button type="button" onClick={addManual} className="h-9 px-3 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold inline-flex items-center gap-1 cursor-pointer"><Plus size={13} /> Add</button>
+              <button type="button" onClick={addManual} className="h-9 px-3 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold inline-flex items-center gap-1 cursor-pointer"><Plus size={13} /> Add</button>
             </div>
             </>)}
           </div>
@@ -317,7 +317,7 @@ export const EditOrderModal: React.FC<{
             <div className="grid grid-cols-4 gap-1.5">
               {PAYMENT_MODES.map((m) => (
                 <button key={m.id} type="button" onClick={() => setMode(m.id)}
-                  className={`py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border-2 cursor-pointer transition-colors ${mode === m.id ? 'bg-[#0A0A0A] text-[#D4AF37] border-[#0A0A0A]' : 'bg-white text-[#374151] border-gray-200 hover:border-gray-300'}`}>
+                  className={`py-2 rounded-xl text-[11px] font-black uppercase tracking-wide border-2 cursor-pointer transition-colors ${mode === m.id ? 'bg-[#0A0A0A] text-accent border-[#0A0A0A]' : 'bg-white text-[#374151] border-gray-200 hover:border-gray-300'}`}>
                   {m.label}
                 </button>
               ))}
@@ -362,7 +362,7 @@ export const EditOrderModal: React.FC<{
 
         <div className="shrink-0 px-5 py-3.5 border-t border-gray-100 bg-white flex items-center justify-end gap-2.5">
           <button type="button" onClick={onClose} className="h-10 px-5 rounded-xl border border-gray-300 text-xs font-bold text-gray-800 hover:bg-gray-50 cursor-pointer">Cancel</button>
-          <button type="button" disabled={saving} onClick={() => void save()} className="h-10 px-6 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold tracking-wide disabled:opacity-60 cursor-pointer">
+          <button type="button" disabled={saving} onClick={() => void save()} className="h-10 px-6 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold tracking-wide disabled:opacity-60 cursor-pointer">
             {saving ? 'Saving…' : 'Save changes'}
           </button>
         </div>

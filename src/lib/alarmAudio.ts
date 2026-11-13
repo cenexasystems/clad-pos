@@ -292,7 +292,11 @@ class AlarmSoundManager {
     }
   }
 
-  public startAlert() {
+  /** Settings > Stock alerts: when false, startAlert() stays silent (the Test sound button passes force). */
+  public allowed = true
+
+  public startAlert(force = false) {
+    if (!this.allowed && !force) return
     if (this.isAlarmPlaying) return
     this.stopAlert() // Clear any existing intervals / state
 

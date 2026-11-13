@@ -125,9 +125,9 @@ export const CategoryManagerView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Top Banner & Search */}
-      <div className="bg-white border border-[#E8D399] rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-white border border-accent-light rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] text-[#D4AF37] flex items-center justify-center font-black">
+          <div className="w-10 h-10 rounded-xl bg-[#0A0A0A] text-accent flex items-center justify-center font-black">
             <Layers size={18} />
           </div>
           <div>
@@ -148,7 +148,7 @@ export const CategoryManagerView: React.FC = () => {
               placeholder="Search categories..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-300 bg-[#FBFAF6] text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A] focus:bg-white"
+              className="w-full pl-10 pr-3 py-2 rounded-xl border border-gray-300 bg-accent-soft text-[11px] sm:text-xs font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#0A0A0A] focus:bg-white"
             />
           </div>
           <button
@@ -186,10 +186,10 @@ export const CategoryManagerView: React.FC = () => {
       {/* Main 2-Column Grid: Left (Add/Edit Form) | Right (Category List) */}
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
         {/* Form Card */}
-        <div className="bg-[#FBFAF6] border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-accent-soft border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-gray-200 pb-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-black flex items-center gap-1.5">
-              <Tag size={14} className="text-[#D4AF37]" />
+              <Tag size={14} className="text-accent" />
               {editingId ? 'Edit Category' : 'Add New Category'}
             </h4>
             {editingId && (
@@ -264,11 +264,11 @@ export const CategoryManagerView: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 rounded-xl bg-[#0A0A0A] border border-accent text-accent text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {saving ? (
                   <>
-                    <span className="w-3.5 h-3.5 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin inline-block" />
+                    <span className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin inline-block" />
                     Saving...
                   </>
                 ) : editingId ? (
@@ -300,7 +300,7 @@ export const CategoryManagerView: React.FC = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-left text-xs">
-                <thead className="bg-[#FBFAF6] border-b border-gray-200 text-[10px] font-black uppercase tracking-wider text-gray-600">
+                <thead className="bg-accent-soft border-b border-gray-200 text-[10px] font-black uppercase tracking-wider text-gray-600">
                   <tr>
                     <th className="p-3 w-16 text-center">Order</th>
                     <th className="p-3">Category Name</th>
@@ -312,7 +312,7 @@ export const CategoryManagerView: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filtered.map((cat) => (
-                    <tr key={cat.id} className="hover:bg-[#FBFAF6] transition-colors">
+                    <tr key={cat.id} className="hover:bg-accent-soft transition-colors">
                       <td className="p-3 text-center font-mono font-bold text-gray-400">
                         {cat.sort_order ?? 0}
                       </td>

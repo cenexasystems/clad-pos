@@ -102,11 +102,11 @@ export const QuickPriceModal: React.FC<Props> = ({ isOpen, item, onClose, onSucc
     >
       <div className="absolute inset-0" onClick={onClose} />
       <div
-        className="relative z-10 bg-white rounded-none sm:rounded-2xl w-full max-w-md sm:h-auto sm:max-h-[92dvh] shadow-2xl overflow-hidden border-0 sm:border border-[#E8D399]/50 animate-in fade-in zoom-in-95 flex flex-col"
+        className="relative z-10 bg-white rounded-none sm:rounded-2xl w-full max-w-md sm:h-auto sm:max-h-[92dvh] shadow-2xl overflow-hidden border-0 sm:border border-accent-light/50 animate-in fade-in zoom-in-95 flex flex-col"
         style={{ height: typeof window !== 'undefined' && window.innerWidth < 640 ? (vvh ? `${vvh}px` : '100dvh') : undefined }}
       >
         {/* Header */}
-        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-[#FBFAF6] shrink-0">
+        <div className="px-4 py-3 sm:px-5 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-accent-soft shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-700">
               <Tag className="w-4 h-4" />
@@ -129,7 +129,7 @@ export const QuickPriceModal: React.FC<Props> = ({ isOpen, item, onClose, onSucc
 
         {/* Item Summary Box */}
         <div className="px-5 pt-4">
-          <div className="p-3 bg-[#FBFAF6] border border-gray-200 rounded-xl space-y-1.5 text-xs">
+          <div className="p-3 bg-accent-soft border border-gray-200 rounded-xl space-y-1.5 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-bold text-gray-900 text-sm">{item.name}</span>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
@@ -206,7 +206,7 @@ export const QuickPriceModal: React.FC<Props> = ({ isOpen, item, onClose, onSucc
 
           {/* Sticky Footer Actions */}
           <div
-            className="shrink-0 sticky bottom-0 z-20 px-4 py-3 sm:px-5 sm:py-3 bg-[#FBFAF6] border-t border-[#E8D399] flex items-center justify-between sm:justify-end gap-2"
+            className="shrink-0 sticky bottom-0 z-20 px-4 py-3 sm:px-5 sm:py-3 bg-accent-soft border-t border-accent-light flex items-center justify-between sm:justify-end gap-2"
             style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
           >
             <button
@@ -219,16 +219,16 @@ export const QuickPriceModal: React.FC<Props> = ({ isOpen, item, onClose, onSucc
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 sm:flex-none h-11 sm:h-9 px-4 text-xs font-bold rounded-xl bg-[#0A0A0A] text-[#D4AF37] border border-[#D4AF37] hover:bg-[#1A1A1A] transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer min-h-[48px] sm:min-h-0"
+              className="flex-1 sm:flex-none h-11 sm:h-9 px-4 text-xs font-bold rounded-xl bg-[#0A0A0A] text-accent border border-accent hover:bg-[#1A1A1A] transition-all shadow-xs disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer min-h-[48px] sm:min-h-0"
             >
               {loading ? (
                 <>
-                  <span className="w-3.5 h-3.5 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin inline-block" />
+                  <span className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin inline-block" />
                   <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <Check className="w-3.5 h-3.5 text-[#D4AF37]" />
+                  <Check className="w-3.5 h-3.5 text-accent" />
                   <span>Update Price</span>
                 </>
               )}

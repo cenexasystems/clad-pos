@@ -113,7 +113,7 @@ const RangeFilter: React.FC<{ filter: Filter; onChange: (f: Filter) => void }> =
             type="button"
             onClick={() => onChange({ ...ALL_FILTER, preset: chip.id })}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-colors ${
-              filter.preset === chip.id ? 'bg-[#0A0A0A] text-[#D4AF37]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              filter.preset === chip.id ? 'bg-[#0A0A0A] text-accent' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
             {chip.label}
@@ -191,9 +191,9 @@ const MonthGrid: React.FC<{
               onClick={() => onPickDay(month, d)}
               className={`relative h-9 rounded-lg border text-xs font-bold cursor-pointer transition-colors ${
                 inRange
-                  ? 'bg-[#0A0A0A] border-[#0A0A0A] text-[#D4AF37]'
+                  ? 'bg-[#0A0A0A] border-[#0A0A0A] text-accent'
                   : isToday
-                    ? 'bg-[#FBFAF6] border-[#D4AF37] text-gray-900'
+                    ? 'bg-accent-soft border-accent text-gray-900'
                     : 'bg-white border-gray-200 text-gray-800 hover:bg-gray-50'
               }`}
             >
@@ -221,8 +221,8 @@ const CustomerRow: React.FC<{
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 border-t border-gray-100 first:border-t-0">
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div className="w-10 h-10 shrink-0 rounded-full bg-[#FBFAF6] border border-[#E8D399] flex items-center justify-center">
-          <Cake size={17} className="text-[#B8962E]" />
+        <div className="w-10 h-10 shrink-0 rounded-full bg-accent-soft border border-accent-light flex items-center justify-center">
+          <Cake size={17} className="text-accent-dark" />
         </div>
         <div className="min-w-0">
           <p className="text-sm font-bold text-[#0A0A0A] truncate">{customer.name}</p>
@@ -394,8 +394,8 @@ export const BirthdayPanel: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-[#FBFAF6] border border-[#E8D399] flex items-center justify-center">
-            <Cake size={22} className="text-[#B8962E]" />
+          <div className="w-11 h-11 rounded-xl bg-accent-soft border border-accent-light flex items-center justify-center">
+            <Cake size={22} className="text-accent-dark" />
           </div>
           <div>
             <h2 className="text-xl font-bold tracking-tight text-[#0A0A0A]">Date of Birth</h2>
@@ -409,7 +409,7 @@ export const BirthdayPanel: React.FC = () => {
           <button
             type="button"
             onClick={() => openAdd()}
-            className="h-10 px-4 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold tracking-wide inline-flex items-center gap-2 cursor-pointer"
+            className="h-10 px-4 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold tracking-wide inline-flex items-center gap-2 cursor-pointer"
           >
             <UserPlus size={15} /> ADD CUSTOMER
           </button>
@@ -440,7 +440,7 @@ export const BirthdayPanel: React.FC = () => {
 
       {error && <div className="text-xs font-bold text-rose-800 bg-rose-50 border border-rose-200 p-3 rounded-xl">{error}</div>}
       {notice && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9998] bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl">
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-[9998] bg-[#0A0A0A] text-accent text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl">
           {notice}
         </div>
       )}
@@ -500,7 +500,7 @@ export const BirthdayPanel: React.FC = () => {
                   type="button"
                   onClick={() => void saveSettings()}
                   disabled={!dirty || savingSettings}
-                  className="h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer bg-[#0A0A0A] text-[#D4AF37] disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  className="h-9 px-3.5 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer bg-[#0A0A0A] text-accent disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
                   <Save size={14} /> {savingSettings ? 'Saving…' : 'Save'}
                 </button>
@@ -552,7 +552,7 @@ export const BirthdayPanel: React.FC = () => {
                       placeholder="e.g. Flat 20% off on your birthday week"
                       className="h-10 flex-1 px-3 rounded-xl border border-gray-300 text-xs font-semibold outline-none focus:border-[#0A0A0A]"
                     />
-                    <button type="button" onClick={() => void submitOffer()} className="h-10 px-4 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold cursor-pointer">
+                    <button type="button" onClick={() => void submitOffer()} className="h-10 px-4 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold cursor-pointer">
                       {offerEditor.mode === 'add' ? 'Add' : 'Update'}
                     </button>
                     <button type="button" onClick={() => setOfferEditor(null)} aria-label="Cancel" className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center cursor-pointer">

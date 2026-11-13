@@ -171,20 +171,20 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
     >
       <div className="absolute inset-0" onClick={onClose} />
       <div
-        className="relative z-10 bg-white rounded-none sm:rounded-3xl max-w-lg w-full sm:h-auto sm:max-h-[92dvh] border-0 sm:border border-[#E8D399] shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
+        className="relative z-10 bg-white rounded-none sm:rounded-3xl max-w-lg w-full sm:h-auto sm:max-h-[92dvh] border-0 sm:border border-accent-light shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200"
         style={{ height: typeof window !== 'undefined' && window.innerWidth < 640 ? (vvh ? `${vvh}px` : '100dvh') : undefined }}
       >
         {/* Header */}
-        <div className="shrink-0 bg-[#0A0A0A] px-4 py-3 sm:px-5 sm:py-3.5 border-b border-[#D4AF37]/30 flex items-center justify-between text-white">
+        <div className="shrink-0 bg-[#0A0A0A] px-4 py-3 sm:px-5 sm:py-3.5 border-b border-accent/30 flex items-center justify-between text-white">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#1A1A1A] border border-[#D4AF37] flex items-center justify-center text-[#D4AF37]">
+            <div className="w-8 h-8 rounded-lg bg-[#1A1A1A] border border-accent flex items-center justify-center text-accent">
               <SlidersHorizontal size={16} />
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-black tracking-wide text-white leading-tight">
                 Adjust Inventory Stock ({BRAND_EN})
               </h2>
-              <p className="text-[11px] text-[#D4AF37] font-semibold leading-tight">
+              <p className="text-[11px] text-accent font-semibold leading-tight">
                 Restock, remove stock, or reconcile physical count
               </p>
             </div>
@@ -209,10 +209,10 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
             )}
 
             {/* Target SKU card */}
-            <div className="bg-[#FBFAF6] border border-[#E8D399] rounded-xl p-3">
+            <div className="bg-accent-soft border border-accent-light rounded-xl p-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-[10px] font-black uppercase tracking-wider text-[#B48811] flex items-center gap-1">
+                  <div className="text-[10px] font-black uppercase tracking-wider text-accent-dark flex items-center gap-1">
                     <Package size={11} /> Target SKU / Product
                   </div>
                   <div className="text-xs sm:text-sm font-black text-black truncate mt-0.5">
@@ -233,7 +233,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
                 </div>
               </div>
               {item.barcode && (
-                <div className="mt-1.5 pt-1.5 border-t border-[#E8D399]/40 flex items-center gap-1.5 text-[11px] font-semibold text-gray-600">
+                <div className="mt-1.5 pt-1.5 border-t border-accent-light/40 flex items-center gap-1.5 text-[11px] font-semibold text-gray-600">
                   <span>Barcode:</span>
                   <strong className="font-mono text-black bg-white px-1.5 py-0.2 rounded border border-gray-200">
                     {item.barcode}
@@ -255,7 +255,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
                   className={`flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                     mode === 'RESTOCK'
                       ? 'bg-emerald-50 border-emerald-500 text-emerald-900 shadow-sm ring-2 ring-emerald-500/20'
-                      : 'bg-[#FBFAF6] border-gray-200 text-gray-700 hover:bg-gray-100'
+                      : 'bg-accent-soft border-gray-200 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <PlusCircle size={17} className={mode === 'RESTOCK' ? 'text-emerald-600' : 'text-gray-400'} />
@@ -270,7 +270,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
                   className={`flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                     mode === 'REMOVE'
                       ? 'bg-rose-50 border-rose-500 text-rose-900 shadow-sm ring-2 ring-rose-500/20'
-                      : 'bg-[#FBFAF6] border-gray-200 text-gray-700 hover:bg-gray-100'
+                      : 'bg-accent-soft border-gray-200 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <MinusCircle size={17} className={mode === 'REMOVE' ? 'text-rose-600' : 'text-gray-400'} />
@@ -284,11 +284,11 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
                   onClick={() => { setMode('CORRECTION'); setError('') }}
                   className={`flex flex-col items-center justify-center p-2 sm:p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
                     mode === 'CORRECTION'
-                      ? 'bg-amber-50 border-[#D4AF37] text-amber-950 shadow-sm ring-2 ring-[#D4AF37]/30'
-                      : 'bg-[#FBFAF6] border-gray-200 text-gray-700 hover:bg-gray-100'
+                      ? 'bg-amber-50 border-accent text-amber-950 shadow-sm ring-2 ring-accent/30'
+                      : 'bg-accent-soft border-gray-200 text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <Target size={17} className={mode === 'CORRECTION' ? 'text-[#D4AF37]' : 'text-gray-400'} />
+                  <Target size={17} className={mode === 'CORRECTION' ? 'text-accent' : 'text-gray-400'} />
                   <span className="text-xs font-black mt-0.5">Reconciliation</span>
                   <span className="text-[9px] font-semibold text-gray-500">Set Exact Count</span>
                 </button>
@@ -482,7 +482,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
 
             {/* MODE 3: RECONCILIATION COUNT INPUT */}
             {mode === 'CORRECTION' && (
-              <div className="space-y-2.5 bg-amber-50/60 border border-[#E8D399] p-3 sm:p-3.5 rounded-xl">
+              <div className="space-y-2.5 bg-amber-50/60 border border-accent-light p-3 sm:p-3.5 rounded-xl">
                 <div>
                   <label className="block text-[11px] font-black uppercase tracking-wider text-amber-950 mb-1">
                     Actual Audited Physical Count <span className="text-red-500">*</span>
@@ -511,7 +511,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
                       onBlur={() => {
                         if (correctedQuantity === '') setCorrectedQuantity(0)
                       }}
-                      className="flex-1 text-center font-black text-xl py-1.5 rounded-lg border-2 border-[#D4AF37] bg-white text-black focus:border-black outline-none shadow-sm"
+                      className="flex-1 text-center font-black text-xl py-1.5 rounded-lg border-2 border-accent bg-white text-black focus:border-black outline-none shadow-sm"
                     />
                     <button
                       type="button"
@@ -526,7 +526,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
             )}
 
             {/* Real-time Math Preview Banner */}
-            <div className="bg-[#FBFAF6] border border-[#E8D399] rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-xs font-bold">
+            <div className="bg-accent-soft border border-accent-light rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-xs font-bold">
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-gray-500 text-[11px]">Current:</span>
                 <span className="text-black font-black text-xs sm:text-sm">{currentStock}</span>
@@ -580,7 +580,7 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
 
           {/* Sticky Footer at the bottom */}
           <div
-            className="shrink-0 sticky bottom-0 z-20 px-4 py-3 sm:px-5 sm:py-3 bg-[#FBFAF6] border-t border-[#E8D399] flex items-center justify-between sm:justify-end gap-2.5"
+            className="shrink-0 sticky bottom-0 z-20 px-4 py-3 sm:px-5 sm:py-3 bg-accent-soft border-t border-accent-light flex items-center justify-between sm:justify-end gap-2.5"
             style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}
           >
             <button
@@ -595,10 +595,10 @@ export const AdjustStockModal: React.FC<AdjustStockModalProps> = ({
               disabled={submitting || delta === 0}
               className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-5 py-3 sm:px-5 sm:py-2 rounded-xl text-xs font-black transition-all shadow-md disabled:opacity-50 cursor-pointer min-h-[48px] sm:min-h-0 ${
                 mode === 'RESTOCK'
-                  ? 'bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] hover:bg-[#1A1A1A]'
+                  ? 'bg-[#0A0A0A] border border-accent text-accent hover:bg-[#1A1A1A]'
                   : mode === 'REMOVE'
                   ? 'bg-rose-700 text-white hover:bg-rose-800 border border-rose-800'
-                  : 'bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] hover:bg-[#1A1A1A]'
+                  : 'bg-[#0A0A0A] border border-accent text-accent hover:bg-[#1A1A1A]'
               }`}
             >
               {submitting ? (

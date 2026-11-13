@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf'
 import html2canvas from 'html2canvas'
-import { BRAND_ADDRESS, BRAND_EN, BRAND_PHONE_DISPLAY } from './brand'
+import { BRAND_ADDRESS, BRAND_EN, BRAND_PHONE_DISPLAY, BRAND_ACCENT, BRAND_ACCENT_SOFT } from './brand'
 import { formatCurrency, formatQuantityDisplay, normalizeStructuredOrderItem, formatInvoiceNo } from './retail'
 import { formatPhone } from './phone'
 import { LOGO_BASE64 } from './logoBase64'
@@ -37,7 +37,7 @@ export function createInvoicePdf(data: InvoicePdfData): Blob {
   const pageWidth = 210
   const left = 16
   const right = 194
-  const primaryColor = '#D4AF37' // Flamingo Pink
+  const primaryColor = BRAND_ACCENT // Flamingo Pink
   const ink = '#18202a'
   const muted = '#68717c'
   let y = 16
@@ -81,7 +81,7 @@ export function createInvoicePdf(data: InvoicePdfData): Blob {
     : []
   const customerBoxHeight = 19 + customerNameLines.length * 4 + customerAddressLines.length * 4
 
-  doc.setFillColor('#FBFAF6')
+  doc.setFillColor(BRAND_ACCENT_SOFT)
   doc.roundedRect(left, y, right - left, customerBoxHeight, 2, 2, 'F')
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(7)
@@ -138,8 +138,8 @@ export function createInvoicePdf(data: InvoicePdfData): Blob {
 
   y = Math.max(y + 6, 150)
   const rows: Array<[string, string, string]> = [['Subtotal', money(data.subtotal), ink]]
-  if ((data.discountAmount || 0) > 0) rows.push([`Coupon${data.couponCode ? ` (${data.couponCode})` : ''}`, `-${money(data.discountAmount || 0)}`, '#D4AF37'])
-  if ((data.manualDiscountAmount || 0) > 0) rows.push(['Discount', `-${money(data.manualDiscountAmount || 0)}`, '#D4AF37'])
+  if ((data.discountAmount || 0) > 0) rows.push([`Coupon${data.couponCode ? ` (${data.couponCode})` : ''}`, `-${money(data.discountAmount || 0)}`, BRAND_ACCENT])
+  if ((data.manualDiscountAmount || 0) > 0) rows.push(['Discount', `-${money(data.manualDiscountAmount || 0)}`, BRAND_ACCENT])
   if ((data.gstAmount || 0) > 0) rows.push(['GST', money(data.gstAmount || 0), ink])
   rows.push(['Delivery', (data.shipping || 0) > 0 ? money(data.shipping) : 'FREE', ink])
   doc.setFontSize(9)

@@ -4,7 +4,7 @@ import { formatCurrency, formatInvoiceNo } from '../../lib/retail'
 import { formatPhone } from '../../lib/phone'
 import { refundMethodText, type OrderReturn } from '../../lib/returns'
 
-const th: React.CSSProperties = { padding: '8px 6px', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8 }
+const th: React.CSSProperties = { padding: '8px 6px', fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 0.8 }
 
 /** The return (credit note) invoice shown next to the original bill. */
 export const ReturnInvoice: React.FC<{ ret: OrderReturn }> = ({ ret }) => {
@@ -28,7 +28,7 @@ export const ReturnInvoice: React.FC<{ ret: OrderReturn }> = ({ ret }) => {
         </div>
       </div>
 
-      <div style={{ padding: '12px 14px', borderRadius: 12, background: '#FBFAF6', border: '1px solid #E8D399', marginBottom: 18 }}>
+      <div style={{ padding: '12px 14px', borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--accent-light)', marginBottom: 18 }}>
         <div style={{ fontSize: 9, fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: 1 }}>Customer</div>
         <div style={{ fontSize: 13, fontWeight: 800 }}>{ret.customer_name || 'Walk-in Customer'}</div>
         <div style={{ fontSize: 12, color: '#555' }}>{formatPhone(ret.phone)}</div>
@@ -64,10 +64,10 @@ export const ReturnInvoice: React.FC<{ ret: OrderReturn }> = ({ ret }) => {
         </table>
       </div>
 
-      <div style={{ marginTop: 20, borderTop: '2px solid #D4AF37', paddingTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ marginTop: 20, borderTop: '2px solid var(--accent)', paddingTop: 14, display: 'flex', justifyContent: 'flex-end' }}>
         <div style={{ width: '100%', maxWidth: 300 }}>
           <Row label="Returned items" value={formatCurrency(ret.items_total)} />
-          {ret.discount_share > 0 && <Row label="Less: bill discount share" value={`−${formatCurrency(ret.discount_share)}`} color="#B48811" />}
+          {ret.discount_share > 0 && <Row label="Less: bill discount share" value={`−${formatCurrency(ret.discount_share)}`} color="var(--accent-dark)" />}
           {ret.gst_share > 0 && <Row label="Add: GST share" value={`+${formatCurrency(ret.gst_share)}`} />}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
             <span style={{ fontSize: 13, fontWeight: 900 }}>REFUND TOTAL</span>

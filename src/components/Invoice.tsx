@@ -65,7 +65,7 @@ export const Invoice: React.FC<InvoiceProps> = ({
     catch { return new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) }
   })()
 
-  const statusColor = status === 'completed' ? '#D4AF37' : status === 'cancelled' ? '#dc2626' : '#d97706'
+  const statusColor = status === 'completed' ? 'var(--accent)' : status === 'cancelled' ? '#dc2626' : '#d97706'
   const effectiveDelivery = deliveryCharge || shipping
 
   return (
@@ -77,7 +77,7 @@ export const Invoice: React.FC<InvoiceProps> = ({
       }}
     >
       {/* ── HEADER ────────────────────────────────────────────────── */}
-      <div className="invoice-header" style={{ textAlign: 'center', borderBottom: '1px solid #E8D399', paddingBottom: 20, marginBottom: 20 }}>
+      <div className="invoice-header" style={{ textAlign: 'center', borderBottom: '1px solid var(--accent-light)', paddingBottom: 20, marginBottom: 20 }}>
         <div style={{ width: 64, height: 64, margin: '0 auto 10px auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img src={BRAND_ICON} alt={BRAND_EN} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
@@ -96,7 +96,7 @@ export const Invoice: React.FC<InvoiceProps> = ({
 
       {/* ── META ROW (Properly partitioned bill details) ─────────── */}
       <div className="invoice-meta grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-        <div style={{ minWidth: 0, padding: '12px 14px', borderRadius: 12, background: '#FBFAF6', border: '1px solid #E8D399' }}>
+        <div style={{ minWidth: 0, padding: '12px 14px', borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--accent-light)' }}>
           <div style={{ fontSize: 9, fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Bill Details</div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <span style={{ fontSize: 10, fontWeight: 700, color: '#666', textTransform: 'uppercase' }}>Invoice No</span>
@@ -126,7 +126,7 @@ export const Invoice: React.FC<InvoiceProps> = ({
           )}
         </div>
 
-        <div style={{ minWidth: 0, padding: '12px 14px', borderRadius: 12, background: '#FBFAF6', border: '1px solid #E8D399', overflowWrap: 'anywhere' }}>
+        <div style={{ minWidth: 0, padding: '12px 14px', borderRadius: 12, background: 'var(--accent-soft)', border: '1px solid var(--accent-light)', overflowWrap: 'anywhere' }}>
           <div style={{ fontSize: 9, fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Customer Information</div>
           <div style={{ fontSize: 9, fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: 0.7, marginTop: 4 }}>Customer Name</div>
           <div style={{ fontSize: 13, fontWeight: 800, color: '#0A0A0A', lineHeight: 1.35, wordBreak: 'break-word' }}>{customerName || 'Walk-in Customer'}</div>
@@ -145,11 +145,11 @@ export const Invoice: React.FC<InvoiceProps> = ({
         <table className="invoice-billing-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 380 }}>
           <thead>
             <tr style={{ background: '#0A0A0A', borderRadius: 8 }}>
-              <th style={{ padding: '8px 6px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 28 }}>#</th>
-              <th className="invoice-product-col" style={{ padding: '8px 6px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, minWidth: 120, width: 'auto' }}>Item / SKU</th>
-              <th style={{ padding: '8px 6px', textAlign: 'center', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 45 }}>Qty</th>
-              <th style={{ padding: '8px 6px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 75 }}>Rate</th>
-              <th style={{ padding: '8px 6px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: '#D4AF37', textTransform: 'uppercase', letterSpacing: 0.8, width: 85 }}>Amount</th>
+              <th style={{ padding: '8px 6px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 0.8, width: 28 }}>#</th>
+              <th className="invoice-product-col" style={{ padding: '8px 6px', textAlign: 'left', fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 0.8, minWidth: 120, width: 'auto' }}>Item / SKU</th>
+              <th style={{ padding: '8px 6px', textAlign: 'center', fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 0.8, width: 45 }}>Qty</th>
+              <th style={{ padding: '8px 6px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 0.8, width: 75 }}>Rate</th>
+              <th style={{ padding: '8px 6px', textAlign: 'right', fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 0.8, width: 85 }}>Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -182,7 +182,7 @@ export const Invoice: React.FC<InvoiceProps> = ({
       </div>
 
       {/* ── TOTALS ───────────────────────────────────────────────── */}
-      <div className="invoice-totals" style={{ marginTop: 24, borderTop: '2px solid #D4AF37', paddingTop: 16 }}>
+      <div className="invoice-totals" style={{ marginTop: 24, borderTop: '2px solid var(--accent)', paddingTop: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
           <div style={{ minWidth: 240, width: '100%', maxWidth: 300 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -191,16 +191,16 @@ export const Invoice: React.FC<InvoiceProps> = ({
             </div>
             {discountAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: '#B48811' }}>
+                <span style={{ fontSize: 12, color: 'var(--accent-dark)' }}>
                   Coupon{couponCode ? ` (${couponCode})` : ''}
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#B48811', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(discountAmount)}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-dark)', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(discountAmount)}</span>
               </div>
             )}
             {manualDiscountAmount > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ fontSize: 12, color: '#B48811' }}>Manual Discount</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: '#B48811', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(manualDiscountAmount)}</span>
+                <span style={{ fontSize: 12, color: 'var(--accent-dark)' }}>Manual Discount</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-dark)', fontVariantNumeric: 'tabular-nums' }}>−{formatCurrency(manualDiscountAmount)}</span>
               </div>
             )}
             {gstAmount > 0 && (
@@ -218,7 +218,7 @@ export const Invoice: React.FC<InvoiceProps> = ({
             <div
               style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                borderTop: '2px solid #D4AF37', paddingTop: 10, marginTop: 4,
+                borderTop: '2px solid var(--accent)', paddingTop: 10, marginTop: 4,
               }}
             >
               <span style={{ fontSize: 15, fontWeight: 900, color: '#0A0A0A', textTransform: 'uppercase', letterSpacing: 0.5 }}>Total</span>

@@ -40,7 +40,7 @@ const ModalShell: React.FC<{ title: React.ReactNode; onClose: () => void; childr
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-xs p-3 sm:p-4">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md max-h-[92dvh] bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-[#E8D399]">
+      <div className="relative z-10 w-full max-w-md max-h-[92dvh] bg-white rounded-3xl overflow-hidden shadow-2xl flex flex-col border border-accent-light">
         <div className="shrink-0 bg-[#0A0A0A] text-white px-5 py-4 flex items-center justify-between gap-3">
           <h3 className="text-[15px] font-black tracking-tight min-w-0">{title}</h3>
           <button type="button" onClick={onClose} aria-label="Close" className="w-9 h-9 shrink-0 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer">
@@ -110,7 +110,7 @@ export const SendCouponModal: React.FC<{
 
   return (
     <ModalShell
-      title={<>Send coupon · <span className="font-mono text-[#D4AF37]">{coupon.code}</span></>}
+      title={<>Send coupon · <span className="font-mono text-accent">{coupon.code}</span></>}
       onClose={onClose}
     >
       <div className="p-5 space-y-4">
@@ -196,7 +196,7 @@ export const SendCouponToEveryoneModal: React.FC<{
   }
 
   return (
-    <ModalShell title={<>Send <span className="font-mono text-[#D4AF37]">{coupon.code}</span> to customers</>} onClose={onClose}>
+    <ModalShell title={<>Send <span className="font-mono text-accent">{coupon.code}</span> to customers</>} onClose={onClose}>
       <div className="p-5 space-y-3">
         <div className="relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -233,7 +233,7 @@ export const SendCouponToEveryoneModal: React.FC<{
 
         <div className="flex items-center justify-between gap-3 pt-1">
           <span className="text-xs font-semibold text-gray-500">{sentNow.size} sent</span>
-          <button type="button" onClick={onClose} className="h-11 px-6 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-black tracking-wider cursor-pointer">
+          <button type="button" onClick={onClose} className="h-11 px-6 rounded-xl bg-[#0A0A0A] text-accent text-xs font-black tracking-wider cursor-pointer">
             DONE · {sentNow.size} SENT
           </button>
         </div>

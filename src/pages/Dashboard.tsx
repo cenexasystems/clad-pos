@@ -51,6 +51,7 @@ import type { OrderReturn } from '../lib/returns'
 import { returnInvoicePdfFile } from '../lib/returnInvoicePdf'
 import { computeCollections } from '../lib/collections'
 import { verifyAdminPassword } from '../lib/adminConfirm'
+import { SettingsView } from '../components/settings/SettingsView'
 import { formatCurrency, normalizeOrderMode, normalizeUnitType, toNumber, type UnitType } from '../lib/retail'
 import { normalizeStructuredOrderItem, formatInvoiceNo } from '../lib/retail'
 import { Invoice } from '../components/Invoice'
@@ -107,7 +108,7 @@ type DashboardCoupon = {
   min_order_value: number
   image_url?: string | null
 }
-type TabKey = 'overview' | 'whatsapp' | 'pos_analytics' | 'billing' | 'advance_orders' | 'inventory' | 'expenses' | 'products' | 'categories' | 'coupons' | 'birthdays' | 'users' | 'history'
+type TabKey = 'overview' | 'whatsapp' | 'pos_analytics' | 'billing' | 'advance_orders' | 'inventory' | 'expenses' | 'products' | 'categories' | 'coupons' | 'birthdays' | 'settings' | 'users' | 'history'
 type PosAnalyticsTab = 'revenue' | 'today' | 'products' | 'categories' | 'coupons'
 type ProfileUser = { id: string; email: string; name: string; mobile: string; role: string; created_at: string }
 
@@ -1039,7 +1040,7 @@ export default function Dashboard() {
   const deleteOrder = async (orderId: string, invoiceNo: string) => {
     if (role === 'staff') {
       const pwd = window.prompt(`Enter admin password to delete order ${invoiceNo}:`)
-      if (pwd !== '192267') {
+      if (pwd === null || !(await verifyAdminPassword(pwd))) {
         alert('Incorrect password. Deletion cancelled.')
         return
       }
@@ -1130,11 +1131,11 @@ export default function Dashboard() {
   }
 
   // Editing a bill needs the admin: the admin goes straight in, staff are asked for the admin password
-  const requestEditOrder = (order: DashboardOrder) => {
+  const requestEditOrder = async (order: DashboardOrder) => {
     if (role !== 'admin') {
       const pwd = window.prompt(`Enter the admin password to edit bill ${order.invoice_no}:`)
       if (pwd === null) return
-      if (!verifyAdminPassword(pwd)) { alert('Incorrect admin password. Edit cancelled.'); return }
+      if (!(await verifyAdminPassword(pwd))) { alert('Incorrect admin password. Edit cancelled.'); return }
     }
     setEditingOrder(order)
   }
@@ -1863,6 +1864,7 @@ export default function Dashboard() {
         { id: 'pos_analytics',  icon: <BarChart2 size={18} />,    label: 'Analytics Dashboard' },
         { id: 'birthdays',      icon: <Gift size={18} />,         label: 'Birthdays' },
         { id: 'coupons',        icon: <Box size={18} />,          label: 'Coupons' },
+        { id: 'settings',       icon: <SlidersHorizontal size={18} />, label: 'Settings' },
       ]
 
   return (
@@ -1870,7 +1872,7 @@ export default function Dashboard() {
       {/* Sidebar */}
       <aside
         className={[
-          'w-full bg-[#0A0A0A] text-white border-b lg:border-b-0 lg:border-r border-[#D4AF37]/20 flex flex-col shrink-0 h-auto lg:h-full lg:max-h-screen',
+          'w-full bg-[#0A0A0A] text-white border-b lg:border-b-0 lg:border-r border-accent/20 flex flex-col shrink-0 h-auto lg:h-full lg:max-h-screen',
           'transition-[width] duration-300 ease-in-out overflow-hidden',
           sidebarCollapsed ? 'lg:w-[76px]' : 'lg:w-[240px] xl:w-[250px]',
         ].join(' ')}
@@ -1878,13 +1880,13 @@ export default function Dashboard() {
         {/* Desktop brand header */}
         <div className={`hidden lg:flex items-center relative transition-all duration-300 shrink-0 ${sidebarCollapsed ? 'flex-col items-center pt-4 pb-3 px-2 gap-2' : 'px-4 py-3.5 justify-between border-b border-white/5'}`}>
           <Link to="/pos" title="Go to Billing Panel" className={`flex items-center gap-2.5 min-w-0 transition-all duration-300 ${sidebarCollapsed ? 'justify-center' : 'flex-1'}`}>
-            <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl bg-[#141414] border border-[#D4AF37]/50 shadow-sm hover:scale-105 transition-transform p-0.5 overflow-hidden">
+            <div className="flex items-center justify-center shrink-0 w-9 h-9 rounded-xl bg-[#141414] border border-accent/50 shadow-sm hover:scale-105 transition-transform p-0.5 overflow-hidden">
               <img src={BRAND_ICON} alt={BRAND_EN} className="w-full h-full object-contain" />
             </div>
             {!sidebarCollapsed && (
               <div className="flex flex-col min-w-0">
                 <h1 className="text-[15px] font-black text-white truncate tracking-wider">{BRAND_EN}</h1>
-                <span className={`text-[8.5px] font-black uppercase tracking-widest px-1.5 py-0.2 rounded w-fit ${role === 'admin' ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40' : 'bg-gray-800 text-gray-300 border border-gray-700'}`}>
+                <span className={`text-[8.5px] font-black uppercase tracking-widest px-1.5 py-0.2 rounded w-fit ${role === 'admin' ? 'bg-accent/20 text-accent border border-accent/40' : 'bg-gray-800 text-gray-300 border border-gray-700'}`}>
                   {role === 'admin' ? 'ADMIN' : 'STAFF'}
                 </span>
               </div>
@@ -1903,14 +1905,14 @@ export default function Dashboard() {
         {/* Mobile mini-header */}
         <div className="flex lg:hidden items-center justify-between px-3 py-2 border-b border-white/10 bg-[#0A0A0A] shrink-0 gap-2">
           <Link to="/pos" title="Go to Billing Panel" className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#141414] border border-[#D4AF37]/50 shrink-0 shadow-sm hover:scale-105 transition-transform p-0.5 overflow-hidden">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#141414] border border-accent/50 shrink-0 shadow-sm hover:scale-105 transition-transform p-0.5 overflow-hidden">
               <img src={BRAND_ICON} alt={BRAND_EN} className="w-full h-full object-contain" />
             </div>
             <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
               <span className="text-[13px] sm:text-[14px] font-black text-white tracking-wide truncate min-w-0">
                 {BRAND_EN}
               </span>
-              <span className={`shrink-0 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded whitespace-nowrap ${role === 'admin' ? 'bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40' : 'bg-gray-800 text-gray-300 border border-gray-700'}`}>
+              <span className={`shrink-0 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded whitespace-nowrap ${role === 'admin' ? 'bg-accent/20 text-accent border border-accent/40' : 'bg-gray-800 text-gray-300 border border-gray-700'}`}>
                 {role === 'admin' ? 'ADMIN' : 'STAFF'}
               </span>
             </div>
@@ -1943,7 +1945,7 @@ export default function Dashboard() {
                 sidebarCollapsed ? 'lg:w-[42px] lg:justify-center mx-auto' : 'lg:px-3',
                 'px-1 py-1 lg:py-0',
                 'rounded-xl font-medium text-[10px] lg:text-[12.5px] xl:text-[13px] transition-all overflow-hidden cursor-pointer',
-                tab === item.id ? 'bg-[#D4AF37] text-[#0A0A0A] font-black shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-[#D4AF37]',
+                tab === item.id ? 'bg-accent text-[#0A0A0A] font-black shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-accent',
               ].join(' ')}
             >
               <span className="shrink-0 flex items-center">
@@ -2553,10 +2555,10 @@ export default function Dashboard() {
                       dateTo: analyticsDateTo,
                     })
                   }}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E8D399] text-[#0A0A0A] font-bold text-xs hover:bg-[#FBFAF6] shadow-xs transition-all cursor-pointer hover:scale-[1.02]"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-accent-light text-[#0A0A0A] font-bold text-xs hover:bg-accent-soft shadow-xs transition-all cursor-pointer hover:scale-[1.02]"
                   title="Export current analytics view to CSV"
                 >
-                  <Download size={14} className="text-[#B48811]" />
+                  <Download size={14} className="text-accent-dark" />
                   <span>Export CSV</span>
                 </button>
 
@@ -2579,13 +2581,13 @@ export default function Dashboard() {
                       setExportingPdf(false)
                     }
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] font-black text-xs hover:bg-[#1A1A1A] shadow-md transition-all cursor-pointer hover:scale-[1.02] disabled:opacity-60"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0A0A0A] border border-accent text-accent font-black text-xs hover:bg-[#1A1A1A] shadow-md transition-all cursor-pointer hover:scale-[1.02] disabled:opacity-60"
                   title="Export formatted executive PDF with chart diagrams"
                 >
                   {exportingPdf ? (
-                    <RefreshCw size={14} className="animate-spin text-[#D4AF37]" />
+                    <RefreshCw size={14} className="animate-spin text-accent" />
                   ) : (
-                    <FileText size={14} className="text-[#D4AF37]" />
+                    <FileText size={14} className="text-accent" />
                   )}
                   <span>{exportingPdf ? 'Generating PDF...' : 'Export PDF (Charts)'}</span>
                 </button>
@@ -2609,11 +2611,11 @@ export default function Dashboard() {
                       onClick={() => setPosAnalyticsTab(id as PosAnalyticsTab)}
                       className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-[13px] font-black tracking-wide transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                         isActive
-                          ? 'bg-white text-[#B48811] shadow-sm'
+                          ? 'bg-white text-accent-dark shadow-sm'
                           : 'text-[#6B7280] hover:text-[#111111] hover:bg-white/60'
                       }`}
                     >
-                      <span className={isActive ? 'text-[#B48811]' : 'text-gray-400'}>
+                      <span className={isActive ? 'text-accent-dark' : 'text-gray-400'}>
                         {icon}
                       </span>
                       <span>{label}</span>
@@ -2651,7 +2653,7 @@ export default function Dashboard() {
             {/* Revenue sub-tab */}
             {posAnalyticsTab === 'revenue' && (
               <div className="space-y-6">
-                <label className="flex w-fit max-w-full cursor-pointer items-center gap-2.5 rounded-xl border border-[#E8D399] bg-[#FBFAF6] px-4 py-2.5 text-xs font-bold text-[#0A0A0A]">
+                <label className="flex w-fit max-w-full cursor-pointer items-center gap-2.5 rounded-xl border border-accent-light bg-accent-soft px-4 py-2.5 text-xs font-bold text-[#0A0A0A]">
                   <input type="checkbox" checked={deductRefunds} onChange={e => setDeductRefunds(e.target.checked)} />
                   Reduce refunds from Net Profit
                   <span className="font-medium text-gray-500">({deductRefunds ? 'on' : 'off'})</span>
@@ -2840,7 +2842,7 @@ export default function Dashboard() {
                           <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis hide />
                           <Tooltip cursor={{ fill: '#F9FAFB' }} formatter={(value) => formatCurrency(toNumber(value as number | string, 0))} />
-                          <Bar dataKey="revenue" fill="#D4AF37" radius={[4, 4, 0, 0]} barSize={12} />
+                          <Bar dataKey="revenue" fill="var(--accent)" radius={[4, 4, 0, 0]} barSize={12} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -2898,10 +2900,10 @@ export default function Dashboard() {
                         <p className="mt-1 text-[12px] text-[#6B7280]">Monday to Sunday sales view for the current week.</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="rounded-full bg-[#F9FAFB] px-3 py-1 text-[11px] font-bold text-[#D4AF37]">
+                        <span className="rounded-full bg-[#F9FAFB] px-3 py-1 text-[11px] font-bold text-accent">
                           Week {(() => { const now = new Date(); const start = new Date(now.getFullYear(), 0, 1); const diff = Math.floor((now.getTime() - start.getTime()) / 86400000); return Math.ceil((diff + start.getDay() + 1) / 7) })()} of {new Date().getFullYear()}
                         </span>
-                        <span className="rounded-full bg-[#F9FAFB] px-3 py-1 text-[11px] font-bold text-[#D4AF37]">
+                        <span className="rounded-full bg-[#F9FAFB] px-3 py-1 text-[11px] font-bold text-accent">
                           Today: {formatCurrency(analytics.todaySales)}
                         </span>
                       </div>
@@ -3004,7 +3006,7 @@ export default function Dashboard() {
                       placeholder="Search by invoice number..."
                       value={todayBillsSearch}
                       onChange={e => setTodayBillsSearch(e.target.value)}
-                      className="w-full px-4 py-2 bg-[#F9FAFB] border border-[#E5E7EB]/60 rounded-xl text-xs sm:text-[13px] font-semibold text-[#111111] placeholder:text-[#8A9384] focus:outline-none focus:border-[#D4AF37] transition-colors"
+                      className="w-full px-4 py-2 bg-[#F9FAFB] border border-[#E5E7EB]/60 rounded-xl text-xs sm:text-[13px] font-semibold text-[#111111] placeholder:text-[#8A9384] focus:outline-none focus:border-accent transition-colors"
                     />
                   </div>
                   {(() => {
@@ -3090,7 +3092,7 @@ export default function Dashboard() {
                       placeholder="Search by Product Name, SKU, or Category..."
                       value={productAnalyticsSearch}
                       onChange={e => setProductAnalyticsSearch(e.target.value)}
-                      className="w-full px-4 py-2 bg-[#F9FAFB] border border-[#E5E7EB]/60 rounded-xl text-xs sm:text-[13px] font-semibold text-[#111111] placeholder:text-[#8A9384] focus:outline-none focus:border-[#D4AF37] transition-colors"
+                      className="w-full px-4 py-2 bg-[#F9FAFB] border border-[#E5E7EB]/60 rounded-xl text-xs sm:text-[13px] font-semibold text-[#111111] placeholder:text-[#8A9384] focus:outline-none focus:border-accent transition-colors"
                     />
                   </div>
                   {(() => {
@@ -3103,7 +3105,7 @@ export default function Dashboard() {
                       <>
                       <div className="space-y-3 md:hidden">
                         {filteredProds.slice(0, 50).map((p, i) => (
-                          <div key={`${p.name}-${p.variant || i}`} className="rounded-2xl border border-[#E5E7EB]/30 bg-[#FBFAF6] p-4">
+                          <div key={`${p.name}-${p.variant || i}`} className="rounded-2xl border border-[#E5E7EB]/30 bg-accent-soft p-4">
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <p className="text-[13px] font-black text-[#9BAB9A]">#{i + 1}</p>
@@ -3174,7 +3176,7 @@ export default function Dashboard() {
                   <>
                   <div className="space-y-3 md:hidden">
                     {analytics.topCategories.map((c, i) => (
-                      <div key={c.name} className="rounded-2xl border border-[#E5E7EB]/30 bg-[#FBFAF6] p-4">
+                      <div key={c.name} className="rounded-2xl border border-[#E5E7EB]/30 bg-accent-soft p-4">
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <p className="text-[13px] font-black text-[#9BAB9A]">#{i + 1}</p>
@@ -3314,7 +3316,7 @@ export default function Dashboard() {
                     <>
                       <div className="space-y-3 md:hidden">
                         {analytics.topCoupons.map((coupon, i) => (
-                          <div key={coupon.code} className="rounded-2xl border border-[#E5E7EB]/30 bg-[#FBFAF6] p-4">
+                          <div key={coupon.code} className="rounded-2xl border border-[#E5E7EB]/30 bg-accent-soft p-4">
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="text-[13px] font-black text-[#9BAB9A]">#{i + 1}</p>
@@ -3428,7 +3430,7 @@ export default function Dashboard() {
 
         {/* ── ORDER MANAGEMENT ── */}
         {tab === 'history' && (
-          <div className="space-y-4 sm:space-y-6 rounded-[20px] sm:rounded-[28px] border border-[#E5E7EB]/60 bg-[#FBFAF6] p-3 sm:p-6 lg:p-7 shadow-sm">
+          <div className="space-y-4 sm:space-y-6 rounded-[20px] sm:rounded-[28px] border border-[#E5E7EB]/60 bg-accent-soft p-3 sm:p-6 lg:p-7 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#10B981]">{l('Billing history', 'பில் வரலாறு')}</p>
@@ -3450,7 +3452,7 @@ export default function Dashboard() {
                       <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       <input
                         type="text"
-                        className="w-full h-10 sm:h-11 pl-10 pr-8 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[11px] sm:text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-all"
+                        className="w-full h-10 sm:h-11 pl-10 pr-8 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[11px] sm:text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                         placeholder={l('Search by Invoice, Customer, Phone...', 'பில் எண், வாடிக்கையாளர், போன் எண்...')}
                         value={historyQuickSearch}
                         onChange={e => setHistoryQuickSearch(e.target.value)}
@@ -3471,7 +3473,7 @@ export default function Dashboard() {
                     <button
                       type="submit"
                       disabled={searchLoading}
-                      className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl bg-[#D4AF37] text-white text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 shrink-0 hover:bg-[#b89528] disabled:opacity-50 transition-colors cursor-pointer"
+                      className="h-10 sm:h-11 px-3 sm:px-4 rounded-xl bg-accent text-white text-xs font-bold shadow-sm flex items-center justify-center gap-1.5 shrink-0 hover:bg-accent-hover disabled:opacity-50 transition-colors cursor-pointer"
                     >
                       {searchLoading ? (
                         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -3489,7 +3491,7 @@ export default function Dashboard() {
                       <select
                         value={billTypeFilter}
                         onChange={e => setBillTypeFilter(e.target.value as typeof billTypeFilter)}
-                        className="w-full lg:w-32 h-10 sm:h-11 appearance-none pl-2 sm:pl-2.5 pr-5 sm:pr-6 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[10.5px] sm:text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#D4AF37] cursor-pointer hover:bg-gray-100 transition-colors truncate"
+                        className="w-full lg:w-32 h-10 sm:h-11 appearance-none pl-2 sm:pl-2.5 pr-5 sm:pr-6 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[10.5px] sm:text-xs font-semibold text-gray-800 focus:outline-none focus:border-accent cursor-pointer hover:bg-gray-100 transition-colors truncate"
                       >
                         <option value="all">{l('All Bills', 'அனைத்து')}</option>
                         <option value="offline">{l('Offline', 'ஆஃப்லைன்')}</option>
@@ -3515,7 +3517,7 @@ export default function Dashboard() {
                             }
                           }
                         }}
-                        className="w-full lg:w-32 h-10 sm:h-11 appearance-none pl-2 sm:pl-2.5 pr-5 sm:pr-6 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[10.5px] sm:text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#D4AF37] cursor-pointer hover:bg-gray-100 transition-colors truncate"
+                        className="w-full lg:w-32 h-10 sm:h-11 appearance-none pl-2 sm:pl-2.5 pr-5 sm:pr-6 rounded-xl bg-[#F9FAFB] border border-gray-200 text-[10.5px] sm:text-xs font-semibold text-gray-800 focus:outline-none focus:border-accent cursor-pointer hover:bg-gray-100 transition-colors truncate"
                       >
                         <option value="">{l('All Dates', 'தேதி: அனைத்து')}</option>
                         <option value="today">{l('Today', 'இன்று')}</option>
@@ -3540,7 +3542,7 @@ export default function Dashboard() {
                       <SlidersHorizontal size={11} className="shrink-0" />
                       <span className="truncate">{l('Filters', 'வடிகட்டி')}</span>
                       {activeHistoryFiltersCount > 0 && (
-                        <span className="w-3.5 h-3.5 rounded-full bg-[#D4AF37] text-black text-[9px] font-black flex items-center justify-center shrink-0">
+                        <span className="w-3.5 h-3.5 rounded-full bg-accent text-black text-[9px] font-black flex items-center justify-center shrink-0">
                           {activeHistoryFiltersCount}
                         </span>
                       )}
@@ -3578,7 +3580,7 @@ export default function Dashboard() {
                             <label className="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">From Date</label>
                             <input
                               type="date"
-                              className="w-full h-10 px-3 rounded-lg bg-white border border-gray-300 text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#D4AF37]"
+                              className="w-full h-10 px-3 rounded-lg bg-white border border-gray-300 text-xs font-semibold text-gray-800 focus:outline-none focus:border-accent"
                               value={search.dateFrom}
                               onChange={e => setSearch(s => ({ ...s, dateFrom: e.target.value }))}
                             />
@@ -3587,7 +3589,7 @@ export default function Dashboard() {
                             <label className="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">To Date</label>
                             <input
                               type="date"
-                              className="w-full h-10 px-3 rounded-lg bg-white border border-gray-300 text-xs font-semibold text-gray-800 focus:outline-none focus:border-[#D4AF37]"
+                              className="w-full h-10 px-3 rounded-lg bg-white border border-gray-300 text-xs font-semibold text-gray-800 focus:outline-none focus:border-accent"
                               value={search.dateTo}
                               onChange={e => setSearch(s => ({ ...s, dateTo: e.target.value }))}
                             />
@@ -3602,7 +3604,7 @@ export default function Dashboard() {
                         <label className="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">{l('Invoice / Bill No', 'பில் எண்')}</label>
                         <input
                           type="text"
-                          className="w-full h-10 px-3 rounded-lg bg-[#F9FAFB] border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#D4AF37]"
+                          className="w-full h-10 px-3 rounded-lg bg-[#F9FAFB] border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-accent"
                           placeholder="e.g. INV000001"
                           value={search.invoiceNo}
                           onChange={e => setSearch(s => ({ ...s, invoiceNo: e.target.value }))}
@@ -3612,7 +3614,7 @@ export default function Dashboard() {
                         <label className="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">{l('Customer Name', 'வாடிக்கையாளர் பெயர்')}</label>
                         <input
                           type="text"
-                          className="w-full h-10 px-3 rounded-lg bg-[#F9FAFB] border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#D4AF37]"
+                          className="w-full h-10 px-3 rounded-lg bg-[#F9FAFB] border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-accent"
                           placeholder="e.g. Priya"
                           value={search.customerName}
                           onChange={e => setSearch(s => ({ ...s, customerName: e.target.value }))}
@@ -3622,7 +3624,7 @@ export default function Dashboard() {
                         <label className="text-[10px] font-bold text-gray-500 uppercase block mb-0.5">{l('Mobile Number', 'மொபைல் எண்')}</label>
                         <input
                           type="text"
-                          className="w-full h-10 px-3 rounded-lg bg-[#F9FAFB] border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-[#D4AF37]"
+                          className="w-full h-10 px-3 rounded-lg bg-[#F9FAFB] border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-accent"
                           placeholder="e.g. 9876543210"
                           value={search.phone}
                           onChange={e => setSearch(s => ({ ...s, phone: e.target.value }))}
@@ -3683,7 +3685,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => exportCSV(filteredSearchResults)}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#D4AF37] hover:text-[#b89528] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-accent hover:text-accent-hover transition-colors cursor-pointer"
                   >
                     <Download size={11} /> Export CSV
                   </button>
@@ -3694,7 +3696,7 @@ export default function Dashboard() {
                   const billTypeLabel = normalizeOrderType(o.order_type) === 'manual_sale' ? 'MANUAL' : normalizeOrderMode(o.order_mode) === 'online' ? 'ONLINE' : 'OFFLINE'
                   const billTypeClass = normalizeOrderType(o.order_type) === 'manual_sale' ? 'bg-purple-50 text-purple-700' : normalizeOrderMode(o.order_mode) === 'online' ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'
                   return (
-                    <div key={o.id} className="rounded-2xl border border-[#E5E7EB]/60 bg-[#FBFAF6] p-3 sm:p-4 space-y-3">
+                    <div key={o.id} className="rounded-2xl border border-[#E5E7EB]/60 bg-accent-soft p-3 sm:p-4 space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-[13px] font-black text-[#111111] break-words">{formatInvoiceNo(o.invoice_no)}</p>
@@ -3773,7 +3775,7 @@ export default function Dashboard() {
                           <Edit2 size={14} className="mx-auto" />
                         </button>
                         {role === 'admin' && (
-                          <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-[#E5E7EB]/60 text-[#D4AF37] transition-colors hover:bg-[#D4AF37]/5" title="Delete Order">
+                          <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="h-10 w-10 sm:h-11 sm:w-11 shrink-0 rounded-xl border border-[#E5E7EB]/60 text-accent transition-colors hover:bg-accent/5" title="Delete Order">
                             <Trash2 size={14} className="mx-auto" />
                           </button>
                         )}
@@ -3783,10 +3785,10 @@ export default function Dashboard() {
                   )
                 })}
                 {filteredSearchResults.length === 0 && (
-                  <div className="rounded-2xl border border-[#E5E7EB]/60 bg-[#FBFAF6] px-4 py-8 text-center text-[#374151]">{l('No matching bills', 'பில்கள் இல்லை')}</div>
+                  <div className="rounded-2xl border border-[#E5E7EB]/60 bg-accent-soft px-4 py-8 text-center text-[#374151]">{l('No matching bills', 'பில்கள் இல்லை')}</div>
                 )}
               </div>
-              <div className="hidden md:block overflow-x-auto rounded-xl border border-[#E5E7EB]/60 bg-[#FBFAF6]">
+              <div className="hidden md:block overflow-x-auto rounded-xl border border-[#E5E7EB]/60 bg-accent-soft">
                 <table className="w-full text-left text-[13px]">
                   <thead className="bg-[#F9FAFB] text-[10px] uppercase tracking-wider text-[#374151]">
                     <tr>
@@ -3842,7 +3844,7 @@ export default function Dashboard() {
                                 <Edit2 size={13} />
                               </button>
                               {role === 'admin' && (
-                                <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="rounded-lg p-1 text-[#D4AF37] transition-colors hover:bg-[#D4AF37]/5" title="Delete Order">
+                                <button onClick={() => void deleteOrder(o.id, o.invoice_no)} className="rounded-lg p-1 text-accent transition-colors hover:bg-accent/5" title="Delete Order">
                                   <Trash2 size={13} />
                                 </button>
                               )}
@@ -3935,7 +3937,7 @@ export default function Dashboard() {
                           const baseQty = opt.value === 'weight' ? 100 : opt.value === 'volume' ? 250 : 1
                           setProdForm(f => ({ ...f, unitType: opt.value, unitLabel, baseQuantity: baseQty, predefinedOptionsText: defaults, allowDecimalQuantity: opt.value === 'weight' || opt.value === 'volume' }))
                         }}
-                        className={`p-3 rounded-xl text-left border-2 transition-colors ${prodForm.unitType === opt.value ? 'border-[#D4AF37] bg-[#0A0A0A]/5' : 'border-[#F3F4F6] hover:border-[#D1D5DB]'}`}>
+                        className={`p-3 rounded-xl text-left border-2 transition-colors ${prodForm.unitType === opt.value ? 'border-accent bg-[#0A0A0A]/5' : 'border-[#F3F4F6] hover:border-[#D1D5DB]'}`}>
                         <p className={`text-[13px] font-black ${prodForm.unitType === opt.value ? 'text-[#0A0A0A]' : 'text-[#111111]'}`}>{opt.label}</p>
                         <p className="text-[11px] text-[#6B7280] leading-tight mt-1">{opt.hint}</p>
                       </button>
@@ -3946,18 +3948,18 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Product Name', 'பொருள் பெயர்')} *</label>
-                    <input required className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
+                    <input required className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
                       placeholder="e.g. Manjal Podi" value={prodForm.name} onChange={e => setProdForm(f => ({...f, name: e.target.value}))} />
                   </div>
                   <div className="col-span-2">
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Tamil Name', 'தமிழ் பெயர்')}</label>
-                    <input className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
+                    <input className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
                       placeholder="எ.கா. மஞ்சள் பொடி" value={prodForm.nameTa} onChange={e => setProdForm(f => ({...f, nameTa: e.target.value}))} />
                   </div>
                   <div>
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Price (INR)', 'விலை (INR)')} *</label>
                     <input required type="number" min="0" step="0.01"
-                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 outline-none transition-colors"
+                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 outline-none transition-colors"
                       value={prodForm.price} onChange={e => setProdForm(f => ({...f, price: Number(e.target.value)}))} />
                     <p className="text-[11px] text-[#6B7280] mt-1">
                       {prodForm.unitType === 'weight' ? `Per ${prodForm.baseQuantity}g` : prodForm.unitType === 'volume' ? `Per ${prodForm.baseQuantity}ml` : 'Per piece/bundle'}
@@ -3966,42 +3968,42 @@ export default function Dashboard() {
                   <div>
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Purchase Price (INR)', 'வாங்கிய விலை')} *</label>
                     <input required type="number" min="0" step="0.01"
-                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 outline-none transition-colors"
+                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 outline-none transition-colors"
                       value={prodForm.purchasePrice} onChange={e => setProdForm(f => ({...f, purchasePrice: Number(e.target.value)}))} />
                   </div>
                   <div>
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('MRP (INR)', 'MRP (INR)')}</label>
                     <input type="number" min="0" step="0.01"
-                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
+                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
                       placeholder="0.00"
                       value={prodForm.mrp} onChange={e => setProdForm(f => ({...f, mrp: e.target.value}))} />
                   </div>
                   <div>
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Offer Price (INR)', 'சலுகை விலை')}</label>
                     <input type="number" min="0" step="0.01"
-                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
+                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
                       placeholder="Optional"
                       value={prodForm.offerPrice} onChange={e => setProdForm(f => ({...f, offerPrice: e.target.value}))} />
                   </div>
                   <div>
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('SKU', 'SKU')}</label>
-                    <input className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
+                    <input className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
                       placeholder="e.g. MP-100G" value={prodForm.sku} onChange={e => setProdForm(f => ({...f, sku: e.target.value}))} />
                   </div>
                   <div>
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Barcode', 'பார்கோடு')}</label>
-                    <input className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
+                    <input className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none transition-colors"
                       placeholder="e.g. 8998765432100" value={prodForm.barcode} onChange={e => setProdForm(f => ({...f, barcode: e.target.value}))} />
                   </div>
                   <div>
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Stock', 'இருப்பு')} *</label>
                     <input required type="number" min="0"
-                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 outline-none transition-colors"
+                      className="w-full h-10 px-3.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-xs sm:text-[13px] font-semibold text-gray-900 outline-none transition-colors"
                       value={prodForm.stockQuantity} onChange={e => setProdForm(f => ({...f, stockQuantity: Number(e.target.value)}))} />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Category', 'வகை')} *</label>
-                    <select required className="w-full min-w-0 h-11 px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-[13px] font-bold outline-none transition-colors touch-manipulation"
+                    <select required className="w-full min-w-0 h-11 px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-[13px] font-bold outline-none transition-colors touch-manipulation"
                       value={prodForm.category}
                       onChange={e => {
                         const sel = cats.find(c => c.name_en === e.target.value)
@@ -4051,7 +4053,7 @@ export default function Dashboard() {
                     <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">
                       {prodForm.unitType === 'weight' ? 'Alpha Size Options (S, M, L...)' : 'Numeric Size Options (28, 30, 32...)'}
                     </label>
-                    <input className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-[13px] font-bold outline-none transition-colors"
+                    <input className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-[13px] font-bold outline-none transition-colors"
                       placeholder={prodForm.unitType === 'weight' ? 'XS, S, M, L, XL, 2XL' : '28, 30, 32, 34, 36, 38'}
                       value={prodForm.predefinedOptionsText}
                       onChange={e => setProdForm(f => ({...f, predefinedOptionsText: e.target.value}))} />
@@ -4061,14 +4063,14 @@ export default function Dashboard() {
 
                 <div>
                   <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Description', 'விளக்கம்')}</label>
-                  <textarea rows={2} className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-[13px] font-bold outline-none transition-colors resize-none"
+                  <textarea rows={2} className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-[13px] font-bold outline-none transition-colors resize-none"
                     placeholder="Short product description..." value={prodForm.description}
                     onChange={e => setProdForm(f => ({...f, description: e.target.value}))} />
                 </div>
 
                 <div>
                   <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider mb-1">{l('Benefits / Health Tags', 'நன்மைகள்')}</label>
-                  <input className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-[13px] font-bold outline-none transition-colors"
+                  <input className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-[13px] font-bold outline-none transition-colors"
                     placeholder="Immunity, Digestion (comma-separated)"
                     value={prodForm.benefits}
                     onChange={e => setProdForm(f => ({...f, benefits: e.target.value}))} />
@@ -4077,7 +4079,7 @@ export default function Dashboard() {
                 {/* Image */}
                 <div className="space-y-3">
                   <label className="block text-[11px] font-black uppercase text-[#6B7280] tracking-wider">{l('Product Image', 'படம்')}</label>
-                  <input className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-[#D4AF37] rounded-xl text-[13px] font-bold outline-none transition-colors"
+                  <input className="w-full px-4 py-2.5 bg-[#FAFAFA] border border-[#F3F4F6] focus:border-accent rounded-xl text-[13px] font-bold outline-none transition-colors"
                     placeholder="https://... (image URL)"
                     value={prodForm.image} onChange={e => setProdForm(f => ({...f, image: e.target.value}))} />
                   <input type="file" accept="image/*"
@@ -4137,7 +4139,7 @@ export default function Dashboard() {
                         placeholder={l('Search items...', 'பொருட்களை தேட...')}
                         value={inventorySearch}
                         onChange={e => setInventorySearch(e.target.value)}
-                        className="pl-10 pr-4 py-2 rounded-xl border border-[#F3F4F6] text-[13px] bg-[#FAFAFA] focus:bg-white outline-none focus:border-[#D4AF37] w-[180px] lg:w-[240px] transition-colors shadow-sm"
+                        className="pl-10 pr-4 py-2 rounded-xl border border-[#F3F4F6] text-[13px] bg-[#FAFAFA] focus:bg-white outline-none focus:border-accent w-[180px] lg:w-[240px] transition-colors shadow-sm"
                       />
                     </div>
                   </div>
@@ -4235,7 +4237,7 @@ export default function Dashboard() {
                       <div className="col-span-2">
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Variant Name *', 'வகை பெயர் *')}</label>
                         <input required
-                          className="w-full px-4 py-2.5 bg-white rounded-xl border border-[#D1D5DB] text-[13px] font-bold outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                          className="w-full px-4 py-2.5 bg-white rounded-xl border border-[#D1D5DB] text-[13px] font-bold outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder={l('e.g. Cycle Brand / 25g', 'e.g. Cycle Brand / 25g')}
                           value={variantForm.name}
                           onChange={e => setVariantForm(f => ({...f, name: e.target.value}))} />
@@ -4243,7 +4245,7 @@ export default function Dashboard() {
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Size Label', 'அளவு பட்டை')}</label>
                         <input
-                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="25g / 250ml / 1 pack"
                           value={variantForm.sizeLabel}
                           onChange={e => setVariantForm(f => ({...f, sizeLabel: e.target.value}))} />
@@ -4251,7 +4253,7 @@ export default function Dashboard() {
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Purchase Price (INR)', 'வாங்கிய விலை')}</label>
                         <input type="number" min="0" step="0.01"
-                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="30"
                           value={variantForm.purchasePrice}
                           onChange={e => setVariantForm(f => ({...f, purchasePrice: e.target.value}))} />
@@ -4259,7 +4261,7 @@ export default function Dashboard() {
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('MRP (INR)', 'MRP (INR)')}</label>
                         <input type="number" min="0" step="0.01"
-                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="50"
                           value={variantForm.mrp}
                           onChange={e => setVariantForm(f => ({...f, mrp: e.target.value}))} />
@@ -4267,21 +4269,21 @@ export default function Dashboard() {
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Selling Price (INR) *', 'விற்பனை விலை *')}</label>
                         <input required type="number" min="0" step="0.01"
-                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="40"
                           value={variantForm.price}
                           onChange={e => setVariantForm(f => ({...f, price: e.target.value}))} />
                       </div>
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('SKU', 'SKU')}</label>
-                        <input className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                        <input className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="SKU-123"
                           value={variantForm.sku}
                           onChange={e => setVariantForm(f => ({...f, sku: e.target.value}))} />
                       </div>
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Barcode', 'பார்கோடு')}</label>
-                        <input className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                        <input className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="890..."
                           value={variantForm.barcode}
                           onChange={e => setVariantForm(f => ({...f, barcode: e.target.value}))} />
@@ -4289,7 +4291,7 @@ export default function Dashboard() {
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Stock *', 'இருப்பு *')}</label>
                         <input required type="number" min="0"
-                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="50"
                           value={variantForm.stock}
                           onChange={e => setVariantForm(f => ({...f, stock: e.target.value}))} />
@@ -4297,7 +4299,7 @@ export default function Dashboard() {
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Weight/Vol Value', 'எடை மதிப்பு')}</label>
                         <input type="number" min="0" step="0.001"
-                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                          className="w-full h-10 px-3.5 bg-white rounded-xl border border-[#D1D5DB] text-xs sm:text-[13px] font-semibold text-gray-900 placeholder:text-gray-400 placeholder:font-normal outline-none focus:border-accent transition-colors shadow-sm"
                           placeholder="250"
                           value={variantForm.weightValue}
                           onChange={e => setVariantForm(f => ({...f, weightValue: e.target.value}))} />
@@ -4305,7 +4307,7 @@ export default function Dashboard() {
                       <div>
                         <label className="block text-[11px] font-black uppercase tracking-wider text-[#6B7280] mb-1">{l('Unit', 'அலகு')}</label>
                         <select
-                          className="w-full px-4 py-2.5 bg-white rounded-xl border border-[#D1D5DB] text-[13px] font-bold outline-none focus:border-[#D4AF37] transition-colors shadow-sm appearance-none"
+                          className="w-full px-4 py-2.5 bg-white rounded-xl border border-[#D1D5DB] text-[13px] font-bold outline-none focus:border-accent transition-colors shadow-sm appearance-none"
                           value={variantForm.weightUnit}
                           onChange={e => setVariantForm(f => ({...f, weightUnit: e.target.value}))}>
                           <option value="">-</option>
@@ -4353,7 +4355,7 @@ export default function Dashboard() {
                       <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                         {getVariants(String(editingProd.id)).map((v: ProductVariant) => (
                           <div key={v.id}
-                            className={`flex items-center justify-between gap-3 p-4 rounded-xl border transition-colors bg-white shadow-sm ${editingVariantId === v.id ? 'border-[#D4AF37] ring-1 ring-maroon-dark/20' : 'border-[#F3F4F6] hover:border-[#D1D5DB]'}`}>
+                            className={`flex items-center justify-between gap-3 p-4 rounded-xl border transition-colors bg-white shadow-sm ${editingVariantId === v.id ? 'border-accent ring-1 ring-maroon-dark/20' : 'border-[#F3F4F6] hover:border-[#D1D5DB]'}`}>
                             <div className="flex items-center gap-3 min-w-0">
                               {v.isDefault && (
                                 <span className="w-5 h-5 rounded-full bg-[#0A0A0A] text-white text-[10px] font-black flex items-center justify-center shrink-0">★</span>
@@ -4413,10 +4415,10 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={() => void loadCoupons()}
-                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#E8D399] text-[#0A0A0A] font-bold text-xs hover:bg-[#FBFAF6] shadow-xs transition-all cursor-pointer hover:scale-[1.02]"
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-accent-light text-[#0A0A0A] font-bold text-xs hover:bg-accent-soft shadow-xs transition-all cursor-pointer hover:scale-[1.02]"
                 title="Refresh coupons list"
               >
-                <RefreshCw size={14} className="text-[#B48811]" />
+                <RefreshCw size={14} className="text-accent-dark" />
                 <span>{l('Refresh', 'புதுப்பி')}</span>
               </button>
             </div>
@@ -4428,7 +4430,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <p className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Total Coupons</p>
-                    <div className="w-8 h-8 rounded-full bg-[#FBFAF6] border border-[#E8D399] flex items-center justify-center text-[#B48811] shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-accent-soft border border-accent-light flex items-center justify-center text-accent-dark shrink-0">
                       <Tag size={15} />
                     </div>
                   </div>
@@ -4460,7 +4462,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
                     <p className="text-[11px] font-bold text-[#111111] uppercase tracking-wider">Total Redemptions</p>
-                    <div className="w-8 h-8 rounded-full bg-[#0A0A0A] text-[#D4AF37] border border-[#D4AF37]/40 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-[#0A0A0A] text-accent border border-accent/40 flex items-center justify-center shrink-0">
                       <Percent size={15} />
                     </div>
                   </div>
@@ -4473,8 +4475,8 @@ export default function Dashboard() {
             </div>
 
             {/* Subtotal notice banner */}
-            <div className="rounded-xl border border-[#E8D399]/60 bg-[#FBFAF6] px-4 py-2.5 text-[12px] font-medium text-[#6C665C] flex items-center gap-2.5 shadow-xs">
-              <Info size={16} className="text-[#B48811] shrink-0" />
+            <div className="rounded-xl border border-accent-light/60 bg-accent-soft px-4 py-2.5 text-[12px] font-medium text-[#6C665C] flex items-center gap-2.5 shadow-xs">
+              <Info size={16} className="text-accent-dark shrink-0" />
               <span>{l('Coupon discount applies to product subtotal only — delivery charges are excluded.', 'கூப்பன் தள்ளுபடி பொருட்களின் subtotal-க்கு மட்டும் பொருந்தும்.')}</span>
             </div>
 
@@ -4485,7 +4487,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-gray-100">
                     <div>
-                      <span className="px-2.5 py-0.5 rounded-full bg-[#0A0A0A] text-[#D4AF37] border border-[#D4AF37]/30 text-[10px] font-black uppercase tracking-wider">
+                      <span className="px-2.5 py-0.5 rounded-full bg-[#0A0A0A] text-accent border border-accent/30 text-[10px] font-black uppercase tracking-wider">
                         {editingCouponId !== null ? 'EDIT MODE' : 'NEW COUPON'}
                       </span>
                       <h3 className="mt-1.5 text-[18px] font-black text-[#111111]">
@@ -4532,9 +4534,9 @@ export default function Dashboard() {
                           <button
                             type="button"
                             onClick={generateCouponCode}
-                            className="inline-flex items-center gap-1.5 shrink-0 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] px-3.5 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-[#1A1A1A] shadow-xs transition-all cursor-pointer hover:scale-[1.02]"
+                            className="inline-flex items-center gap-1.5 shrink-0 rounded-xl bg-[#0A0A0A] border border-accent text-accent px-3.5 sm:px-4 py-2.5 text-xs font-bold uppercase tracking-wider hover:bg-[#1A1A1A] shadow-xs transition-all cursor-pointer hover:scale-[1.02]"
                           >
-                            <Sparkles size={13} className="text-[#D4AF37]" />
+                            <Sparkles size={13} className="text-accent" />
                             <span>Generate</span>
                           </button>
                         )}
@@ -4615,8 +4617,8 @@ export default function Dashboard() {
                       <button type="button" onClick={() => setCouponImageUrl('')} className="ml-auto rounded-lg border border-gray-300 px-3 py-1.5 text-[11px] font-bold text-gray-700 hover:bg-gray-100 cursor-pointer">Remove</button>
                     </div>
                   ) : (
-                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-[#FAFAFA] px-3.5 py-3 text-xs font-bold text-gray-700 hover:border-[#D4AF37] hover:bg-[#FBFAF6]">
-                      <ImageIcon size={15} className="text-[#B48811]" />
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-[#FAFAFA] px-3.5 py-3 text-xs font-bold text-gray-700 hover:border-accent hover:bg-accent-soft">
+                      <ImageIcon size={15} className="text-accent-dark" />
                       {couponImageBusy ? 'Uploading…' : 'Upload coupon image'}
                       <input type="file" accept="image/*" className="hidden" disabled={couponImageBusy} onChange={e => { void handleCouponImage(e.target.files?.[0]); e.target.value = '' }} />
                     </label>
@@ -4626,9 +4628,9 @@ export default function Dashboard() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] py-3 text-[13px] font-black uppercase tracking-wider shadow-md hover:bg-[#1A1A1A] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full rounded-xl bg-[#0A0A0A] border border-accent text-accent py-3 text-[13px] font-black uppercase tracking-wider shadow-md hover:bg-[#1A1A1A] hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <Ticket size={15} className="text-[#D4AF37]" />
+                    <Ticket size={15} className="text-accent" />
                     <span>{editingCouponId !== null ? l('Update Coupon', 'கூப்பனை புதுப்பி') : l('Create Coupon', 'கூப்பனை உருவாக்கு')}</span>
                   </button>
                 </div>
@@ -4645,7 +4647,7 @@ export default function Dashboard() {
                       {coupons.length}
                     </span>
                   </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#FBFAF6] border border-[#E8D399] text-[#B48811] text-[10px] font-black uppercase tracking-wider">
+                  <span className="px-2.5 py-0.5 rounded-full bg-accent-soft border border-accent-light text-accent-dark text-[10px] font-black uppercase tracking-wider">
                     {l('Admin Only', 'அட்மின் மட்டும்')}
                   </span>
                 </div>
@@ -4660,8 +4662,8 @@ export default function Dashboard() {
                         key={coupon.id}
                         className={`rounded-xl border p-3 sm:p-3.5 shadow-xs transition-all ${
                           isEditing
-                            ? 'border-[#D4AF37] bg-[#FBFAF6] ring-2 ring-[#D4AF37]/30'
-                            : 'border-gray-200 bg-white hover:border-[#D4AF37]/60 hover:shadow-md'
+                            ? 'border-accent bg-accent-soft ring-2 ring-accent/30'
+                            : 'border-gray-200 bg-white hover:border-accent/60 hover:shadow-md'
                         }`}
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -4691,7 +4693,7 @@ export default function Dashboard() {
                               )}
                             </div>
 
-                            <p className="text-[13px] font-black text-[#B48811]">
+                            <p className="text-[13px] font-black text-accent-dark">
                               {coupon.percentage}% OFF
                               {coupon.min_order_value > 0 && ` • min order ₹${coupon.min_order_value}`}
                             </p>
@@ -4725,7 +4727,7 @@ export default function Dashboard() {
                               onClick={() => void toggleCoupon(coupon)}
                               className={`rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-wider transition-all cursor-pointer ${
                                 coupon.is_active
-                                  ? 'bg-[#0A0A0A] text-[#D4AF37] border border-[#D4AF37]/40 hover:bg-[#1A1A1A]'
+                                  ? 'bg-[#0A0A0A] text-accent border border-accent/40 hover:bg-[#1A1A1A]'
                                   : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
                               }`}
                               title={coupon.is_active ? 'Click to deactivate' : 'Click to activate'}
@@ -4734,7 +4736,7 @@ export default function Dashboard() {
                             </button>
                             <button
                               onClick={() => startEditCoupon(coupon)}
-                              className="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:border-[#D4AF37] hover:bg-[#FBFAF6] text-gray-700 hover:text-[#B48811] flex items-center justify-center transition-all cursor-pointer shadow-xs"
+                              className="w-8 h-8 rounded-lg border border-gray-200 bg-white hover:border-accent hover:bg-accent-soft text-gray-700 hover:text-accent-dark flex items-center justify-center transition-all cursor-pointer shadow-xs"
                               title="Edit coupon"
                             >
                               <Edit2 size={13} />
@@ -4753,7 +4755,7 @@ export default function Dashboard() {
                   })}
 
                   {coupons.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-[#E8D399] bg-[#FBFAF6] py-12 text-center text-[13px] font-bold text-[#6B7280]">
+                    <div className="rounded-2xl border border-dashed border-accent-light bg-accent-soft py-12 text-center text-[13px] font-bold text-[#6B7280]">
                       {l('No coupons yet. Create your first coupon!', 'இன்னும் கூப்பன் இல்லை. முதல் கூப்பனை உருவாக்குங்கள்!')}
                     </div>
                   )}
@@ -4830,7 +4832,7 @@ export default function Dashboard() {
             <div className="relative max-w-sm">
               <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#6B7280]" />
               <input
-                className="w-full pl-11 pr-4 py-3 bg-white border border-[#D1D5DB] rounded-xl text-[13px] font-bold text-[#111111] placeholder-[#6B7280] focus:outline-none focus:border-[#D4AF37] transition-colors shadow-sm"
+                className="w-full pl-11 pr-4 py-3 bg-white border border-[#D1D5DB] rounded-xl text-[13px] font-bold text-[#111111] placeholder-[#6B7280] focus:outline-none focus:border-accent transition-colors shadow-sm"
                 placeholder={l('Search by name or email...', 'பெயர் அல்லது மின்னஞ்சலால் தேடுக...')}
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
@@ -4924,6 +4926,10 @@ export default function Dashboard() {
         )}
 
         {/* ── BIRTHDAYS TAB ── */}
+        {tab === 'settings' && role === 'admin' && (
+          <SettingsView />
+        )}
+
         {tab === 'birthdays' && role !== 'staff' && (
           <BirthdayPanel />
         )}
@@ -4968,7 +4974,7 @@ export default function Dashboard() {
                   <button
                     type="button"
                     onClick={() => activeReturn ? openReturnPdf(activeReturn, 'download') : void openOrderInvoice(invoicePreviewOrder, 'download')}
-                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-[#0A0A0A] px-3 text-xs font-black text-white hover:bg-[#D4AF37]"
+                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-[#0A0A0A] px-3 text-xs font-black text-white hover:bg-accent"
                   >
                     <Download size={15} /> Download
                   </button>
@@ -4985,7 +4991,7 @@ export default function Dashboard() {
               {previewReturns.length > 0 && (
                 <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[#E5E7EB]/60 bg-white px-4 py-2 sm:px-6 print:hidden">
                   <button type="button" onClick={() => setInvoiceView('original')}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-black cursor-pointer ${!activeReturn ? 'bg-[#0A0A0A] text-[#D4AF37]' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
+                    className={`rounded-lg px-3 py-1.5 text-xs font-black cursor-pointer ${!activeReturn ? 'bg-[#0A0A0A] text-accent' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                     Original bill
                   </button>
                   {previewReturns.map(r => (

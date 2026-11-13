@@ -61,9 +61,9 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen bg-[#FBFAF6] flex items-center justify-center p-4">
+        <div className="min-h-screen bg-accent-soft flex items-center justify-center p-4">
           <div className="bg-white max-w-lg w-full rounded-3xl border border-gray-200 shadow-2xl p-6 sm:p-8 text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-[#D4AF37] flex items-center justify-center text-[#D4AF37] mx-auto shadow-sm">
+            <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-accent flex items-center justify-center text-accent mx-auto shadow-sm">
               <AlertCircle size={28} />
             </div>
 
@@ -77,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </div>
 
             {this.state.error && (
-              <div className="bg-[#FBFAF6] border border-gray-200 rounded-2xl p-3.5 text-left text-xs font-mono text-gray-700 max-h-32 overflow-y-auto break-words select-all">
+              <div className="bg-accent-soft border border-gray-200 rounded-2xl p-3.5 text-left text-xs font-mono text-gray-700 max-h-32 overflow-y-auto break-words select-all">
                 {this.state.error.message || 'Unknown application error'}
               </div>
             )}
@@ -93,7 +93,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <button
                 type="button"
                 onClick={this.handleReload}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#0A0A0A] border border-[#D4AF37] text-[#D4AF37] text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-[#0A0A0A] border border-accent text-accent text-xs font-black uppercase tracking-wider hover:bg-[#1A1A1A] transition-all shadow-md cursor-pointer"
               >
                 <RefreshCw size={14} />
                 <span>Reload Page</span>
