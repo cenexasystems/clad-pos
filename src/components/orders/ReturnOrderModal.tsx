@@ -34,8 +34,11 @@ export const ReturnOrderModal: React.FC<{
 }> = ({ order, previousReturns, role, adminName, onClose, onCreated }) => {
   const lines = useMemo(() => returnableLines(order.items, previousReturns), [order.items, previousReturns])
   const [qty, setQty] = useState<Record<number, number>>({})
+  // Only the admin decides whether returned items go back into stock. Staff see the choices locked
+  // (nothing is added) until the admin password is entered.
+  const [adminUnlocked, setAdminUnlocked] = useState(role === 'admin')
   const [restock, setRestock] = useState<Record<number, boolean>>(() =>
-    Object.fromEntries(lines.map((l) => [l.line_index, !l.is_manual])),
+    Object.fromEntries(lines.map((l) => [l.line_index, role === 'admin' && !l.is_manual])),
   )
   const [method, setMethod] = useState<'cash' | 'card' | 'qr' | 'split'>('cash')
   const [splitInputs, setSplitInputs] = useState({ cash: '', card: '', qr: '' })
@@ -61,13 +64,20 @@ export const ReturnOrderModal: React.FC<{
   const nothingLeft = lines.every((l) => l.available <= 0)
   const isAdmin = role === 'admin'
 
+  const unlockAdmin = () => {
+    if (!verifyAdminPassword(adminPassword)) return setError('Admin password is not correct.')
+    setError('')
+    setAdminUnlocked(true)
+    setRestock(Object.fromEntries(lines.map((l) => [l.line_index, !l.is_manual])))
+  }
+
   const submit = async () => {
     if (refund.lines.length === 0) return setError('Choose at least one item to return.')
     if (method === 'split' && Math.abs(splitDiff) > 0.004) {
       return setError(splitDiff > 0 ? `Split amounts are short by ${formatCurrency(splitDiff)}` : `Split amounts exceed the refund by ${formatCurrency(-splitDiff)}`)
     }
-    if (isAdmin ? !adminTick : !verifyAdminPassword(adminPassword)) {
-      return setError(isAdmin ? 'Tick the box to confirm this refund as admin.' : 'Admin password is not correct. A refund needs the admin to confirm.')
+    if (isAdmin ? !adminTick : !adminUnlocked) {
+      return setError(isAdmin ? 'Tick the box to confirm this refund as admin.' : 'A refund needs the admin. Enter the admin password and press Verify.')
     }
 
     setSaving(true)
@@ -133,12 +143,12 @@ export const ReturnOrderModal: React.FC<{
                           />
                           <span className="text-[10px] font-semibold text-gray-500">of {l.available}</span>
                         </div>
-                        <label className={`col-span-2 sm:col-span-1 flex items-center gap-2 text-[11px] font-bold ${l.is_manual ? 'text-gray-400' : 'text-gray-800 cursor-pointer'}`}>
+                        <label className={`col-span-2 sm:col-span-1 flex items-center gap-2 text-[11px] font-bold ${l.is_manual || !adminUnlocked ? 'text-gray-400' : 'text-gray-800 cursor-pointer'}`}>
                           <input
-                            type="checkbox" disabled={l.is_manual} checked={Boolean(restock[l.line_index]) && !l.is_manual}
+                            type="checkbox" disabled={l.is_manual || !adminUnlocked} checked={Boolean(restock[l.line_index]) && !l.is_manual}
                             onChange={(e) => setRestock({ ...restock, [l.line_index]: e.target.checked })}
                           />
-                          {l.is_manual ? 'Manual item (no stock)' : 'Add back to stock'}
+                          {l.is_manual ? 'Manual item (no stock)' : adminUnlocked ? 'Add back to stock' : 'Not added (admin decides)'}
                         </label>
                       </>
                     ) : (
@@ -147,7 +157,7 @@ export const ReturnOrderModal: React.FC<{
                   </div>
                 ))}
               </div>
-              <p className="mt-1.5 text-[11px] font-semibold text-gray-500">Leave “Add back to stock” unticked for damaged items that cannot be sold again.</p>
+              <p className="mt-1.5 text-[11px] font-semibold text-gray-500">Only the admin chooses whether returned items go back into stock. Untick “Add back to stock” for damaged items that cannot be sold again.</p>
             </div>
           )}
 
@@ -207,8 +217,18 @@ export const ReturnOrderModal: React.FC<{
               </label>
             ) : (
               <div>
-                <p className="text-[11px] font-semibold text-gray-600 mb-1.5">A refund must be approved by the admin. Ask the admin to enter their password.</p>
-                <input type="password" className={fieldCls} value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} placeholder="Admin password" autoComplete="off" />
+                {adminUnlocked ? (
+                  <p className="text-xs font-black text-emerald-700">Admin verified ✓ The admin can now choose which items go back into stock.</p>
+                ) : (
+                  <>
+                    <p className="text-[11px] font-semibold text-gray-600 mb-1.5">A refund must be approved by the admin. Ask the admin to enter their password; the admin also decides whether the items go back into stock.</p>
+                    <div className="flex gap-2">
+                      <input type="password" className={fieldCls} value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') unlockAdmin() }} placeholder="Admin password" autoComplete="off" />
+                      <button type="button" onClick={unlockAdmin} className="h-10 shrink-0 px-4 rounded-xl bg-[#0A0A0A] text-[#D4AF37] text-xs font-bold cursor-pointer">Verify</button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
