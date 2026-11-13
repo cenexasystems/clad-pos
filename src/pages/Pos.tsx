@@ -31,7 +31,7 @@ import { buildProfessionalWhatsAppMessage, buildAdvanceDepositWhatsAppMessage, p
 import { normalizePhone, toWhatsAppUrl, formatPhone } from '../lib/phone'
 import { lookupCustomerByPhone } from '../services/customerLookupService'
 import { birthdayService } from '../services/birthdayService'
-import { MONTH_NAMES, daysInMonth } from '../lib/birthdays'
+import { formatBirthday } from '../lib/birthdays'
 import { useDebouncedValue } from '../lib/debounce'
 import {
   ADVANCE_PAYMENT_METHODS, PAYMENT_MODES, SPLIT_PARTS, paymentDisplayLabel, paymentModeLabel, splitDifference,
@@ -154,7 +154,8 @@ export default function Pos(props: PosProps = {}) {
   // Number whose saved details were filled in automatically (drives the "returning customer" hint)
   const [autofilledPhone, setAutofilledPhone] = useState('')
   // Optional birthday of the customer: saved with the bill so the Birthdays tab can send them an offer
-  const [birthday, setBirthday] = useState({ day: '', month: '' })
+  const [birthday, setBirthday] = useState('') // yyyy-mm-dd from the date picker
+  const [knownBirthday, setKnownBirthday] = useState('') // birthday already saved without a year, e.g. "11 Nov"
   const [debouncedPhone] = useDebouncedValue(customer.phone, 350)
   const lastLookupRef = useRef('')
   const [remarks, setRemarks] = useState('')
@@ -676,7 +677,12 @@ export default function Pos(props: PosProps = {}) {
       setDepositForm(prev => (prev.address.trim() || !found.address ? prev : { ...prev, address: found.address }))
       if (found.birthday) {
         const known = found.birthday
-        setBirthday(prev => (prev.day || prev.month ? prev : { day: String(known.day), month: String(known.month) }))
+        if (known.year) {
+          const pad = (n: number) => String(n).padStart(2, '0')
+          setBirthday(prev => prev || `${known.year}-${pad(known.month)}-${pad(known.day)}`)
+        } else {
+          setKnownBirthday(formatBirthday({ birth_day: known.day, birth_month: known.month, birth_year: null }))
+        }
       }
       setAutofilledPhone(normalized)
     })
@@ -686,7 +692,8 @@ export default function Pos(props: PosProps = {}) {
     setItems([])
     setCustomer({ name: '', phone: '', address: '' })
     setSplitInputs({ cash: '', card: '', qr: '' })
-    setBirthday({ day: '', month: '' })
+    setBirthday('')
+      setKnownBirthday('')
     setInvoice(null)
     setCashReceived('')
     setCouponInput('')
@@ -918,9 +925,10 @@ export default function Pos(props: PosProps = {}) {
         paymentMethod: paymentMode,
       }
       // remember the birthday for the Birthdays tab (does nothing if it was left blank)
-      if (birthday.day && birthday.month && customer.name.trim()) {
+      const [bYear, bMonth, bDay] = birthday.split('-').map(Number)
+      if (bYear && bMonth && bDay && customer.name.trim()) {
         void birthdayService.saveCustomer({
-          name: customer.name, phone: normalizedPhone, birth_day: Number(birthday.day), birth_month: Number(birthday.month), birth_year: null,
+          name: customer.name, phone: normalizedPhone, birth_day: bDay, birth_month: bMonth, birth_year: bYear,
         })
       }
       setInvoice(createdInvoice)
@@ -928,7 +936,8 @@ export default function Pos(props: PosProps = {}) {
       setItems([])
       setCustomer({ name: '', phone: '', address: '' })
       setSplitInputs({ cash: '', card: '', qr: '' })
-      setBirthday({ day: '', month: '' })
+      setBirthday('')
+      setKnownBirthday('')
       void fetchProducts()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to generate bill')
@@ -1251,24 +1260,16 @@ export default function Pos(props: PosProps = {}) {
               </div>
               <div className="min-w-0">
                 <label className="block text-[11px] md:text-[10px] font-bold text-[#374151] mb-1">Birthday (optional)</label>
-                <div className="grid grid-cols-[1fr_1.6fr] gap-2">
-                  <select
-                    value={birthday.day}
-                    onChange={e => setBirthday({ ...birthday, day: e.target.value })}
-                    className="w-full min-w-0 h-10 px-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs font-semibold text-[#111111]"
-                  >
-                    <option value="">Day</option>
-                    {Array.from({ length: birthday.month ? daysInMonth(Number(birthday.month)) : 31 }, (_, i) => i + 1).map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                  <select
-                    value={birthday.month}
-                    onChange={e => setBirthday({ day: birthday.day && Number(birthday.day) > daysInMonth(Number(e.target.value)) ? '' : birthday.day, month: e.target.value })}
-                    className="w-full min-w-0 h-10 px-2 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs font-semibold text-[#111111]"
-                  >
-                    <option value="">Month</option>
-                    {MONTH_NAMES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-                  </select>
-                </div>
+                <input
+                  type="date"
+                  value={birthday}
+                  max={new Date().toISOString().slice(0, 10)}
+                  onChange={e => setBirthday(e.target.value)}
+                  className="w-full min-w-0 max-w-full box-border h-10 px-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#D4AF37] text-xs font-semibold text-[#111111]"
+                />
+                {knownBirthday && !birthday && (
+                  <p className="mt-1 text-[10px] font-bold text-gray-500">Birthday saved: {knownBirthday} (add the year here to complete it)</p>
+                )}
               </div>
               <div className="min-w-0">
                 <label className="block text-[11px] md:text-[10px] font-bold text-[#374151] mb-1">Remarks (Internal)</label>

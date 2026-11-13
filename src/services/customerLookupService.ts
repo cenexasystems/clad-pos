@@ -5,7 +5,7 @@ export interface KnownCustomer {
   name: string
   address: string
   /** birthday saved for this number, if any */
-  birthday?: { day: number; month: number }
+  birthday?: { day: number; month: number; year: number | null }
 }
 
 const PLACEHOLDER_NAMES = /^(walk-in customer|customer)$/i
@@ -32,7 +32,7 @@ export async function lookupCustomerByPhone(rawPhone: string): Promise<KnownCust
         .ilike('phone', pattern)
         .order('created_at', { ascending: false })
         .limit(25),
-      supabase.from('customer_birthdays').select('name, birth_day, birth_month').eq('phone', phone).maybeSingle(),
+      supabase.from('customer_birthdays').select('name, birth_day, birth_month, birth_year').eq('phone', phone).maybeSingle(),
     ])
 
     let name = ''
@@ -46,12 +46,13 @@ export async function lookupCustomerByPhone(rawPhone: string): Promise<KnownCust
       if (name && address) break
     }
     // birthday table may not exist yet (migration not run): ignore its error and use the bill data
-    const birthdayRow = birthdayResult.data as { name?: string; birth_day?: number; birth_month?: number } | null
+    const birthdayRow = birthdayResult.data as { name?: string; birth_day?: number; birth_month?: number; birth_year?: number | null } | null
     if (!name && birthdayRow?.name) name = String(birthdayRow.name).trim()
 
     const day = Number(birthdayRow?.birth_day)
     const month = Number(birthdayRow?.birth_month)
-    const birthday = day >= 1 && month >= 1 ? { day, month } : undefined
+    const year = Number(birthdayRow?.birth_year)
+    const birthday = day >= 1 && month >= 1 ? { day, month, year: year >= 1900 ? year : null } : undefined
     return name || address || birthday ? { name, address, ...(birthday ? { birthday } : {}) } : null
   } catch {
     return null
