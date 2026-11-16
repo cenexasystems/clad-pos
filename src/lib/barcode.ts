@@ -2,8 +2,20 @@ import JsBarcode from 'jsbarcode'
 import { isSupabaseConfigured, supabase } from './supabase'
 
 export const normalizeBarcode = (code: string | null | undefined): string => {
-  return (code || '').trim().toUpperCase()
+  if (code === null || code === undefined) return ''
+
+  const clean = String(code)
+    .trim()
+    // eslint-disable-next-line no-control-regex -- scanners add Enter / Tab and other control codes, which must go
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/[^A-Z0-9_-]/gi, '')
+    .toUpperCase()
+
+  return clean
 }
+
+/** Keep newly generated item codes in the existing CLAD + 7 digit format. */
+export const generateItemCode = (): string => `CLAD${Math.floor(1000000 + Math.random() * 9000000)}`
 
 export interface LabelSizeConfig {
   id: string
@@ -95,6 +107,7 @@ export function getStoredBarcodeSettings(): BarcodeSettings {
   }
   return DEFAULT_BARCODE_SETTINGS
 }
+
 
 export function saveStoredBarcodeSettings(settings: BarcodeSettings): void {
   try {
@@ -277,6 +290,8 @@ export interface BarcodeRenderOptions {
   font?: string
   textMargin?: number
   margin?: number
+  marginLeft?: number
+  marginRight?: number
   /** Extra space under the human-readable text so it is not clipped */
   marginBottom?: number
   lineColor?: string
@@ -303,6 +318,8 @@ export function renderBarcodeSvg(
       font: options?.font ?? 'monospace',
       textMargin: options?.textMargin ?? 1,
       margin: options?.margin ?? 4,
+      ...(options?.marginLeft !== undefined ? { marginLeft: options.marginLeft } : {}),
+      ...(options?.marginRight !== undefined ? { marginRight: options.marginRight } : {}),
       ...(options?.marginBottom !== undefined ? { marginBottom: options.marginBottom } : {}),
       lineColor: options?.lineColor ?? '#000000',
       background: options?.background ?? '#ffffff',
@@ -411,6 +428,19 @@ export function generateThermalBarcodeSvg(value: string, availableWidthMm: numbe
   }
 }
 
+export function getBarcodeModuleWidth(value: string, availableWidthMm: number, options?: BarcodeRenderOptions): number | null {
+  if (!value.trim() || !Number.isFinite(availableWidthMm) || availableWidthMm <= 0) return null
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  renderBarcodeSvg(svg, value, { ...options, width: 1 })
+
+  const naturalWidth = Number.parseFloat(svg.getAttribute('width') || '')
+  if (!Number.isFinite(naturalWidth) || naturalWidth <= 0) return null
+
+  const moduleWidth = (availableWidthMm * 96 / 25.4) / naturalWidth
+  return moduleWidth >= 0.95 ? moduleWidth : null
+}
+
 /**
  * Format barcode for UI display.
  */
@@ -423,7 +453,7 @@ export function formatBarcodeDisplay(value?: string | null): string {
  * Validate barcode format (alphanumeric, 4 to 32 chars).
  */
 export function isValidBarcodeValue(value: string): boolean {
-  return /^[A-Z0-9_-]{4,32}$/i.test(value.trim())
+  return /^[A-Z0-9_-]{4,32}$/i.test(String(value ?? '').trim())
 }
 
 /**

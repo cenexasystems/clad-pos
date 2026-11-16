@@ -3,14 +3,121 @@
 -- Run this ONCE in the MAIN (production) Supabase: Dashboard > SQL Editor > New query > paste > Run.
 -- Every part is safe to run twice. Production already has migrations 0001-0027.
 --
---   0028  Birthdays tab: customer birthdays, offers, message template
---   0029  Coupons on WhatsApp: coupon image + send log
---   0030  Edit bills in Order History (stock stays correct)
---   0031  product-images storage bucket (product + coupon pictures)
---   0032  Blank remarks / reference number no longer break a sale
---   0033  Returns and refunds, return invoices
---   0034  Settings page: shop profile, theme colour, passwords
+--   261102-0028  Barcode codes part 1 (other developer): 8-digit item codes. Part 2 replaces it, so it is safe even if already applied
+--   261102-0029  Barcode codes part 2 (other developer): generated item codes are CLAD + 7 digits
+--   261111-0028  Birthdays tab: customer birthdays, offers, message template
+--   261111-0029  Coupons on WhatsApp: coupon image + send log
+--   261112-0030  Edit bills in Order History (stock stays correct)
+--   261113-0031  product-images storage bucket (product + coupon pictures)
+--   261113-0032  Blank remarks / reference number no longer break a sale
+--   261114-0033  Returns and refunds, return invoices
+--   261115-0034  Settings page: shop profile, theme colour, passwords
 -- ====================================================================
+
+-- >>>>>>>>>> 20261102_0028_clad_barcode_format.sql <<<<<<<<<<
+
+-- Keep automatically generated barcodes in the same 8-digit format as labels.
+
+BEGIN;
+
+CREATE SEQUENCE IF NOT EXISTS public.barcode_item_code_seq
+  START WITH 10000000
+  MINVALUE 10000000
+  MAXVALUE 99999999
+  NO CYCLE;
+
+CREATE OR REPLACE FUNCTION public.generate_barcode_value(p_entity_type TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_barcode_value TEXT;
+BEGIN
+  LOOP
+    v_barcode_value := nextval('public.barcode_item_code_seq')::TEXT;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.barcode_registry
+      WHERE UPPER(barcode_value) = v_barcode_value
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM public.products
+      WHERE UPPER(barcode) = v_barcode_value
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM public.product_variants
+      WHERE UPPER(barcode) = v_barcode_value
+    ) THEN
+      RETURN v_barcode_value;
+    END IF;
+  END LOOP;
+END;
+$$;
+
+COMMIT;
+
+-- >>>>>>>>>> 20261102_0029_clad_item_code_format.sql <<<<<<<<<<
+
+-- Keep database-generated barcodes in the same CLAD + 7 digit format as labels.
+
+BEGIN;
+
+CREATE SEQUENCE IF NOT EXISTS public.barcode_clad_seq
+  START WITH 1000000
+  MINVALUE 1000000
+  MAXVALUE 9999999
+  NO CYCLE;
+
+WITH existing_codes AS (
+  SELECT barcode_value AS barcode FROM public.barcode_registry
+  UNION ALL
+  SELECT barcode FROM public.products WHERE barcode IS NOT NULL
+  UNION ALL
+  SELECT barcode FROM public.product_variants WHERE barcode IS NOT NULL
+),
+latest AS (
+  SELECT MAX(SUBSTRING(barcode FROM 5)::BIGINT) AS max_code
+  FROM existing_codes
+  WHERE barcode ~* '^CLAD[0-9]{7}$'
+)
+SELECT setval(
+  'public.barcode_clad_seq',
+  COALESCE(max_code, 1000000),
+  max_code IS NOT NULL
+)
+FROM latest;
+
+CREATE OR REPLACE FUNCTION public.generate_barcode_value(p_entity_type TEXT)
+RETURNS TEXT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_barcode_value TEXT;
+BEGIN
+  LOOP
+    v_barcode_value := 'CLAD' || nextval('public.barcode_clad_seq')::TEXT;
+
+    IF NOT EXISTS (
+      SELECT 1
+      FROM public.barcode_registry
+      WHERE UPPER(barcode_value) = v_barcode_value
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM public.products
+      WHERE UPPER(barcode) = v_barcode_value
+    ) AND NOT EXISTS (
+      SELECT 1
+      FROM public.product_variants
+      WHERE UPPER(barcode) = v_barcode_value
+    ) THEN
+      RETURN v_barcode_value;
+    END IF;
+  END LOOP;
+END;
+$$;
+
+COMMIT;
 
 -- >>>>>>>>>> 20261111_0028_customer_birthdays.sql <<<<<<<<<<
 

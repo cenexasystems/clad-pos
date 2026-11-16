@@ -25,7 +25,9 @@ import {
   generateBarcodeSvgString,
   generateThermalBarcodeSvg,
   thermalBarcodeWidthMm,
+  getBarcodeModuleWidth,
   normalizeBarcode,
+  generateItemCode,
 } from '../../lib/barcode'
 import { BRAND_EN } from '../../lib/brand'
 import { barcodeService } from '../../services/barcodeService'
@@ -33,6 +35,7 @@ import { fetchVariantsByProduct, type ProductVariant } from '../../services/vari
 import { useVisualViewportHeight } from '../../hooks/useVisualViewportHeight'
 import { BarcodeSettingsDrawer } from './BarcodeSettingsDrawer'
 import { BarcodeSheetPreviewModal } from './BarcodeSheetPreviewModal'
+import { StickerFooter } from './StickerFooter'
 import { useProductStore } from '../../store/store'
 import { lockScroll, unlockScroll } from '../../lib/scrollLock'
 
@@ -147,7 +150,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     setDropdownOpen(false)
 
     // Set default item code (product barcode or generate new code)
-    const code = prod.barcode || `CLAD${Math.floor(1000000 + Math.random() * 9000000)}`
+    const code = prod.barcode || generateItemCode()
     setItemCode(code)
     setLine1(prod.name)
     setLine2(prod.category || '')
@@ -200,7 +203,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
 
   // Update live preview SVG with dynamic dimension calculations
   useEffect(() => {
-    const codeToRender = (itemCode && itemCode.trim()) || 'CLAD0000000'
+    const codeToRender = (itemCode && itemCode.trim()) || '00000000'
 
     // Proportional preview dimensions: fit comfortably within preview box
     const previewScale = Math.min(230 / currentSizeConfig.widthMm, 150 / currentSizeConfig.heightMm)
@@ -253,7 +256,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
   }
 
   const handleAssignCode = () => {
-    const generated = 'CLAD' + Math.floor(1000000 + Math.random() * 9000000)
+    const generated = generateItemCode()
     setItemCode(generated)
   }
 
@@ -395,6 +398,43 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     const selectedItems = queue.filter((it) => it.selected)
     if (selectedItems.length === 0) return
 
+    const isThermal = settings.printerType === 'label'
+    const isSmall = currentSizeConfig.heightMm <= 25
+    const barcodeHeightPx = Math.max(16, Math.round(currentSizeConfig.heightMm * 0.32 * 3.7795))
+    const barcodeFontSize = Math.max(6, Math.min(9.5, Math.round(currentSizeConfig.heightMm * 0.20 * 10) / 10))
+    const barcodeAvailableWidthMm = (currentSizeConfig.widthMm - (isSmall ? 4 : 3.2)) * 0.97
+    const barcodeWidths = new Map<string, number>()
+    if (!isThermal) {
+      for (const item of selectedItems) {
+        const moduleWidth = getBarcodeModuleWidth(item.barcodeValue, barcodeAvailableWidthMm, {
+          height: barcodeHeightPx,
+          fontSize: barcodeFontSize,
+          font: 'Arial, sans-serif',
+          margin: 0,
+          marginLeft: 10,
+          marginRight: 10,
+          textMargin: 1.5,
+          displayValue: true,
+        })
+        if (moduleWidth === null) {
+          alert(`Barcode "${item.barcodeValue}" is too dense for the selected sticker size. Choose a wider label or use a shorter barcode.`)
+          return
+        }
+        barcodeWidths.set(item.barcodeValue, moduleWidth)
+      }
+    }
+    const thermalBarcodes = new Map<string, string>()
+    if (isThermal) {
+      for (const item of selectedItems) {
+        const svg = generateThermalBarcodeSvg(item.barcodeValue, thermalBarcodeWidthMm(currentSizeConfig.widthMm))
+        if (!svg) {
+          alert(`Barcode "${item.barcodeValue}" is too long for the selected sticker size. Choose a wider label or use a shorter barcode.`)
+          return
+        }
+        thermalBarcodes.set(item.barcodeValue, svg)
+      }
+    }
+
     try {
       // Build printable HTML sheet for thermal / regular printer
       const iframe = document.createElement('iframe')
@@ -413,18 +453,9 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
         return
       }
 
-    const isThermal = settings.printerType === 'label'
-    const isSmall = currentSizeConfig.heightMm <= 25
     const isLarge = currentSizeConfig.heightMm >= 40
 
-    // Proportional barcode sizing preventing detail overlaps
-    const barcodeHeightPx = Math.max(16, Math.round(currentSizeConfig.heightMm * 0.32 * 3.7795))
-    const printableWidthPx = Math.max(30, (currentSizeConfig.widthMm - 4) * 3.7795)
-    const barcodeBarWidth = Math.max(0.80, Math.min(1.70, Math.round((printableWidthPx / 120) * 100) / 100))
-    const barcodeFontSize = Math.max(6, Math.min(9.5, Math.round(currentSizeConfig.heightMm * 0.20 * 10) / 10))
-
     const headerFontSize = isSmall ? '7pt' : isLarge ? '10.5pt' : '8.5pt'
-    const titleFontSize = isSmall ? '6pt' : isLarge ? '9pt' : '7.5pt'
     const tagFontSize = isSmall ? '5.5pt' : isLarge ? '8.5pt' : '7pt'
     const priceFontSize = isSmall ? '8pt' : isLarge ? '12pt' : '9.5pt'
     const stickerPadding = isThermal
@@ -437,27 +468,28 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
     selectedItems.forEach((item) => {
       const count = Math.max(1, item.noOfLabels)
       const fullTitle = `${item.productName}${item.variantName ? ` (${item.variantName})` : ''}`
-      const svgMarkup = generateBarcodeSvgString(item.barcodeValue, {
-        width: barcodeBarWidth,
+      const svgMarkup = isThermal ? '' : generateBarcodeSvgString(item.barcodeValue, {
+        width: barcodeWidths.get(item.barcodeValue) ?? undefined,
         height: barcodeHeightPx,
         fontSize: barcodeFontSize,
         font: 'Arial, sans-serif',
         margin: 0,
+        marginLeft: 10,
+        marginRight: 10,
         marginBottom: 2,
         textMargin: 1.5,
         displayValue: true,
       })
-      const thermalSvg = isThermal ? generateThermalBarcodeSvg(item.barcodeValue, thermalBarcodeWidthMm(currentSizeConfig.widthMm)) : ''
+      const thermalSvg = thermalBarcodes.get(item.barcodeValue) || ''
       for (let i = 0; i < count; i++) {
         allStickers.push(`
           <div class="label-sticker">
             ${settings.showCompanyName ? `<div class="header">${item.header || BRAND_EN}</div>` : ''}
-            ${settings.showItemName ? `<div class="prod-title">${fullTitle}</div>` : ''}
             ${isThermal
               ? `<div class="barcode-box thermal" style="width:${thermalBarcodeWidthMm(currentSizeConfig.widthMm)}mm;max-width:none;margin-left:0;margin-right:0;flex-shrink:0">${thermalSvg}<div class="bc-text">${item.barcodeValue}</div></div>`
               : `<div class="barcode-box">${svgMarkup}</div>`}
             <div class="footer">
-              <span>${item.line2 ? `<span class="tag">${item.line2}</span>` : '<span class="tag">CLAD RETAIL</span>'}</span>
+              <span class="product-name">${settings.showItemName ? fullTitle : item.line2 || ''}</span>
               ${settings.showSalePrice ? `<span class="price">₹${item.price}</span>` : ''}
             </div>
           </div>
@@ -566,6 +598,13 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               column-gap: ${gapMm}mm;
               row-gap: ${currentSizeConfig.horizontalGapMm || gapMm}mm;
             }
+            .a4-container .label-sticker:nth-child(${labelsPerRow}n + 1) > * {
+              position: relative;
+              left: 1.5mm;
+            }
+            .a4-container .label-sticker:nth-child(${labelsPerRow}n + 1) .barcode-box {
+              overflow: visible;
+            }
             .label-sticker {
               width: ${currentSizeConfig.widthMm}mm !important;
               height: ${currentSizeConfig.heightMm}mm !important;
@@ -593,17 +632,6 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               color: #000;
               flex-shrink: 0;
             }
-            .prod-title {
-              font-size: ${titleFontSize};
-              font-weight: 800;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 98%;
-              margin-top: 0.3mm;
-              color: #000;
-              line-height: 1.1;
-            }
             .barcode-box {
               width: 100%;
               flex: 1;
@@ -630,10 +658,21 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               display: flex;
               justify-content: space-between;
               align-items: center;
+              gap: 1mm;
               border-top: 0.6pt solid #000;
               padding-top: 0.5mm;
+              ${isThermal ? "padding-left: 1mm; padding-right: 1mm;" : ""}
               line-height: 1;
               flex-shrink: 0;
+              font-size: ${tagFontSize};
+            }
+            .product-name {
+              flex: 1;
+              min-width: 0;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              text-align: left;
               font-size: ${tagFontSize};
             }
             .tag {
@@ -646,7 +685,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
               font-weight: 900;
               color: #000;
             }
-            .header *, .prod-title, .bc-text, .footer *, .price, .mrp, .retail-tag { font-weight: 900 !important; -webkit-text-stroke: 0.25pt #000; color: #000 !important; }
+            .header *, .product-name, .bc-text, .footer *, .price, .mrp, .retail-tag { font-weight: 900 !important; -webkit-text-stroke: 0.25pt #000; color: #000 !important; }
           </style>
         </head>
         <body data-gramm="false">
@@ -935,7 +974,7 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
                               productName: selectedProduct.name,
                               variantId: v.id,
                               variantName: v.variantName,
-                              barcodeValue: `CLAD${Math.floor(1000000 + Math.random() * 9000000)}`,
+                              barcodeValue: generateItemCode(),
                               price: v.price || selectedProduct.price,
                               costPrice: selectedProduct.cost_price || 0,
                               noOfLabels: parseInt(noOfLabels, 10) || 1,
@@ -1121,48 +1160,21 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
                             className="font-mono font-bold text-gray-800 tracking-wider leading-none"
                             style={{ fontSize: `${Math.max(7.5, Math.round(previewHeightPx * 0.075))}px` }}
                           >
-                            {itemCode || 'CLAD0000000'}
+                            {itemCode || '00000000'}
                           </span>
 
-                          {/* Product Title */}
-                          {settings.showItemName && (
-                            <span
-                              className="font-bold text-gray-800 truncate max-w-full leading-tight"
-                              style={{ fontSize: `${Math.max(7.5, Math.round(previewHeightPx * 0.075))}px` }}
-                            >
-                              {line1 || selectedProduct?.name || 'Item Name'}
-                            </span>
-                          )}
-
-                          {/* Variant / Category */}
-                          {line2 && (
-                            <span
-                              className="font-semibold text-gray-600 truncate max-w-full leading-tight"
-                              style={{ fontSize: `${Math.max(7, Math.round(previewHeightPx * 0.07))}px` }}
-                            >
-                              {line2}
-                            </span>
-                          )}
-
-                          {/* Price */}
-                          {settings.showSalePrice && (
-                            <span
-                              className="font-black text-black truncate max-w-full leading-none"
-                              style={{ fontSize: `${Math.max(8.5, Math.round(previewHeightPx * 0.095))}px` }}
-                            >
-                              {line3 || (settings.showDiscount ? 'Discount: 0%' : 'Price: ₹0')}
-                            </span>
-                          )}
-
-                          {/* Extra line */}
-                          {line4 && (
-                            <span
-                              className="text-gray-500 truncate max-w-full leading-none"
-                              style={{ fontSize: `${Math.max(6.5, Math.round(previewHeightPx * 0.065))}px` }}
-                            >
-                              {line4}
-                            </span>
-                          )}
+                          {/* Footer: same as the printed sticker (rule, name left, price right) */}
+                          <StickerFooter
+                            name={
+                              settings.showItemName
+                                ? (selectedProduct
+                                    ? `${selectedProduct.name}${selectedVariant ? ` (${selectedVariant.variantName})` : ''}`
+                                    : 'Item Name')
+                                : line2
+                            }
+                            price={settings.showSalePrice ? (selectedVariant?.price || selectedProduct?.price || 0) : null}
+                            heightPx={previewHeightPx}
+                          />
                         </div>
                       )
                     })()}
@@ -1434,6 +1446,9 @@ export const CreateBarcodeModal: React.FC<CreateBarcodeModalProps> = ({
           onClose={() => setShowSheetPreviewModal(false)}
           items={queue}
           sizeConfig={currentSizeConfig}
+          showCompanyName={settings.showCompanyName}
+          showItemName={settings.showItemName}
+          showSalePrice={settings.showSalePrice}
           onPrint={printQueueDirectly}
         />
       )}
