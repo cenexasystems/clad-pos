@@ -81,7 +81,7 @@ export function useHardwareBarcodeScanner({
 
       // Printable single character
       if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
-        if (diff > 45) {
+        if (diff > 80) {
           // Slow typing cadence (human typing): reset buffer
           bufferRef.current = {
             code: e.key,
@@ -89,7 +89,7 @@ export function useHardwareBarcodeScanner({
             targetInput: isInputField ? (target as HTMLInputElement | HTMLTextAreaElement) : null,
           }
         } else {
-          // Rapid typing cadence (< 45ms): hardware barcode burst
+          // Rapid typing cadence (< 80ms): hardware barcode burst
           bufferRef.current.code += e.key
           bufferRef.current.lastTime = now
           if (isInputField) {
