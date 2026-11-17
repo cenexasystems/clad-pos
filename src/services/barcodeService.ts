@@ -83,6 +83,13 @@ export const barcodeService = {
   async lookupBarcode(barcodeValue: string): Promise<BarcodeRegistryRecord | null> {
     const cleanValue = normalizeBarcode(barcodeValue)
     if (!cleanValue) return null
+    const found = await this.lookupExact(cleanValue)
+    // Small roll labels carry only the 7 digits of a CLAD code in the bars
+    if (!found && /^\d{7,8}$/.test(cleanValue)) return this.lookupExact(`CLAD${cleanValue}`)
+    return found
+  },
+
+  async lookupExact(cleanValue: string): Promise<BarcodeRegistryRecord | null> {
 
     // Case-insensitive exact match: escape "_" so ILIKE doesn't treat it as a wildcard
     const pattern = cleanValue.replace(/[\\%_]/g, '\\$&')

@@ -373,14 +373,30 @@ const THERMAL_DOT_MAPS: number[][] = [
 export const thermalBarcodeWidthMm = (labelWidthMm: number): number => labelWidthMm - 3.4
 
 /**
+ * What to encode in the bars on a roll label. A CLAD + 7 digit code needs 134 modules (268 dots at the
+ * ideal 2 dots per module = 33.9 mm), which does not fit a 33 / 35 mm roll label: the bars would have to be
+ * squeezed to uneven widths that laser scanners reject. On those labels only the 7 digits are encoded
+ * (90 modules, exact bar widths); the full CLAD code is still printed as text, and billing accepts both.
+ */
+export function thermalBarcodeData(value: string, availableWidthMm: number): string {
+  const m = /^CLAD(\d{7,8})$/.exec(value || '')
+  if (!m || typeof document === 'undefined') return value
+  const src = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  renderBarcodeSvg(src, value, { width: 1, height: 100, displayValue: false, margin: 0 })
+  const modules = Number((src.getAttribute('viewBox') || '').split(' ')[2]) || 0
+  return modules * 2 > Math.floor(availableWidthMm / PRINTER_DOT_MM) ? m[1] : value
+}
+
+/**
  * Barcode bars for roll (thermal) labels. Every bar and gap is drawn as a whole
  * number of printer dots, so the printer never has to round bars to uneven
  * widths (the main reason thermal barcodes fail to scan). Returns an SVG that
  * stretches to its container's height. No text: the number is printed as HTML.
  */
-export function generateThermalBarcodeSvg(value: string, availableWidthMm: number): string {
-  if (typeof document === 'undefined' || !value) return ''
+export function generateThermalBarcodeSvg(fullValue: string, availableWidthMm: number): string {
+  if (typeof document === 'undefined' || !fullValue) return ''
   try {
+    const value = thermalBarcodeData(fullValue, availableWidthMm)
     const src = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     renderBarcodeSvg(src, value, { width: 1, height: 100, displayValue: false, margin: 0 })
     const modules = Number((src.getAttribute('viewBox') || '').split(' ')[2]) || 0
