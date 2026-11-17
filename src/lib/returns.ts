@@ -43,6 +43,13 @@ export interface OrderReturn {
   reason: string
   confirmed_by: string
   created_at: string
+  /** exchanges only: the new bill that replaced the returned items */
+  exchange_order_id: string | null
+  exchange_invoice_no: string
+  /** value of the new bill */
+  exchange_total: number
+  /** value of the returned items used as credit against the new bill */
+  credit_applied: number
 }
 
 export interface ReturnableLine {
@@ -156,11 +163,33 @@ export const computeRefund = (bill: BillForReturn, picks: ReturnPick[]) => {
   }
 }
 
-/** "Cash", "GPay", or "Split (Cash ₹500 + Card ₹300)" */
-export const refundMethodText = (ret: Pick<OrderReturn, 'refund_method' | 'refund_split'>): string =>
-  ret.refund_method === 'split'
-    ? `Split (${splitSummary({ cash: 0, card: 0, qr: 0, ...ret.refund_split } as SplitAmounts)})`
-    : paymentModeLabel(ret.refund_method)
+export const isExchange = (ret: Pick<OrderReturn, 'exchange_order_id' | 'exchange_total'>): boolean =>
+  Boolean(ret.exchange_order_id) || ret.exchange_total > 0
+
+/** "Cash", "GPay", "Split (Cash ₹500 + Card ₹300)", "Exchange credit ₹800 + Cash ₹200" */
+export const refundMethodText = (ret: Pick<OrderReturn, 'refund_method' | 'refund_split'>): string => {
+  const split = (ret.refund_split || {}) as Record<string, number>
+  const credit = Number(split.exchange) || 0
+  const money = splitSummary({ cash: 0, card: 0, qr: 0, ...split } as SplitAmounts)
+  if (ret.refund_method === 'exchange') return 'Exchange credit (adjusted against the new bill)'
+  if (ret.refund_method === 'split') {
+    return credit > 0 ? `Exchange credit ₹${credit} + ${money}` : `Split (${money})`
+  }
+  return paymentModeLabel(ret.refund_method)
+}
+
+/**
+ * Exchange settlement: the returned items' value (refund) is credit against the new bill.
+ * The customer pays any extra; the shop pays back any surplus; equal value changes no money.
+ */
+export const exchangeSettlement = (refundTotal: number, newTotal: number) => {
+  const applied = Math.min(refundTotal, newTotal)
+  return {
+    applied: r2(applied),
+    pay: r2(Math.max(0, newTotal - applied)),
+    back: r2(Math.max(0, refundTotal - applied)),
+  }
+}
 
 /** order id -> total refunded on it */
 export const refundedByOrder = (returns: OrderReturn[]): Record<string, number> => {

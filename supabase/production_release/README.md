@@ -21,6 +21,7 @@ Run these files, in this order, the same way:
 | 261113-0032 | `20261113_0032_orders_optional_remarks.sql` | Blank remarks / reference number no longer break a sale |
 | 261114-0033 | `20261114_0033_order_returns.sql` | Returns and refunds, return invoices |
 | 261115-0034 | `20261115_0034_shop_settings.sql` | Settings page: shop profile, theme colour, passwords |
+| 261116-0035 | `20261116_0035_order_exchange.sql` | Exchange: credit note + new bill in one step |
 
 ## Notes
 - Production must already have migrations 0001 to 0027 (the files in `../migrations`).

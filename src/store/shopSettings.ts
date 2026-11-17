@@ -99,6 +99,8 @@ export function initShopSettings(): void {
     applyBrandSettings(cached)
     applyAccentToDocument(cached.accent_color)
     useShopSettingsStore.setState({ settings: cached })
+  } else {
+    applyAccentToDocument(DEFAULT_ACCENT) // first visit: make sure every colour variable has a value
   }
   void useShopSettingsStore.getState().load()
 }

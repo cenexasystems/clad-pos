@@ -21,7 +21,7 @@ export const SPLIT_PARTS: { id: SplitPart; label: string }[] = [
 ]
 
 export const paymentModeLabel = (mode: string): string =>
-  PAYMENT_MODES.find((m) => m.id === mode)?.label ?? mode
+  mode === 'exchange' ? 'Exchange credit' : (PAYMENT_MODES.find((m) => m.id === mode)?.label ?? mode)
 
 const money = (n: number) => `₹${Number.isInteger(n) ? n : n.toFixed(2)}`
 
@@ -54,11 +54,32 @@ export const advanceMethodLabel = (method?: string | null): string => {
 }
 
 /** Which analytics box a stored payment mode belongs to. Online / request orders and unknown values are 'other'. */
-export const paymentBucket = (raw?: string | null): 'cash' | 'card' | 'qr' | 'split' | 'other' => {
+export const paymentBucket = (raw?: string | null): 'cash' | 'card' | 'qr' | 'split' | 'exchange' | 'other' => {
   const v = (raw || '').toLowerCase()
+  if (v === 'exchange') return 'exchange'
   if (v.includes('split')) return 'split'
   if (v === 'qr' || v.includes('gpay') || v.includes('upi')) return 'qr'
   if (v.includes('card')) return 'card'
   if (v.includes('cash')) return 'cash'
   return 'other'
+}
+
+/**
+ * What to print as the payment on a bill: "Cash", "Split (Cash ₹500 + Card ₹300)",
+ * "Exchange credit ₹800" or "Exchange credit ₹800 + Cash ₹200". Splits that don't carry amounts keep their mode name.
+ */
+export const orderPaymentLabel = (mode: string, split?: Record<string, unknown> | null): string => {
+  const raw = (mode || '').trim()
+  if (!raw) return ''
+  const key = raw.toLowerCase()
+  if (key !== 'split' && key !== 'exchange') return paymentModeLabel(key) === key ? raw : paymentModeLabel(key)
+  const num = (v: unknown) => Number(v) || 0
+  const parts = [
+    ['Exchange credit', num(split?.exchange)],
+    ['Cash', num(split?.cash)],
+    ['Card', num(split?.card)],
+    ['GPay', num(split?.qr)],
+  ].filter((p) => (p[1] as number) > 0).map((p) => `${p[0]} ${money(p[1] as number)}`)
+  if (key === 'exchange') return parts.length ? parts.join(' + ') : 'Exchange credit'
+  return parts.length ? `Split (${parts.join(' + ')})` : 'Split'
 }

@@ -28,8 +28,8 @@ import {
   formatInvoiceNo,
 } from '../lib/retail'
 import { buildProfessionalWhatsAppMessage, buildAdvanceDepositWhatsAppMessage, publicInvoiceUrl } from '../lib/whatsappMessage'
-import { normalizePhone, toWhatsAppUrl, formatPhone } from '../lib/phone'
-import { lookupCustomerByPhone } from '../services/customerLookupService'
+import { normalizePhone, toWhatsAppUrl, formatPhone, getSubscriberDigits } from '../lib/phone'
+import { lookupCustomerByPhone, searchCustomers, type CustomerSuggestion } from '../services/customerLookupService'
 import { birthdayService } from '../services/birthdayService'
 import { formatBirthday } from '../lib/birthdays'
 import { useDebouncedValue } from '../lib/debounce'
@@ -158,6 +158,10 @@ export default function Pos(props: PosProps = {}) {
   const [knownBirthday, setKnownBirthday] = useState('') // birthday already saved without a year, e.g. "11 Nov"
   const [debouncedPhone] = useDebouncedValue(customer.phone, 350)
   const lastLookupRef = useRef('')
+  // Suggestions while typing a name (3+ letters) or any 4+ digits of a number
+  const [suggestField, setSuggestField] = useState<'name' | 'phone' | null>(null)
+  const [suggestions, setSuggestions] = useState<CustomerSuggestion[]>([])
+  const suggestTimer = useRef<number | null>(null)
   const [remarks, setRemarks] = useState('')
   const [referenceNumber, setReferenceNumber] = useState('')
   const [billingDate, setBillingDate] = useState('') // '' = use current date/time
@@ -652,6 +656,52 @@ export default function Pos(props: PosProps = {}) {
     updateItem(item.id, 'basePrice', parsedPrice)
     handleClosePriceEdit()
   }
+
+  // Suggest matching customers as the cashier types (wait a moment so we don't search on every key)
+  const runSuggest = (field: 'name' | 'phone', text: string) => {
+    if (suggestTimer.current) window.clearTimeout(suggestTimer.current)
+    setSuggestField(field)
+    const digits = text.replace(/\D/g, '')
+    // a full valid number is handled by the autofill below, so only suggest while it is still incomplete
+    if (field === 'phone' && normalizePhone(text)) return setSuggestions([])
+    if (field === 'phone' ? digits.length < 4 : text.trim().length < 3) return setSuggestions([])
+    suggestTimer.current = window.setTimeout(() => {
+      void searchCustomers(text).then(list => setSuggestions(list))
+    }, 250)
+  }
+
+  const pickSuggestion = (c: CustomerSuggestion) => {
+    setSuggestions([])
+    setSuggestField(null)
+    const phoneText = getSubscriberDigits(c.phone) || c.phone
+    setCustomer(prev => ({ ...prev, name: c.name || prev.name, phone: phoneText, address: c.address || prev.address }))
+    setAutofilledPhone(c.phone)
+    lastLookupRef.current = c.phone
+    if (c.birthday) {
+      const pad = (n: number) => String(n).padStart(2, '0')
+      if (c.birthday.year) setBirthday(`${c.birthday.year}-${pad(c.birthday.month)}-${pad(c.birthday.day)}`)
+      else setKnownBirthday(formatBirthday({ birth_day: c.birthday.day, birth_month: c.birthday.month, birth_year: null }))
+    }
+  }
+
+  const suggestionList = (field: 'name' | 'phone') =>
+    suggestField === field && suggestions.length > 0 ? (
+      <div className="absolute z-30 left-0 right-0 top-full mt-1 rounded-xl border border-gray-200 bg-white shadow-xl max-h-64 overflow-y-auto">
+        <p className="px-3 pt-2 pb-1 text-[10px] font-black uppercase tracking-wider text-gray-400">Pick a customer</p>
+        {suggestions.map(c => (
+          <button
+            key={c.phone}
+            type="button"
+            onMouseDown={e => { e.preventDefault(); pickSuggestion(c) }}
+            className="w-full text-left px-3 py-2 border-t border-gray-100 hover:bg-accent-soft cursor-pointer"
+          >
+            <span className="block text-xs font-black text-[#0A0A0A] truncate">{c.name || 'Customer'}</span>
+            <span className="block text-[11px] font-semibold text-gray-600">{formatPhone(c.phone)}</span>
+            {c.address && <span className="block text-[10px] font-medium text-gray-400 truncate">{c.address}</span>}
+          </button>
+        ))}
+      </div>
+    ) : null
 
   // Fill in name / address from the customer's earlier bills once a full mobile number is typed.
   // Anything the cashier already typed is kept.
@@ -1235,25 +1285,33 @@ export default function Pos(props: PosProps = {}) {
               Customer Details
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 min-w-0">
-              <div className="min-w-0">
+              <div className="min-w-0 relative">
                 <label className="block text-[11px] md:text-[10px] font-bold text-[#374151] mb-1">Customer Name</label>
                 <input
                   type="text"
                   value={customer.name}
-                  onChange={e => setCustomer({...customer, name: e.target.value})}
+                  onChange={e => { setCustomer({...customer, name: e.target.value}); runSuggest('name', e.target.value) }}
+                  onFocus={() => runSuggest('name', customer.name)}
+                  onBlur={() => window.setTimeout(() => setSuggestField(f => (f === 'name' ? null : f)), 180)}
+                  autoComplete="off"
                   placeholder="Enter name"
                   className="w-full min-w-0 max-w-full box-border h-10 px-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-accent text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal"
                 />
+                {suggestionList('name')}
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 relative">
                 <label className="block text-[11px] md:text-[10px] font-bold text-[#374151] mb-1">Mobile Number (WhatsApp)</label>
                 <input
                   type="text"
                   value={customer.phone}
-                  onChange={e => setCustomer({...customer, phone: e.target.value})}
+                  onChange={e => { setCustomer({...customer, phone: e.target.value}); runSuggest('phone', e.target.value) }}
+                  onFocus={() => runSuggest('phone', customer.phone)}
+                  onBlur={() => window.setTimeout(() => setSuggestField(f => (f === 'phone' ? null : f)), 180)}
+                  autoComplete="off"
                   placeholder="Enter WhatsApp number"
                   className="w-full min-w-0 max-w-full box-border h-10 px-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-accent text-xs font-semibold text-[#111111] placeholder:text-gray-400 placeholder:font-normal"
                 />
+                {suggestionList('phone')}
                 {autofilledPhone && normalizePhone(customer.phone || '') === autofilledPhone && (
                   <p className="mt-1 text-[10px] font-bold text-emerald-700">Returning customer: details filled in from their last bill.</p>
                 )}

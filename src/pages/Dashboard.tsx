@@ -47,7 +47,8 @@ import { EditOrderModal, type SavedOrderEdit } from '../components/orders/EditOr
 import { ReturnOrderModal } from '../components/orders/ReturnOrderModal'
 import { ReturnInvoice } from '../components/orders/ReturnInvoice'
 import { returnService } from '../services/returnService'
-import type { OrderReturn } from '../lib/returns'
+import { isExchange, type OrderReturn } from '../lib/returns'
+import { orderPaymentLabel } from '../lib/paymentModes'
 import { returnInvoicePdfFile } from '../lib/returnInvoicePdf'
 import { computeCollections } from '../lib/collections'
 import { verifyAdminPassword } from '../lib/adminConfirm'
@@ -535,6 +536,15 @@ export default function Dashboard() {
       billableCompleted.map(o => ({ total: getOrderTotal(o), payment_mode: o.payment_mode, split_details: o.split_details })),
       returnsInRange,
     )
+    // Exchanges: items returned for new ones. The returned items' value is credit against the new bill.
+    const exchangeReturns = returnsInRange.filter(isExchange)
+    const exchangeStats = {
+      count: exchangeReturns.length,
+      newBills: r2(exchangeReturns.reduce((sum, r) => sum + r.exchange_total, 0)),
+      credit: r2(exchangeReturns.reduce((sum, r) => sum + r.credit_applied, 0)),
+      paidExtra: r2(exchangeReturns.reduce((sum, r) => sum + Math.max(0, r.exchange_total - r.credit_applied), 0)),
+      paidBack: r2(exchangeReturns.reduce((sum, r) => sum + Math.max(0, r.refund_total - r.credit_applied), 0)),
+    }
     const netProfit = completedRevenue - totalExpenses - (deductRefunds ? refundedAmount : 0)
     const isProfitable = netProfit >= 0
 
@@ -866,6 +876,7 @@ export default function Dashboard() {
       refundedAmount,
       refundedBills,
       collections,
+      exchangeStats,
     }
   }, [orders, orderItems, products, coupons, expenses, analyticsDateRange, orderReturns, deductRefunds])
 
@@ -1222,7 +1233,7 @@ export default function Dashboard() {
       discountAmount: order.discount_amount,
       manualDiscountAmount: order.manual_discount_amount,
       gstAmount: order.total_gst,
-      paymentMode: order.payment_mode,
+      paymentMode: orderPaymentLabel(order.payment_mode, order.split_details),
       total: order.total,
     })
     const url = URL.createObjectURL(file)
@@ -2317,7 +2328,7 @@ export default function Dashboard() {
                           })),
                           subtotal: normalizedItems.reduce((sum, item) => sum + item.line_total, 0),
                           total: getOrderTotal(order),
-                          paymentMode: order.payment_mode || order.payment_method,
+                          paymentMode: orderPaymentLabel(order.payment_mode || order.payment_method || '', order.split_details),
                         })
 
                         return (
@@ -2728,7 +2739,7 @@ export default function Dashboard() {
                     },
                     {
                       label: 'Refunded Amount',
-                      helper: `Paid back to customers${deductRefunds ? ' · reduced from net profit' : ' · not reduced from net profit'}`,
+                      helper: `Paid back to customers${analytics.exchangeStats.credit > 0 ? ` (incl. exchange credit ${formatCurrency(analytics.exchangeStats.credit)})` : ''}${deductRefunds ? ' · reduced from net profit' : ' · not reduced from net profit'}`,
                       value: formatCurrency(analytics.refundedAmount),
                       icon: <RotateCcw size={16} />,
                       color: 'text-rose-500',
@@ -2778,6 +2789,46 @@ export default function Dashboard() {
                       label: 'Online / Other Payments',
                       helper: `${plural(analytics.collections.other.bills, 'bill')} (online or unrecorded mode)`,
                       value: formatCurrency(analytics.collections.other.sales),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-gray-500',
+                      bg: 'bg-gray-100',
+                    },
+                    {
+                      label: 'Exchanges',
+                      helper: `New bills worth ${formatCurrency(analytics.exchangeStats.newBills)}`,
+                      value: String(analytics.exchangeStats.count),
+                      icon: <RotateCcw size={16} />,
+                      color: 'text-indigo-500',
+                      bg: 'bg-indigo-50',
+                    },
+                    {
+                      label: 'Exchange Credit Used',
+                      helper: 'Value of returned items adjusted against new bills',
+                      value: formatCurrency(analytics.exchangeStats.credit),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-indigo-500',
+                      bg: 'bg-indigo-50',
+                    },
+                    {
+                      label: 'Extra Paid in Exchanges',
+                      helper: 'Customers paid this on top of the credit',
+                      value: formatCurrency(analytics.exchangeStats.paidExtra),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-emerald-500',
+                      bg: 'bg-emerald-50',
+                    },
+                    {
+                      label: 'Paid Back in Exchanges',
+                      helper: 'Shop paid back when the new items cost less',
+                      value: formatCurrency(analytics.exchangeStats.paidBack),
+                      icon: <RMIcon size={16} />,
+                      color: 'text-rose-500',
+                      bg: 'bg-rose-50',
+                    },
+                    {
+                      label: 'Bills Paid by Exchange Credit',
+                      helper: 'Fully covered by returned items, no money received',
+                      value: String(analytics.collections.exchange.bills),
                       icon: <RMIcon size={16} />,
                       color: 'text-gray-500',
                       bg: 'bg-gray-100',
@@ -5002,6 +5053,16 @@ export default function Dashboard() {
                   ))}
                 </div>
               )}
+              {activeReturn?.exchange_order_id && (() => {
+                const newBill = orders.find(o => o.id === activeReturn.exchange_order_id)
+                return newBill ? (
+                  <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[#E5E7EB]/60 bg-accent-soft px-4 py-2 sm:px-6 print:hidden">
+                    <span className="text-xs font-bold text-[#111111]">Exchanged for a new bill: {formatInvoiceNo(newBill.invoice_no)} · {formatCurrency(newBill.total)}</span>
+                    <button type="button" onClick={() => { setInvoiceView('original'); setInvoicePreviewOrder(newBill) }}
+                      className="rounded-lg bg-[#0A0A0A] px-3 py-1.5 text-xs font-black text-accent cursor-pointer">View the new bill</button>
+                  </div>
+                ) : null
+              })()}
               <div className="overflow-y-auto p-2 sm:p-5 print:p-0 print:overflow-visible print:max-h-none">
                 <div className="mx-auto max-w-3xl overflow-hidden rounded-xl bg-white shadow-sm print:shadow-none print:rounded-none print:max-w-full print:m-0 print:p-0 print:overflow-visible">
                   {activeReturn ? <ReturnInvoice ret={activeReturn} /> : (
@@ -5018,7 +5079,7 @@ export default function Dashboard() {
                     discountAmount={invoicePreviewOrder.discount_amount}
                     manualDiscountAmount={invoicePreviewOrder.manual_discount_amount}
                     gstAmount={invoicePreviewOrder.total_gst}
-                    paymentMode={invoicePreviewOrder.payment_mode}
+                    paymentMode={orderPaymentLabel(invoicePreviewOrder.payment_mode, invoicePreviewOrder.split_details)}
                     total={invoicePreviewOrder.total}
                     status={invoicePreviewOrder.status}
                   />

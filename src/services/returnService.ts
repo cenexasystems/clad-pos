@@ -25,7 +25,16 @@ const toReturn = (row: Record<string, unknown>): OrderReturn => ({
   reason: String(row.reason || ''),
   confirmed_by: String(row.confirmed_by || ''),
   created_at: String(row.created_at || ''),
+  exchange_order_id: row.exchange_order_id ? String(row.exchange_order_id) : null,
+  exchange_invoice_no: String(row.exchange_invoice_no || ''),
+  exchange_total: Number(row.exchange_total) || 0,
+  credit_applied: Number(row.credit_applied) || 0,
 })
+
+const friendlyExchange = (message: string): string =>
+  /create_exchange|exchange_order_id|schema cache|could not find the function/i.test(message)
+    ? 'Exchanges are not set up yet. Run supabase/migrations/20261116_0035_order_exchange.sql in the Supabase SQL editor.'
+    : friendly(message)
 
 export const returnService = {
   /** All returns, newest first. Resolves to [] when the returns table is not there yet. */
@@ -58,6 +67,41 @@ export const returnService = {
     const returnId = (Array.isArray(data) ? data[0] : data)?.return_id
     const { data: row, error: fetchError } = await supabase.from('order_returns').select('*').eq('id', returnId).single()
     if (fetchError || !row) return { data: null, error: 'The return was saved, but it could not be loaded. Refresh the page.' }
+    return { data: toReturn(row as Record<string, unknown>), error: null }
+  },
+
+  /**
+   * Exchange: returns items and creates the replacement bill in ONE database step.
+   * Resolves to the credit note (with the new bill's invoice number) or an error message.
+   */
+  async createExchange(input: {
+    orderId: string
+    picks: ReturnPick[]
+    newItems: unknown[]
+    payMethod: string
+    paySplit: Record<string, number>
+    backMethod: string
+    backSplit: Record<string, number>
+    reason: string
+    confirmedBy: string
+  }): Promise<{ data: OrderReturn; error: null } | { data: null; error: string }> {
+    if (!isSupabaseConfigured) return { data: null, error: 'Connect Supabase to process exchanges.' }
+    const { data, error } = await supabase.rpc('create_exchange', {
+      p_order_id: input.orderId,
+      p_return_items: input.picks.filter((p) => p.quantity > 0),
+      p_new_items: input.newItems,
+      p_pay_method: input.payMethod,
+      p_pay_split: input.paySplit,
+      p_back_method: input.backMethod,
+      p_back_split: input.backSplit,
+      p_reason: input.reason,
+      p_confirmed_by: input.confirmedBy,
+    })
+    if (error) return { data: null, error: friendlyExchange(error.message || 'Could not save the exchange.') }
+
+    const returnId = (Array.isArray(data) ? data[0] : data)?.return_id
+    const { data: row, error: fetchError } = await supabase.from('order_returns').select('*').eq('id', returnId).single()
+    if (fetchError || !row) return { data: null, error: 'The exchange was saved, but it could not be loaded. Refresh the page.' }
     return { data: toReturn(row as Record<string, unknown>), error: null }
   },
 }

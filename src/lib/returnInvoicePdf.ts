@@ -3,7 +3,7 @@ import { BRAND_ADDRESS, BRAND_EN, BRAND_PHONE_DISPLAY, BRAND_ACCENT, BRAND_ACCEN
 import { formatCurrency, formatInvoiceNo } from './retail'
 import { formatPhone } from './phone'
 import { LOGO_BASE64 } from './logoBase64'
-import { refundMethodText, type OrderReturn } from './returns'
+import { isExchange, refundMethodText, type OrderReturn } from './returns'
 
 // jsPDF's built-in font has no rupee glyph, so amounts are written as "Rs. 1,234.00" (same as the sales invoice).
 const money = (value: number): string => formatCurrency(Number(value || 0)).replace(/\s+/g, ' ').replace(/^[₹₹]\s*/, 'Rs. ')
@@ -14,6 +14,9 @@ const methodText = (ret: OrderReturn): string => refundMethodText(ret).replace(/
 /** A4 return invoice (credit note) for one return. */
 export function createReturnInvoicePdf(ret: OrderReturn): Blob {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const exchange = isExchange(ret)
+  const pay = Math.max(0, ret.exchange_total - ret.credit_applied)
+  const back = Math.max(0, ret.refund_total - ret.credit_applied)
   const left = 16
   const right = 194
   const ink = '#18202a'
@@ -25,7 +28,7 @@ export function createReturnInvoicePdf(ret: OrderReturn): Blob {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(8)
   doc.setTextColor(red)
-  doc.text('RETURN INVOICE (CREDIT NOTE)', left, y)
+  doc.text(exchange ? 'EXCHANGE CREDIT NOTE' : 'RETURN INVOICE (CREDIT NOTE)', left, y)
   doc.setTextColor(muted)
   doc.text(`Return: ${ret.return_no}`, right, y, { align: 'right' })
   y += 7
@@ -124,7 +127,7 @@ export function createReturnInvoicePdf(ret: OrderReturn): Blob {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
   doc.setTextColor(red)
-  doc.text('REFUND TOTAL', 124, y)
+  doc.text(exchange ? 'CREDIT FROM RETURNED ITEMS' : 'REFUND TOTAL', 124, y)
   doc.text(money(ret.refund_total), right, y, { align: 'right' })
   y += 6
   if (ret.delivery_charge_kept > 0) {
@@ -139,7 +142,16 @@ export function createReturnInvoicePdf(ret: OrderReturn): Blob {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(8)
   doc.setTextColor(ink)
-  doc.text(`Refunded as: ${methodText(ret)}`, left, y); y += 5
+  if (exchange) {
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Exchanged for new bill #${ret.exchange_invoice_no ? formatInvoiceNo(ret.exchange_invoice_no) : ''} worth ${money(ret.exchange_total)}`, left, y); y += 5
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Credit used against the new bill: ${money(ret.credit_applied)}`, left, y); y += 5
+    if (pay > 0) { doc.text(`Customer paid the difference: ${money(pay)} (shown on the new bill)`, left, y); y += 5 }
+    if (back > 0) { doc.text(`Paid back to the customer: ${money(back)}`, left, y); y += 5 }
+    if (pay <= 0 && back <= 0) { doc.text('Even exchange: no money changed hands.', left, y); y += 5 }
+  }
+  doc.text(`${exchange ? 'Settled as' : 'Refunded as'}: ${methodText(ret)}`, left, y); y += 5
   if (ret.reason) { doc.text(`Reason: ${ret.reason}`, left, y, { maxWidth: 170 }); y += 5 }
   if (ret.confirmed_by) { doc.text(`Approved by: ${ret.confirmed_by}`, left, y); y += 5 }
   y += 4

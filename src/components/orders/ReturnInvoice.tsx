@@ -2,12 +2,15 @@ import React from 'react'
 import { BRAND_ADDRESS, BRAND_EN, BRAND_PRIMARY_PHONE_DISPLAY, BRAND_ICON } from '../../lib/brand'
 import { formatCurrency, formatInvoiceNo } from '../../lib/retail'
 import { formatPhone } from '../../lib/phone'
-import { refundMethodText, type OrderReturn } from '../../lib/returns'
+import { isExchange, refundMethodText, type OrderReturn } from '../../lib/returns'
 
 const th: React.CSSProperties = { padding: '8px 6px', fontSize: 10, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 0.8 }
 
 /** The return (credit note) invoice shown next to the original bill. */
 export const ReturnInvoice: React.FC<{ ret: OrderReturn }> = ({ ret }) => {
+  const exchange = isExchange(ret)
+  const pay = Math.max(0, ret.exchange_total - ret.credit_applied)
+  const back = Math.max(0, ret.refund_total - ret.credit_applied)
   const dateStr = new Date(ret.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   return (
     <div className="w-full max-w-[680px] mx-auto bg-white text-[#111111] box-border p-4 sm:p-8" style={{ fontFamily: 'inherit' }}>
@@ -21,7 +24,7 @@ export const ReturnInvoice: React.FC<{ ret: OrderReturn }> = ({ ret }) => {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 999, background: '#FEE2E2', color: '#B91C1C', fontSize: 10, fontWeight: 900, letterSpacing: 1 }}>RETURN INVOICE</div>
+          <div style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 999, background: '#FEE2E2', color: '#B91C1C', fontSize: 10, fontWeight: 900, letterSpacing: 1 }}>{exchange ? 'EXCHANGE CREDIT NOTE' : 'RETURN INVOICE'}</div>
           <div style={{ fontSize: 14, fontWeight: 900, marginTop: 6 }}>{ret.return_no}</div>
           <div style={{ fontSize: 10, color: '#777' }}>Original bill: {formatInvoiceNo(ret.invoice_no)}</div>
           <div style={{ fontSize: 10, color: '#777' }}>Date: {dateStr}</div>
@@ -70,7 +73,7 @@ export const ReturnInvoice: React.FC<{ ret: OrderReturn }> = ({ ret }) => {
           {ret.discount_share > 0 && <Row label="Less: bill discount share" value={`−${formatCurrency(ret.discount_share)}`} color="var(--accent-dark)" />}
           {ret.gst_share > 0 && <Row label="Add: GST share" value={`+${formatCurrency(ret.gst_share)}`} />}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
-            <span style={{ fontSize: 13, fontWeight: 900 }}>REFUND TOTAL</span>
+            <span style={{ fontSize: 13, fontWeight: 900 }}>{exchange ? 'CREDIT FROM RETURNED ITEMS' : 'REFUND TOTAL'}</span>
             <span style={{ fontSize: 17, fontWeight: 900, color: '#B91C1C' }}>{formatCurrency(ret.refund_total)}</span>
           </div>
           {ret.delivery_charge_kept > 0 && (
@@ -80,11 +83,20 @@ export const ReturnInvoice: React.FC<{ ret: OrderReturn }> = ({ ret }) => {
       </div>
 
       <div style={{ marginTop: 18, fontSize: 11, color: '#555', lineHeight: 1.6 }}>
-        <div><b>Refunded as:</b> {refundMethodText(ret)}</div>
+        {exchange && (
+          <div style={{ margin: '4px 0 8px', padding: '10px 12px', borderRadius: 10, background: 'var(--accent-soft)', border: '1px solid var(--accent-light)' }}>
+            <div><b>Exchanged for new bill:</b> {ret.exchange_invoice_no ? formatInvoiceNo(ret.exchange_invoice_no) : '(bill)'} worth {formatCurrency(ret.exchange_total)}</div>
+            <div><b>Credit used against the new bill:</b> {formatCurrency(ret.credit_applied)}</div>
+            {pay > 0 && <div><b>Customer paid the difference:</b> {formatCurrency(pay)} (shown on the new bill)</div>}
+            {back > 0 && <div><b>Paid back to the customer:</b> {formatCurrency(back)}</div>}
+            {pay <= 0 && back <= 0 && <div><b>Even exchange:</b> no money changed hands.</div>}
+          </div>
+        )}
+        <div><b>{exchange ? 'Settled as' : 'Refunded as'}:</b> {refundMethodText(ret)}</div>
         {ret.reason && <div><b>Reason:</b> {ret.reason}</div>}
         {ret.confirmed_by && <div><b>Approved by:</b> {ret.confirmed_by}</div>}
       </div>
-      <div style={{ marginTop: 18, textAlign: 'center', fontSize: 10, color: '#999' }}>This is a credit note for the original bill {formatInvoiceNo(ret.invoice_no)}.</div>
+      <div style={{ marginTop: 18, textAlign: 'center', fontSize: 10, color: '#999' }}>This is a credit note for the original bill {formatInvoiceNo(ret.invoice_no)}{exchange ? ' and records an exchange' : ''}.</div>
     </div>
   )
 }

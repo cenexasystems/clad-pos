@@ -12,6 +12,8 @@ export interface Collections {
   card: { sales: number; refunds: number; bills: number }
   qr: { sales: number; refunds: number; bills: number }
   split: { sales: number; bills: number }
+  /** bills paid entirely with exchange credit (no money received) */
+  exchange: { sales: number; bills: number }
   other: { sales: number; bills: number }
 }
 
@@ -26,6 +28,7 @@ export const computeCollections = (bills: CollectionBill[], returns: Pick<OrderR
     card: { sales: 0, refunds: 0, bills: 0 },
     qr: { sales: 0, refunds: 0, bills: 0 },
     split: { sales: 0, bills: 0 },
+    exchange: { sales: 0, bills: 0 },
     other: { sales: 0, bills: 0 },
   }
   for (const bill of bills) {

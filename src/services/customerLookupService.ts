@@ -58,3 +58,67 @@ export async function lookupCustomerByPhone(rawPhone: string): Promise<KnownCust
     return null
   }
 }
+
+export interface CustomerSuggestion extends KnownCustomer {
+  phone: string // 91XXXXXXXXXX
+}
+
+/**
+ * Customers matching what the cashier has typed so far: 3+ letters of a name, or 4+ digits of a
+ * mobile number (any 4 digits of it work, e.g. the last four). Newest customers first, one row per number.
+ */
+export async function searchCustomers(rawQuery: string, limit = 8): Promise<CustomerSuggestion[]> {
+  const query = (rawQuery || '').trim()
+  if (!query || !isSupabaseConfigured) return []
+  const digits = query.replace(/\D/g, '')
+  const byNumber = digits.length >= 4 && digits.length >= query.replace(/\s/g, '').length - 1
+  const byName = !byNumber && query.length >= 3
+  if (!byNumber && !byName) return []
+
+  try {
+    // phones are stored as typed ("98765 43210"), so match the digits in order, then confirm below
+    const phonePattern = `%${digits.split('').join('%')}%`
+    const namePattern = `%${query.replace(/[\\%_]/g, '\\$&')}%`
+
+    const [orders, saved] = await Promise.all([
+      byNumber
+        ? supabase.from('orders').select('customer_name, phone, address, created_at').ilike('phone', phonePattern).order('created_at', { ascending: false }).limit(120)
+        : supabase.from('orders').select('customer_name, phone, address, created_at').ilike('customer_name', namePattern).order('created_at', { ascending: false }).limit(120),
+      byNumber
+        ? supabase.from('customer_birthdays').select('name, phone, birth_day, birth_month, birth_year').ilike('phone', `%${digits}%`).limit(20)
+        : supabase.from('customer_birthdays').select('name, phone, birth_day, birth_month, birth_year').ilike('name', namePattern).limit(20),
+    ])
+
+    const found = new Map<string, CustomerSuggestion>()
+    const keep = (phoneRaw: string | null, name: string, address: string) => {
+      const phone = phoneRaw ? normalizePhone(phoneRaw) : null
+      if (!phone) return
+      if (byNumber && !phone.includes(digits)) return
+      const cleanName = PLACEHOLDER_NAMES.test(name.trim()) ? '' : name.trim()
+      const cleanAddress = PLACEHOLDER_ADDRESSES.test(address.trim()) ? '' : address.trim()
+      const existing = found.get(phone)
+      if (existing) {
+        if (!existing.name && cleanName) existing.name = cleanName
+        if (!existing.address && cleanAddress) existing.address = cleanAddress
+      } else {
+        found.set(phone, { name: cleanName, address: cleanAddress, phone })
+      }
+    }
+    for (const row of (orders.data || []) as { customer_name: string | null; phone: string | null; address: string | null }[]) {
+      keep(row.phone, row.customer_name || '', row.address || '')
+    }
+    for (const row of (saved.data || []) as { name: string; phone: string; birth_day: number; birth_month: number; birth_year: number | null }[]) {
+      keep(row.phone, row.name || '', '')
+      const entry = found.get(normalizePhone(row.phone) || '')
+      if (entry && row.birth_day >= 1 && row.birth_month >= 1) {
+        entry.birthday = { day: row.birth_day, month: row.birth_month, year: row.birth_year && row.birth_year >= 1900 ? row.birth_year : null }
+      }
+    }
+    // a name search only keeps rows whose name really contains the text
+    return [...found.values()]
+      .filter((c) => byNumber || c.name.toLowerCase().includes(query.toLowerCase()))
+      .slice(0, limit)
+  } catch {
+    return []
+  }
+}

@@ -12,6 +12,11 @@
     --accent-light-rgb: 232 211 153;
     --accent-soft-rgb: 251 250 246;
     --accent-hover-rgb: 184 149 40;
+    /* the same colours as plain values, for inline styles (invoices, charts) that cannot use the rgb form */
+    --accent: #D4AF37;
+    --accent-dark: #B48811;
+    --accent-light: #E8D399;
+    --accent-soft: #FBFAF6;
     --brand-gold: rgb(var(--accent-rgb));
     --brand-gold-hover: #C5A059;
     --brand-gold-light: #FBF6E9;
