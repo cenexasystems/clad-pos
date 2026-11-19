@@ -29,11 +29,16 @@ const toReturn = (row: Record<string, unknown>): OrderReturn => ({
   exchange_invoice_no: String(row.exchange_invoice_no || ''),
   exchange_total: Number(row.exchange_total) || 0,
   credit_applied: Number(row.credit_applied) || 0,
+  adj_coupon_code: String(row.adj_coupon_code || ''),
+  adj_coupon_discount: Number(row.adj_coupon_discount) || 0,
+  adj_manual_discount: Number(row.adj_manual_discount) || 0,
+  adj_gst: Number(row.adj_gst) || 0,
+  adj_delivery: Number(row.adj_delivery) || 0,
 })
 
 const friendlyExchange = (message: string): string =>
   /create_exchange|exchange_order_id|schema cache|could not find the function/i.test(message)
-    ? 'Exchanges are not set up yet. Run supabase/migrations/20261116_0035_order_exchange.sql in the Supabase SQL editor.'
+    ? 'Exchanges are not set up yet. Run supabase/migrations/20261116_0035_order_exchange.sql and 20261117_0036_exchange_bill_options.sql in the Supabase SQL editor.'
     : friendly(message)
 
 export const returnService = {
@@ -52,17 +57,28 @@ export const returnService = {
     refundSplit: Record<string, number>
     reason: string
     confirmedBy: string
+    /** coupon / discount / GST / delivery changing the refund amount */
+    adjust?: { couponCode: string | null; couponDiscount: number; manualDiscount: number; gst: number; delivery: number }
   }): Promise<{ data: OrderReturn; error: null } | { data: null; error: string }> {
     if (!isSupabaseConfigured) return { data: null, error: 'Connect Supabase to process returns.' }
-    const { data, error } = await supabase.rpc('create_order_return', {
+    const a = input.adjust
+    const base = {
       p_order_id: input.orderId,
       p_items: input.picks.filter((p) => p.quantity > 0),
       p_refund_method: input.refundMethod,
       p_refund_split: input.refundSplit,
       p_reason: input.reason,
       p_confirmed_by: input.confirmedBy,
-    })
-    if (error) return { data: null, error: friendly(error.message || 'Could not save the return.') }
+    }
+    const { data, error } = a && (a.couponDiscount > 0 || a.manualDiscount > 0 || a.gst > 0 || a.delivery > 0)
+      ? await supabase.rpc('create_order_return_adjusted', {
+          ...base, p_coupon_code: a.couponCode, p_coupon_discount: a.couponDiscount, p_manual_discount: a.manualDiscount, p_gst: a.gst, p_delivery: a.delivery,
+        })
+      : await supabase.rpc('create_order_return', base)
+    if (error) {
+      const adjMissing = /create_order_return_adjusted|adj_/i.test(error.message || '')
+      return { data: null, error: adjMissing ? 'Refund adjustments are not set up yet. Run supabase/migrations/20261118_0037_return_adjustments.sql in the Supabase SQL editor.' : friendly(error.message || 'Could not save the return.') }
+    }
 
     const returnId = (Array.isArray(data) ? data[0] : data)?.return_id
     const { data: row, error: fetchError } = await supabase.from('order_returns').select('*').eq('id', returnId).single()
@@ -84,8 +100,32 @@ export const returnService = {
     backSplit: Record<string, number>
     reason: string
     confirmedBy: string
+    /** coupon, manual discount, GST and delivery on the new bill */
+    bill?: {
+      deliveryCharge: number
+      couponDiscount: number
+      manualDiscountAmount: number
+      manualDiscountType: 'flat' | 'percent'
+      manualDiscountValue: number
+      couponCode: string | null
+      couponPercentage: number
+      totalGst: number
+      gstEnabled: boolean
+    }
   }): Promise<{ data: OrderReturn; error: null } | { data: null; error: string }> {
     if (!isSupabaseConfigured) return { data: null, error: 'Connect Supabase to process exchanges.' }
+    const b = input.bill
+    const billArgs = b ? {
+      p_delivery_charge: b.deliveryCharge,
+      p_discount_amount: b.couponDiscount,
+      p_manual_discount_amount: b.manualDiscountAmount,
+      p_manual_discount_type: b.manualDiscountType,
+      p_manual_discount_value: b.manualDiscountValue,
+      p_coupon_code: b.couponCode,
+      p_coupon_percentage: b.couponPercentage,
+      p_total_gst: b.totalGst,
+      p_gst_enabled: b.gstEnabled,
+    } : {}
     const { data, error } = await supabase.rpc('create_exchange', {
       p_order_id: input.orderId,
       p_return_items: input.picks.filter((p) => p.quantity > 0),
@@ -96,6 +136,7 @@ export const returnService = {
       p_back_split: input.backSplit,
       p_reason: input.reason,
       p_confirmed_by: input.confirmedBy,
+      ...billArgs,
     })
     if (error) return { data: null, error: friendlyExchange(error.message || 'Could not save the exchange.') }
 

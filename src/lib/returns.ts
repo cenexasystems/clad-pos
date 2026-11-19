@@ -50,6 +50,12 @@ export interface OrderReturn {
   exchange_total: number
   /** value of the returned items used as credit against the new bill */
   credit_applied: number
+  /** refund adjustments chosen at the counter (already included in refund_total) */
+  adj_coupon_code: string
+  adj_coupon_discount: number
+  adj_manual_discount: number
+  adj_gst: number
+  adj_delivery: number
 }
 
 export interface ReturnableLine {

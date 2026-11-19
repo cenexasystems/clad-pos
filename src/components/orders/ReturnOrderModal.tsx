@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { AlertCircle, ArrowLeftRight, RotateCcw, ShieldCheck, X } from 'lucide-react'
 import { computeRefund, exchangeSettlement, returnableLines, type OrderReturn } from '../../lib/returns'
 import { ExchangeItemsEditor, type ExchangeRow } from './ExchangeItemsEditor'
+import { ExchangeBillPanel, computeBill, emptyBillState, type ExchangeBillState } from './ExchangeBillPanel'
 import { formatCurrency, formatInvoiceNo } from '../../lib/retail'
 import { PAYMENT_MODES, SPLIT_PARTS, splitDifference, type SplitAmounts } from '../../lib/paymentModes'
 import { lockScroll, unlockScroll } from '../../lib/scrollLock'
@@ -44,6 +45,7 @@ export const ReturnOrderModal: React.FC<{
   // 'exchange' = return items and take new ones; the difference is paid by the customer or paid back by the shop
   const [mode, setMode] = useState<'return' | 'exchange'>('return')
   const [newRows, setNewRows] = useState<ExchangeRow[]>([])
+  const [billState, setBillState] = useState<ExchangeBillState>(emptyBillState)
   const [method, setMethod] = useState<'cash' | 'card' | 'qr' | 'split'>('cash')
   const [splitInputs, setSplitInputs] = useState({ cash: '', card: '', qr: '' })
   const [reason, setReason] = useState('')
@@ -65,10 +67,16 @@ export const ReturnOrderModal: React.FC<{
     qr: Number(splitInputs.qr) || 0,
   }
   const isExchange = mode === 'exchange'
-  const newTotal = newRows.reduce((sum, r) => sum + r.line_total, 0)
+  const newItemsTotal = newRows.reduce((sum, r) => sum + r.line_total, 0)
+  // the new bill's grand total: items - coupon - discount + GST + delivery
+  const billCalc = computeBill(newItemsTotal, billState)
+  const newTotal = billCalc.total
+  // plain return: the same options adjust the refund (coupon/discount/delivery deducted, GST added)
+  const refundCalc = computeBill(refund.refund_total, billState, -1)
+  const finalRefund = isExchange ? refund.refund_total : refundCalc.total
   const settle = exchangeSettlement(refund.refund_total, newTotal)
   // the money that really changes hands: the refund (return), or the customer's extra / the shop's pay-back (exchange)
-  const moneyDue = isExchange ? (settle.pay > 0 ? settle.pay : settle.back) : refund.refund_total
+  const moneyDue = isExchange ? (settle.pay > 0 ? settle.pay : settle.back) : finalRefund
   const splitDiff = splitDifference(splitAmounts, moneyDue)
   const nothingLeft = lines.every((l) => l.available <= 0)
   const isAdmin = role === 'admin'
@@ -84,6 +92,7 @@ export const ReturnOrderModal: React.FC<{
     if (refund.lines.length === 0) return setError('Choose at least one item to return.')
     if (isExchange && newRows.length === 0) return setError('Add the new items the customer is taking.')
     if (isExchange && newRows.some((r) => r.base_price <= 0)) return setError('Every new item needs a price.')
+    if (isExchange && newTotal <= 0) return setError('The new bill total must be more than zero. Reduce the discount.')
     if (moneyDue > 0.004 && method === 'split' && Math.abs(splitDiff) > 0.004) {
       return setError(splitDiff > 0 ? `Split amounts are short by ${formatCurrency(splitDiff)}` : `Split amounts exceed the amount by ${formatCurrency(-splitDiff)}`)
     }
@@ -105,6 +114,17 @@ export const ReturnOrderModal: React.FC<{
         backSplit: settle.back > 0 ? parts : {},
         reason: reason.trim(),
         confirmedBy: isAdmin ? adminName || 'Admin' : 'Admin (password)',
+        bill: {
+          deliveryCharge: billCalc.delivery,
+          couponDiscount: billCalc.couponDiscount,
+          manualDiscountAmount: billCalc.manualDiscount,
+          manualDiscountType: billState.manualType,
+          manualDiscountValue: billCalc.manualNumeric,
+          couponCode: billCalc.couponDiscount > 0 && billState.coupon ? billState.coupon.code : null,
+          couponPercentage: billCalc.couponDiscount > 0 && billState.coupon ? billState.coupon.percentage : 0,
+          totalGst: billCalc.totalGst,
+          gstEnabled: billState.gstOn,
+        },
       })
       setSaving(false)
       if (!result.data) return setError(result.error || 'Could not save the exchange.')
@@ -117,6 +137,10 @@ export const ReturnOrderModal: React.FC<{
       refundSplit: method === 'split' ? { ...splitAmounts } : {},
       reason: reason.trim(),
       confirmedBy: isAdmin ? adminName || 'Admin' : 'Admin (password)',
+      adjust: {
+        couponCode: refundCalc.couponDiscount > 0 && billState.coupon ? billState.coupon.code : null,
+        couponDiscount: refundCalc.couponDiscount, manualDiscount: refundCalc.manualDiscount, gst: refundCalc.totalGst, delivery: refundCalc.delivery,
+      },
     })
     setSaving(false)
     if (!result.data) return setError(result.error || 'Could not save the return.')
@@ -147,7 +171,7 @@ export const ReturnOrderModal: React.FC<{
 
           <div className="inline-flex rounded-2xl border border-gray-200 p-1 gap-1">
             {([['return', 'Return / refund'], ['exchange', 'Exchange']] as const).map(([id, text]) => (
-              <button key={id} type="button" onClick={() => { setMode(id); setError('') }}
+              <button key={id} type="button" onClick={() => { setMode(id); setError(''); setBillState(emptyBillState) }}
                 className={`h-9 px-4 rounded-xl text-[11px] font-black tracking-wider uppercase cursor-pointer ${mode === id ? 'bg-[#0A0A0A] text-accent' : 'text-gray-700 hover:bg-gray-50'}`}>
                 {text}
               </button>
@@ -202,7 +226,16 @@ export const ReturnOrderModal: React.FC<{
             <div>
               <span className={labelCls}>New items the customer takes</span>
               <ExchangeItemsEditor rows={newRows} onChange={setNewRows} />
+              {newRows.length > 0 && (
+                <div className="mt-3">
+                  <ExchangeBillPanel subtotal={newItemsTotal} itemCount={newRows.length} state={billState} onChange={setBillState} />
+                </div>
+              )}
             </div>
+          )}
+
+          {!isExchange && !nothingLeft && refund.lines.length > 0 && (
+            <ExchangeBillPanel refund subtotal={refund.refund_total} itemCount={refund.lines.length} state={billState} onChange={setBillState} />
           )}
 
           {/* Refund amount */}
@@ -210,10 +243,10 @@ export const ReturnOrderModal: React.FC<{
             <div className="flex justify-between"><span>Returned items</span><span>{formatCurrency(refund.items_total)}</span></div>
             {refund.discount_share > 0 && <div className="flex justify-between"><span>Less: their share of the bill discount</span><span>− {formatCurrency(refund.discount_share)}</span></div>}
             {refund.gst_share > 0 && <div className="flex justify-between"><span>Add: their share of GST</span><span>+ {formatCurrency(refund.gst_share)}</span></div>}
-            <div className="flex justify-between pt-1.5 mt-1 border-t border-gray-200 text-sm font-black text-[#0A0A0A]"><span>{isExchange ? 'Credit from returned items' : 'Refund to customer'}</span><span>{formatCurrency(refund.refund_total)}</span></div>
+            <div className="flex justify-between pt-1.5 mt-1 border-t border-gray-200 text-sm font-black text-[#0A0A0A]"><span>{isExchange ? 'Credit from returned items' : 'Refund to customer'}</span><span>{formatCurrency(finalRefund)}</span></div>
             {isExchange && (
               <>
-                <div className="flex justify-between"><span>New items</span><span>{formatCurrency(newTotal)}</span></div>
+                <div className="flex justify-between"><span>New bill total</span><span>{formatCurrency(newTotal)}</span></div>
                 <div className={`flex justify-between text-sm font-black ${settle.pay > 0 ? 'text-rose-700' : settle.back > 0 ? 'text-emerald-700' : 'text-gray-700'}`}>
                   <span>{settle.pay > 0 ? 'Customer pays the difference' : settle.back > 0 ? 'Shop pays back the difference' : newRows.length > 0 ? 'Even exchange, no money changes hands' : 'Add the new items'}</span>
                   <span>{settle.pay > 0 ? formatCurrency(settle.pay) : settle.back > 0 ? formatCurrency(settle.back) : formatCurrency(0)}</span>
@@ -268,7 +301,7 @@ export const ReturnOrderModal: React.FC<{
             {isAdmin ? (
               <label className="flex items-start gap-2 text-xs font-bold text-gray-800 cursor-pointer">
                 <input type="checkbox" className="mt-0.5" checked={adminTick} onChange={(e) => setAdminTick(e.target.checked)} />
-                {isExchange ? `I confirm this exchange (credit ${formatCurrency(refund.refund_total)}) as admin.` : `I confirm this refund of ${formatCurrency(refund.refund_total)} as admin.`}
+                {isExchange ? `I confirm this exchange (credit ${formatCurrency(refund.refund_total)}) as admin.` : `I confirm this refund of ${formatCurrency(finalRefund)} as admin.`}
               </label>
             ) : (
               <div>
@@ -293,7 +326,7 @@ export const ReturnOrderModal: React.FC<{
           <button type="button" onClick={onClose} className="h-10 px-5 rounded-xl border border-gray-300 text-xs font-bold text-gray-800 hover:bg-gray-50 cursor-pointer">Cancel</button>
           <button type="button" disabled={saving || nothingLeft || refund.lines.length === 0 || (isExchange && newRows.length === 0)} onClick={() => void submit()}
             className="h-10 px-6 rounded-xl bg-[#0A0A0A] text-accent text-xs font-bold tracking-wide disabled:opacity-50 cursor-pointer">
-            {saving ? 'Processing…' : isExchange ? 'Confirm exchange' : `Confirm refund ${formatCurrency(refund.refund_total)}`}
+            {saving ? 'Processing…' : isExchange ? 'Confirm exchange' : `Confirm refund ${formatCurrency(finalRefund)}`}
           </button>
         </div>
       </div>

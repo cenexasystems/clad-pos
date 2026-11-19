@@ -22,6 +22,8 @@ Run these files, in this order, the same way:
 | 261114-0033 | `20261114_0033_order_returns.sql` | Returns and refunds, return invoices |
 | 261115-0034 | `20261115_0034_shop_settings.sql` | Settings page: shop profile, theme colour, passwords |
 | 261116-0035 | `20261116_0035_order_exchange.sql` | Exchange: credit note + new bill in one step |
+| 261117-0036 | `20261117_0036_exchange_bill_options.sql` | Exchange bill: coupon, discount, GST, delivery |
+| 261118-0037 | `20261118_0037_return_adjustments.sql` | Refund adjustments on a plain return |
 
 ## Notes
 - Production must already have migrations 0001 to 0027 (the files in `../migrations`).
